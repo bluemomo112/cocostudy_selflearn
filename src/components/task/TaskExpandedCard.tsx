@@ -105,8 +105,9 @@ function FullscreenMode({ task, idx, selectedAnswers, submissionText, onAnswer, 
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-auto flex items-center justify-center p-8 bg-gray-50">
-          <div className="w-full max-w-3xl">
+        <div className="flex-1 overflow-auto p-8 bg-gray-50">
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="w-full max-w-3xl">
             {task.type === 'quiz' && task.questions?.[idx] && (() => {
               const q = task.questions[idx];
               const feedback = getQuestionFeedback(q.id);
@@ -185,6 +186,7 @@ function FullscreenMode({ task, idx, selectedAnswers, submissionText, onAnswer, 
                 <SubmissionToolbar value={submissionText} onChange={(v: string) => onStateUpdate?.({ submissionText: v })} />
               </div>
             )}
+          </div>
           </div>
         </div>
 
