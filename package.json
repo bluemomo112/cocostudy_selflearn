@@ -1,0 +1,45 @@
+{
+  "name": "@cross/self-learn",
+  "version": "1.0.0",
+  "description": "Self-learning workspace module for Cross platform",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./components/*": "./src/components/*.tsx",
+    "./components/workbench/shared/types": "./src/components/workbench/shared/types.ts",
+    "./types": "./src/types/index.ts",
+    "./data": "./src/data/index.ts",
+    "./contexts": "./src/contexts/index.ts"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "tsc && next build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "lucide-react": "^0.562.0",
+    "next": "16.1.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "tdesign-react": "^1.15.1",
+    "zustand": "^5.0.9",
+    "immer": "^11.1.3",
+    "react-countup": "^6.5.3",
+    "recharts": "^2.15.3",
+    "opencc-js": "^1.0.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "5.9.3"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0",
+    "next": ">=14.0.0"
+  }
+}
