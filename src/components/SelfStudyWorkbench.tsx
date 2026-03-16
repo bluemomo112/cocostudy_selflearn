@@ -670,13 +670,8 @@ export default function SelfStudyWorkbench({
     setSavedNormalState(null);
   };
 
-  // [资源/任务] 统一的资源点击处理
+  // [资源/任务] 统一的资源点击处理 - 所有资源默认全屏打开
   const handleResourceClick = (resource: Resource | typeof aiGeneratedResources[0]) => {
-    const hasUrl = 'url' in resource && !!resource.url;
-    const isInteractive = (resource.type === 'interactive' || resource.type === 'ai_generated') && hasUrl &&
-      ('interactiveCategory' in resource && !!resource.interactiveCategory);
-    const hasCustomViewer = 'toolId' in resource && ['flashcards', 'audio_overview', 'timeline', 'mind_map'].includes(resource.toolId || '');
-
     const viewResource: InlineViewResource = {
       id: resource.id,
       title: resource.title,
@@ -690,25 +685,19 @@ export default function SelfStudyWorkbench({
       data: 'data' in resource ? resource.data : undefined,
     };
 
-    if (isInteractive || hasCustomViewer) {
-      // H5/自定义 viewer 类：只设 viewingResource（全屏），清除 inlineViewingResource
-      setInlineViewingResource(null);
-      setViewingResource({
-        id: resource.id,
-        title: resource.title,
-        type: 'interactive',
-        description: 'description' in resource ? (resource.description || '') : '',
-        url: 'url' in resource ? resource.url : undefined,
-        interactiveCategory: 'interactiveCategory' in resource ? resource.interactiveCategory as Resource['interactiveCategory'] : undefined,
-        toolId: 'toolId' in resource ? resource.toolId : undefined,
-        data: 'data' in resource ? resource.data : undefined,
-        textContent: 'textContent' in resource ? resource.textContent : undefined,
-      } as any);
-    } else {
-      // 文档/文本类：只设 inlineViewingResource（左侧内嵌），清除 viewingResource
-      setViewingResource(null);
-      setInlineViewingResource(viewResource);
-    }
+    // 所有资源统一打开全屏 modal
+    setInlineViewingResource(null);
+    setViewingResource({
+      id: resource.id,
+      title: resource.title,
+      type: 'interactive',
+      description: 'description' in resource ? (resource.description || '') : '',
+      url: 'url' in resource ? resource.url : undefined,
+      interactiveCategory: 'interactiveCategory' in resource ? resource.interactiveCategory as Resource['interactiveCategory'] : undefined,
+      toolId: 'toolId' in resource ? resource.toolId : undefined,
+      data: 'data' in resource ? resource.data : undefined,
+      textContent: 'textContent' in resource ? resource.textContent : undefined,
+    } as any);
   };
 
   // 生成测试任务
