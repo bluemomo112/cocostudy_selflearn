@@ -11,26 +11,24 @@ interface LanguageContextType {
   t: (text: string) => string;
 }
 
-const LanguageContext = createContext<LanguageContextType>({
-  language: 'zh-TW',
-  setLanguage: () => {},
-  t: (text) => text,
-});
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState<Language>('zh-TW');
+  const [language, setLanguageState] = useState<Language>('zh-CN');
   const [converter, setConverter] = useState<((text: string) => string) | null>(null);
 
   // 初始化：从 localStorage 读取语言偏好
   useEffect(() => {
     const savedLanguage = localStorage.getItem('language') as Language;
+    console.log('[LanguageProvider] Loaded language from localStorage:', savedLanguage);
     if (savedLanguage && (savedLanguage === 'zh-CN' || savedLanguage === 'zh-TW')) {
-      setLanguage(savedLanguage);
+      setLanguageState(savedLanguage);
     }
   }, []);
 
   // 当语言改变时，更新转换器
   useEffect(() => {
+    console.log('[LanguageProvider] Language changed to:', language);
     if (language === 'zh-TW') {
       const conv = OpenCC.Converter({ from: 'cn', to: 'tw' });
       setConverter(() => conv);
@@ -48,6 +46,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       return converter(text);
     }
     return text;
+  };
+
+  const setLanguage = (lang: Language) => {
+    console.log('[LanguageProvider] setLanguage called with:', lang);
+    setLanguageState(lang);
   };
 
   return (

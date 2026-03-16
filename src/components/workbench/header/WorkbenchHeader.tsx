@@ -3,6 +3,7 @@
 import { SpaceConfig } from '../../../types/self-study';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { ArrowLeft, Brain, Pencil, Check, X, Settings, Share2, BarChart3 } from 'lucide-react';
+import LanguageSwitch from '../../LanguageSwitch';
 
 interface WorkbenchHeaderProps {
   config: SpaceConfig;
@@ -149,6 +150,9 @@ export function WorkbenchHeader({
         )}
 
         <div className="flex items-center gap-2">
+          {/* 语言切换 */}
+          <LanguageSwitch />
+
           {/* 设置 - 仅教师模式显示 */}
           {!isStudentMode && (
             <button

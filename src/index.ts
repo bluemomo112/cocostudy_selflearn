@@ -3,6 +3,7 @@ export { default as SelfStudyWorkbench } from './components/SelfStudyWorkbench';
 export { default as SpaceManager } from './components/SpaceManager';
 export { default as SpaceResults } from './components/SpaceResults';
 export { default as Onboarding } from './components/Onboarding';
+export { default as LanguageSwitch } from './components/LanguageSwitch';
 
 // Modal components
 export { default as CreationMethodModal } from './components/CreationMethodModal';
