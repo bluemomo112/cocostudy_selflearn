@@ -368,22 +368,21 @@ export function LeftPanel(props: LeftPanelProps) {
               >
                 {/* 资源区域标题栏 - 可点击折叠 */}
                 <div
-                  className="h-10 px-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-all flex items-center justify-between"
+                  className="px-4 py-2 cursor-pointer transition-all flex items-center justify-between"
                   onClick={() => onTogglePanel('resources')}
                 >
-                  <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                    <FolderOpen size={16} className="text-gray-500" />
+                  <h3 className="text-sm font-medium text-gray-500 flex items-center gap-1.5">
                     {t('学习资源')}
                     {(config.resources.length + aiGeneratedResources.length + mockAIResources.length) > 0 && (
-                      <span className="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">
+                      <span className="text-xs text-gray-400">
                         {config.resources.length + aiGeneratedResources.length + mockAIResources.length}
                       </span>
                     )}
                   </h3>
                   {collapsedPanels.resources ? (
-                    <ChevronRight size={16} className="text-gray-400" />
+                    <ChevronRight size={14} className="text-gray-300" />
                   ) : (
-                    <ChevronDown size={16} className="text-gray-400" />
+                    <ChevronDown size={14} className="text-gray-300" />
                   )}
                 </div>
 
@@ -573,29 +572,28 @@ export function LeftPanel(props: LeftPanelProps) {
 
               {/* 任务区域 - 可折叠，资源收起时自动扩展，展开时占50% */}
               <div
-                className="flex flex-col min-h-0 border-t border-gray-200 transition-all overflow-hidden"
+                className="flex flex-col min-h-0 transition-all overflow-hidden"
                 style={{
                   flex: collapsedPanels.tasks ? '0 0 auto' : collapsedPanels.resources ? '1 1 auto' : '0 0 50%'
                 }}
               >
                 {/* 任务区域标题栏 - 可点击折叠 */}
                 <div
-                  className="h-10 px-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-all flex items-center justify-between"
+                  className="px-4 py-2 cursor-pointer transition-all flex items-center justify-between"
                   onClick={() => onTogglePanel('tasks')}
                 >
-                  <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                    <ListChecks size={16} className="text-gray-500" />
+                  <h3 className="text-sm font-medium text-gray-500 flex items-center gap-1.5">
                     {t('学习任务')}
                     {generatedTasks.length > 0 && (
-                      <span className="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">
+                      <span className="text-xs text-gray-400">
                         {generatedTasks.length}
                       </span>
                     )}
                   </h3>
                   {collapsedPanels.tasks ? (
-                    <ChevronRight size={16} className="text-gray-400" />
+                    <ChevronRight size={14} className="text-gray-300" />
                   ) : (
-                    <ChevronDown size={16} className="text-gray-400" />
+                    <ChevronDown size={14} className="text-gray-300" />
                   )}
                 </div>
 
