@@ -281,6 +281,80 @@ export function LeftPanel(props: LeftPanelProps) {
               </button>
             </div>
             <div className="flex-1 flex flex-col overflow-hidden">
+              {/* 顶层条件分支：内嵌查看器占满面板 vs 两板块列表视图 */}
+              {inlineViewingResource ? (
+                <div className="flex-1 overflow-hidden">
+                  <ResourceInlineViewer
+                    resource={inlineViewingResource}
+                    onBack={() => onSetInlineViewingResource(null)}
+                    onFullscreen={() => {
+                      onSetViewingResource?.({
+                        id: inlineViewingResource.id,
+                        title: inlineViewingResource.title,
+                        type: 'interactive',
+                        description: inlineViewingResource.description || '',
+                        url: inlineViewingResource.url,
+                        interactiveCategory: inlineViewingResource.interactiveCategory,
+                        toolId: inlineViewingResource.toolId,
+                        data: inlineViewingResource.data,
+                        textContent: inlineViewingResource.textContent,
+                      } as any);
+                      onSetInlineViewingResource(null);
+                    }}
+                  />
+                </div>
+              ) : expandedTask && taskDisplayMode === 'embedded' ? (
+                <div className="flex-1 overflow-hidden">
+                  <TaskInlineViewer
+                    task={expandedTask}
+                    mode={explainQuestion ? 'explaining' : 'doing'}
+                    currentQuestionIndex={
+                      messages.find(m => m.embeddedTask?.id === expandedTask.id)?.taskState?.currentQuestionIndex || 0
+                    }
+                    selectedAnswers={
+                      messages.find(m => m.embeddedTask?.id === expandedTask.id)?.taskState?.selectedAnswers || {}
+                    }
+                    quickResult={quickResult}
+                    explainQuestion={explainQuestion}
+                    onFullscreen={() => {
+                      if (explainQuestion) {
+                        onSetExplainQuestion?.(null);
+                        onSetTaskDisplayMode?.('result_review');
+                      } else if (completedTasks.has(expandedTask.id) && quickResult) {
+                        onSetTaskDisplayMode?.('result_review');
+                      } else {
+                        onSetTaskDisplayMode?.('fullscreen');
+                      }
+                    }}
+                    onBack={() => {
+                      onSetExplainQuestion?.(null);
+                      onSetExpandedTask?.(null);
+                      onSetTaskDisplayMode?.('fullscreen');
+                    }}
+                    onPrevQuestion={() => {
+                      const questions = expandedTask.questions || [];
+                      const currentIdx = explainQuestion ? questions.findIndex(q => q.id === explainQuestion.id) : -1;
+                      if (currentIdx > 0) {
+                        onSetExplainQuestion?.(questions[currentIdx - 1]);
+                      }
+                    }}
+                    onNextQuestion={() => {
+                      const questions = expandedTask.questions || [];
+                      const currentIdx = explainQuestion ? questions.findIndex(q => q.id === explainQuestion.id) : -1;
+                      if (currentIdx >= 0 && currentIdx < questions.length - 1) {
+                        onSetExplainQuestion?.(questions[currentIdx + 1]);
+                      }
+                    }}
+                    onExplainQuestion={onExplainQuestion}
+                    onGenerateVariant={(question) => {
+                      const typeLabel = question.type === 'single_choice' ? '单选题' : question.type === 'multiple_choice' ? '多选题' : question.type === 'fill_in_blank' ? '填空题' : '判断题';
+                      const optionsText = question.options ? `\n选项：\n${question.options.map((opt, i) => `${String.fromCharCode(65 + i)}. ${opt}`).join('\n')}` : '';
+                      onSendMessage?.(`请根据这道${typeLabel}生成一道类似的变种题，保持相同知识点和难度，但改变具体场景或数据：\n\n原题：${question.content}${optionsText}\n\n要求：提供完整的题目、选项（如有）、正确答案和解析。`);
+                    }}
+                  />
+                </div>
+              ) : (
+              <>
               {/* 资源区域 - 任务收起时自动扩展，支持折叠 */}
               <div
                 className="flex flex-col min-h-0 overflow-hidden transition-all"
@@ -369,30 +443,6 @@ export function LeftPanel(props: LeftPanelProps) {
 
                 {/* 资源列表 */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                  {inlineViewingResource ? (
-                    <div className="h-full -m-4">
-                      <ResourceInlineViewer
-                        resource={inlineViewingResource}
-                        onBack={() => onSetInlineViewingResource(null)}
-                        onFullscreen={() => {
-                          // 切到全屏：设 viewingResource + 清除 inlineViewingResource
-                          onSetViewingResource?.({
-                            id: inlineViewingResource.id,
-                            title: inlineViewingResource.title,
-                            type: 'interactive',
-                            description: inlineViewingResource.description || '',
-                            url: inlineViewingResource.url,
-                            interactiveCategory: inlineViewingResource.interactiveCategory,
-                            toolId: inlineViewingResource.toolId,
-                            data: inlineViewingResource.data,
-                            textContent: inlineViewingResource.textContent,
-                          } as any);
-                          onSetInlineViewingResource(null);
-                        }}
-                      />
-                    </div>
-                  ) : (
-                  <>
                   {config.resources.length === 0 && aiGeneratedResources.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center py-12">
                       <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
@@ -516,8 +566,6 @@ export function LeftPanel(props: LeftPanelProps) {
                       ))}
                     </>
                   )}
-                  </>
-                  )}
                 </div>
                 </>
                 )}
@@ -554,58 +602,6 @@ export function LeftPanel(props: LeftPanelProps) {
                 {/* 可折叠的内容区域 */}
                 {!collapsedPanels.tasks && (
                   <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                    {expandedTask && taskDisplayMode === 'embedded' ? (
-                      <div className="h-full -m-4">
-                        <TaskInlineViewer
-                          task={expandedTask}
-                          mode={explainQuestion ? 'explaining' : 'doing'}
-                          currentQuestionIndex={
-                            messages.find(m => m.embeddedTask?.id === expandedTask.id)?.taskState?.currentQuestionIndex || 0
-                          }
-                          selectedAnswers={
-                            messages.find(m => m.embeddedTask?.id === expandedTask.id)?.taskState?.selectedAnswers || {}
-                          }
-                          quickResult={quickResult}
-                          explainQuestion={explainQuestion}
-                          onFullscreen={() => {
-                            if (explainQuestion) {
-                              onSetExplainQuestion?.(null);
-                              onSetTaskDisplayMode?.('result_review');
-                            } else if (completedTasks.has(expandedTask.id) && quickResult) {
-                              onSetTaskDisplayMode?.('result_review');
-                            } else {
-                              onSetTaskDisplayMode?.('fullscreen');
-                            }
-                          }}
-                          onBack={() => {
-                            onSetExplainQuestion?.(null);
-                            onSetExpandedTask?.(null);
-                            onSetTaskDisplayMode?.('fullscreen');
-                          }}
-                          onPrevQuestion={() => {
-                            const questions = expandedTask.questions || [];
-                            const currentIdx = explainQuestion ? questions.findIndex(q => q.id === explainQuestion.id) : -1;
-                            if (currentIdx > 0) {
-                              onSetExplainQuestion?.(questions[currentIdx - 1]);
-                            }
-                          }}
-                          onNextQuestion={() => {
-                            const questions = expandedTask.questions || [];
-                            const currentIdx = explainQuestion ? questions.findIndex(q => q.id === explainQuestion.id) : -1;
-                            if (currentIdx >= 0 && currentIdx < questions.length - 1) {
-                              onSetExplainQuestion?.(questions[currentIdx + 1]);
-                            }
-                          }}
-                          onExplainQuestion={onExplainQuestion}
-                          onGenerateVariant={(question) => {
-                            const typeLabel = question.type === 'single_choice' ? '单选题' : question.type === 'multiple_choice' ? '多选题' : question.type === 'fill_in_blank' ? '填空题' : '判断题';
-                            const optionsText = question.options ? `\n选项：\n${question.options.map((opt, i) => `${String.fromCharCode(65 + i)}. ${opt}`).join('\n')}` : '';
-                            onSendMessage?.(`请根据这道${typeLabel}生成一道类似的变种题，保持相同知识点和难度，但改变具体场景或数据：\n\n原题：${question.content}${optionsText}\n\n要求：提供完整的题目、选项（如有）、正确答案和解析。`);
-                          }}
-                        />
-                      </div>
-                    ) : (
-                    <>
                     {/* AI生成进度指示器 */}
                     {isAIGenerating && (
                       <div className="px-3 py-3 bg-gray-50 border border-gray-200 rounded-lg">
@@ -746,12 +742,11 @@ export function LeftPanel(props: LeftPanelProps) {
                       ))}
                       </>
                     )}
-
-                    </>
-                    )}
                   </div>
                 )}
               </div>
+              </>
+              )}
             </div>
             </>
           )}

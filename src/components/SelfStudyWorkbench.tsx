@@ -1786,9 +1786,9 @@ export default function SelfStudyWorkbench({
     setTaskDisplayMode('embedded');
 
     // 2. 自动收起资源区域，展开任务区域
-    setIsResourceCollapsed(true);  // 收起资源
     setCollapsedPanels(prev => ({
       ...prev,
+      resources: true,  // 收起资源
       tasks: false,   // 展开任务
     }));
 
