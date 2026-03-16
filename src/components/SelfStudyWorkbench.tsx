@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { SpaceConfig, LearningMode, LearningPathNode, LEARNING_MODE_CONFIG } from '../types/self-study';
 import { Resource, Task, TaskQuestion } from '../types/shared-context';
-import { mockResources } from '../data/mockLearningData';
+import { mockResources, mockTasks } from '../data/mockLearningData';
 import { blankExamScenario, multiStudentScenario, arbitraryFileScenario, historicalTestScenario, errorQuestionsScenario } from '../data/demoScenarios';
 import {
   ArrowLeft, Send, Settings, BookOpen, Brain, Sparkles, FileText, Video,
@@ -231,126 +231,12 @@ export default function SelfStudyWorkbench({
     { id: 'interactive_test', label: t('互动测试'), icon: '🧪', description: t('生成互动测试'), status: 'ready' as const, type: 'interactive' as const },
   ];
 
-  const MOCK_GENERATED_TASKS = [
-    {
-      id: 'gen_task_1',
-      type: 'quiz' as const,
-      title: t('AI生成：植物工厂基础测验'),
-      status: 'available' as const,
-      required: true,
-      questionCount: 8,
-      questions: [
-        {
-          id: 'q1',
-          type: 'single_choice',
-          content: '观察下面的植物工厂图片，植物工厂的主要优势是什么？\n\n![植物工厂](https://picsum.photos/seed/plant1/600/300)',
-          options: [
-            t('不受气候影响，可全年生产'),
-            t('成本低廉'),
-            t('不需要任何技术'),
-            t('产量低但质量好')
-          ],
-          answer: t('不受气候影响，可全年生产'),
-          explanation: '植物工厂最大的优势在于通过人工控制环境，实现全年不间断生产，不受自然气候条件的限制。',
-          points: 1,
-        },
-        {
-          id: 'q2',
-          type: 'multiple_choice',
-          content: t('以下哪些是植物工厂中需要控制的关键环境因素？（多选）'),
-          options: [
-            t('温度和湿度'),
-            t('光照强度与光谱'),
-            t('CO₂ 浓度'),
-            t('土壤酸碱度')
-          ],
-          answer: [t('温度和湿度'), t('光照强度与光谱'), t('CO₂ 浓度')],
-          explanation: '植物工厂通常采用无土栽培，因此不涉及土壤酸碱度。温度、湿度、光照和 CO₂ 浓度是核心控制参数。',
-          points: 2,
-        },
-        {
-          id: 'q3',
-          type: 'true_false',
-          content: t('植物工厂可以完全不使用土壤进行种植。'),
-          answer: 'true',
-          explanation: '植物工厂普遍采用水培、气雾培等无土栽培技术，通过营养液直接为植物根系提供养分。',
-          points: 1,
-        },
-        {
-          id: 'q4',
-          type: 'fill_in_blank',
-          content: t('植物工厂通常使用___技术来提供植物所需的营养。'),
-          answer: t('水培'),
-          explanation: '水培（Hydroponics）是植物工厂最常用的栽培方式，通过营养液循环系统为植物提供所需的水分和矿物质。',
-          blanks: 1,
-          points: 1,
-        },
-        {
-          id: 'q5',
-          type: 'single_choice',
-          content: t('LED灯在植物工厂中的主要作用是？'),
-          options: [
-            t('装饰美观'),
-            t('提供光合作用所需的特定光谱'),
-            t('加热空气'),
-            t('驱赶害虫')
-          ],
-          answer: t('提供光合作用所需的特定光谱'),
-          explanation: 'LED 灯可以精确调节光谱组成（如红光、蓝光比例），为不同生长阶段的植物提供最优光照条件。',
-          points: 1,
-        },
-        {
-          id: 'q6',
-          type: 'multiple_choice',
-          content: t('植物工厂相比传统农业的优势包括哪些？（多选）'),
-          options: [
-            t('单位面积产量更高'),
-            t('可实现农药零使用'),
-            t('初始建设成本更低'),
-            t('生产周期可精确控制')
-          ],
-          answer: [t('单位面积产量更高'), t('可实现农药零使用'), t('生产周期可精确控制')],
-          explanation: '植物工厂的初始建设成本实际上远高于传统农业，但在产量、食品安全和生产可控性方面具有显著优势。',
-          points: 2,
-        },
-        {
-          id: 'q7',
-          type: 'fill_in_blank',
-          content: t('植物工厂中，红光促进植物___，蓝光促进植物___。'),
-          answer: t('开花结果|茎叶生长'),
-          blanks: 2,
-          explanation: '红光（620-780nm）主要促进植物的开花和结果，蓝光（400-500nm）则有利于茎叶的营养生长。',
-          points: 2,
-        },
-        {
-          id: 'q8',
-          type: 'single_choice',
-          content: t('下列哪种作物最适合在植物工厂中种植？'),
-          options: [
-            t('小麦'),
-            t('生菜'),
-            t('苹果树'),
-            t('水稻')
-          ],
-          answer: t('生菜'),
-          explanation: '叶菜类（如生菜）生长周期短、株型小、对光照需求适中，是植物工厂中最常见也最经济的种植品种。',
-          points: 1,
-        },
-      ],
-      passScore: 60,
-      generatedAt: new Date(Date.now() - 1000 * 60 * 10),
-    },
-    {
-      id: 'gen_task_2',
-      type: 'assignment' as const,
-      title: t('AI生成：学习反思'),
-      status: 'available' as const,
-      required: false,
-      teacherHint: t('请结合今天学习的内容，思考以下问题：\n1. 你学到了哪些新知识？\n2. 哪些概念你还不太理解？\n3. 你打算如何应用这些知识？'),
-      wordLimit: { min: 200, max: 500 },
-      generatedAt: new Date(Date.now() - 1000 * 60 * 5),
-    },
-  ];
+  const MOCK_GENERATED_TASKS = mockTasks.map((task, idx) => ({
+    ...task,
+    status: 'available' as const,
+    questionCount: task.questions?.length || 0,
+    generatedAt: new Date(Date.now() - 1000 * 60 * (10 - idx * 2)),
+  }));
 
   // Mock 对话数据 - 模拟从自由探索到 AI 引导的完整流程
   const MOCK_SELF_DIRECTED_MESSAGES: ChatMessage[] = [
@@ -1092,42 +978,24 @@ export default function SelfStudyWorkbench({
       setTimeout(() => {
         // 特殊处理：生成变种题
         if (tool.id === 'generate_variant_question') {
+          // 从 mockTasks 的 quiz 类型中随机抽取题目作为变种题
+          const quizTasks = mockTasks.filter(t => t.type === 'quiz' && t.questions && t.questions.length > 0);
+          const sourceQuestions = quizTasks.flatMap(t => t.questions || []);
+          const shuffled = [...sourceQuestions].sort(() => Math.random() - 0.5);
+          const pickedQuestions = shuffled.slice(0, 3).map((q, i) => ({
+            ...q,
+            id: `q_variant_${Date.now()}_${i}`,
+          }));
+
           const variantTask = {
             id: `gen_task_${Date.now()}`,
             type: 'quiz' as const,
             title: `🔄 ${t('变种练习题')}`,
+            description: t('基于错题生成的变种练习，巩固薄弱知识点'),
             status: 'available' as const,
             required: false,
-            questionCount: 3,
-            questions: [
-              {
-                id: `q_${Date.now()}_1`,
-                type: 'single_choice',
-                content: t('【变种题】这是基于你的错题生成的变种练习，考查相同知识点但换了不同角度。'),
-                options: [t('选项A'), t('选项B'), t('选项C'), t('选项D')],
-                answer: t('选项B'),
-                explanation: t('这道变种题从另一个角度考查了相同的知识点，帮助你更全面地理解。'),
-                points: 1,
-              },
-              {
-                id: `q_${Date.now()}_2`,
-                type: 'single_choice',
-                content: t('【变种题】继续巩固这个知识点，这次从应用场景出发。'),
-                options: [t('选项A'), t('选项B'), t('选项C'), t('选项D')],
-                answer: t('选项C'),
-                explanation: t('通过实际应用场景，你可以更好地理解这个概念。'),
-                points: 1,
-              },
-              {
-                id: `q_${Date.now()}_3`,
-                type: 'true_false',
-                content: t('【变种题】判断题形式，检验你对核心概念的理解是否准确。'),
-                options: [t('正确'), t('错误')],
-                answer: t('正确'),
-                explanation: t('这个判断帮助你明确概念的边界和适用范围。'),
-                points: 1,
-              },
-            ],
+            questionCount: pickedQuestions.length,
+            questions: pickedQuestions,
             passScore: 60,
             generatedAt: new Date(),
           };
@@ -1144,42 +1012,24 @@ export default function SelfStudyWorkbench({
           };
           setMessages(prev => [...prev, confirmMsg]);
         } else {
-          // 普通任务生成
+          // 普通任务生成：从 mockTasks 中随机抽取真实题目
+          const quizTasks = mockTasks.filter(t => t.type === 'quiz' && t.questions && t.questions.length > 0);
+          const sourceQuestions = quizTasks.flatMap(t => t.questions || []);
+          const shuffled = [...sourceQuestions].sort(() => Math.random() - 0.5);
+          const pickedQuestions = shuffled.slice(0, 3).map((q, i) => ({
+            ...q,
+            id: `q_${Date.now()}_${i}`,
+          }));
+
           const newTask = {
             id: `gen_task_${Date.now()}`,
             type: 'quiz' as const,
             title: `🤖 ${t('AI生成')}：${tool.label}`,
+            description: `${t('AI 根据学习资料自动生成的练习题')}`,
             status: 'available' as const,
             required: false,
-            questionCount: 3,
-            questions: [
-              {
-                id: `q_${Date.now()}_1`,
-                type: 'single_choice',
-                content: t('这是一道AI生成的示例题目，请选择正确答案。'),
-                options: [t('选项A'), t('选项B'), t('选项C'), t('选项D')],
-                answer: t('选项A'),
-                explanation: t('选项A是正确答案。'),
-                points: 1,
-              },
-              {
-                id: `q_${Date.now()}_2`,
-                type: 'true_false',
-                content: t('这是一道判断题示例。'),
-                answer: 'true',
-                explanation: t('该说法是正确的。'),
-                points: 1,
-              },
-              {
-                id: `q_${Date.now()}_3`,
-                type: 'fill_in_blank',
-                content: t('这是一道填空题示例，请填写___。'),
-                answer: t('答案'),
-                blanks: 1,
-                explanation: t('正确答案是"答案"。'),
-                points: 1,
-              },
-            ],
+            questionCount: pickedQuestions.length,
+            questions: pickedQuestions,
             passScore: 60,
             generatedAt: new Date(),
           };
