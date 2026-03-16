@@ -1,6 +1,6 @@
 'use client';
 
-import { Maximize2, ChevronLeft, ChevronRight, CheckCircle, XCircle, Lightbulb } from 'lucide-react';
+import { Maximize2, ChevronLeft, ChevronRight, CheckCircle, XCircle, Lightbulb, Shuffle } from 'lucide-react';
 import { Task, TaskQuestion } from '../../types/shared-context';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getQuestionTypeLabel } from './QuestionRenderer';
@@ -19,12 +19,13 @@ interface TaskInlineViewerProps {
   onPrevQuestion?: () => void;
   onNextQuestion?: () => void;
   onExplainQuestion?: (question: TaskQuestion, userAnswer: string | string[], correctAnswer: string | string[]) => void;
+  onGenerateVariant?: (question: TaskQuestion) => void;
 }
 
 export default function TaskInlineViewer({
   task, mode, currentQuestionIndex, selectedAnswers,
   quickResult, explainQuestion, onFullscreen, onBack,
-  onPrevQuestion, onNextQuestion, onExplainQuestion,
+  onPrevQuestion, onNextQuestion, onExplainQuestion, onGenerateVariant,
 }: TaskInlineViewerProps) {
   const { t } = useLanguage();
   const questions = task.questions || [];
@@ -95,8 +96,8 @@ export default function TaskInlineViewer({
           )}
         </div>
 
-        {/* 底部导航栏：上一题 / 详解 / 下一题 */}
-        <div className="px-3 py-2.5 border-t border-gray-200 bg-white flex items-center justify-between gap-2 flex-shrink-0">
+        {/* 底部导航栏：上一题 / 详解 / 变种题 / 下一题 */}
+        <div className="px-3 py-2.5 border-t border-gray-200 bg-white flex items-center gap-2 flex-shrink-0">
           <button
             onClick={onPrevQuestion}
             disabled={currentIdx <= 0}
@@ -104,16 +105,26 @@ export default function TaskInlineViewer({
           >
             <ChevronLeft size={14} />{t('上一题')}
           </button>
-          <button
-            onClick={() => {
-              if (onExplainQuestion) {
-                onExplainQuestion(explainQuestion, userAnswer, correctAnswer);
-              }
-            }}
-            className="px-3 py-2 rounded-lg bg-primary-50 border border-primary-200 text-primary-700 text-xs font-medium hover:bg-primary-100 flex items-center gap-1"
-          >
-            <Lightbulb size={14} />{t('详细解释')}
-          </button>
+          <div className="flex-1 flex gap-2">
+            <button
+              onClick={() => {
+                if (onExplainQuestion) {
+                  onExplainQuestion(explainQuestion, userAnswer, correctAnswer);
+                }
+              }}
+              className="flex-1 px-3 py-2 rounded-lg bg-primary-50 border border-primary-200 text-primary-700 text-xs font-medium hover:bg-primary-100 flex items-center justify-center gap-1"
+            >
+              <Lightbulb size={14} />{t('详细解释')}
+            </button>
+            {!isCorrect && onGenerateVariant && (
+              <button
+                onClick={() => onGenerateVariant(explainQuestion)}
+                className="flex-1 px-3 py-2 rounded-lg bg-orange-50 border border-orange-200 text-orange-700 text-xs font-medium hover:bg-orange-100 flex items-center justify-center gap-1"
+              >
+                <Shuffle size={14} />{t('变种题')}
+              </button>
+            )}
+          </div>
           <button
             onClick={onNextQuestion}
             disabled={currentIdx >= totalQuestions - 1}

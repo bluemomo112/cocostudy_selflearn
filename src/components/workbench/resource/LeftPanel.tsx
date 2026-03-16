@@ -77,6 +77,7 @@ interface LeftPanelProps {
   onSetTaskDisplayMode?: (mode: 'fullscreen' | 'embedded' | 'result_review') => void;
   onSetExplainQuestion?: (q: TaskQuestion | null) => void;
   onExplainQuestion?: (question: TaskQuestion, userAnswer: string | string[], correctAnswer: string | string[]) => void;
+  onSendMessage?: (message: string) => void;
   isResourceCollapsed?: boolean;
   onSetResourceCollapsed?: (collapsed: boolean) => void;
 }
@@ -102,7 +103,7 @@ export function LeftPanel(props: LeftPanelProps) {
     selectedTaskIds, toggleAllTasks, toggleAllResources, toggleTaskSelection, setEditingTask, onSaveTask,
     onSetViewingResource,
     explainQuestion, onSetExpandedTask, onSetTaskDisplayMode, onSetExplainQuestion,
-    onExplainQuestion,
+    onExplainQuestion, onSendMessage,
     isResourceCollapsed: externalIsResourceCollapsed,
     onSetResourceCollapsed,
   } = props;
@@ -624,6 +625,11 @@ export function LeftPanel(props: LeftPanelProps) {
                             }
                           }}
                           onExplainQuestion={onExplainQuestion}
+                          onGenerateVariant={(question) => {
+                            const typeLabel = question.type === 'single_choice' ? '单选题' : question.type === 'multiple_choice' ? '多选题' : question.type === 'fill_in_blank' ? '填空题' : '判断题';
+                            const optionsText = question.options ? `\n选项：\n${question.options.map((opt, i) => `${String.fromCharCode(65 + i)}. ${opt}`).join('\n')}` : '';
+                            onSendMessage?.(`请根据这道${typeLabel}生成一道类似的变种题，保持相同知识点和难度，但改变具体场景或数据：\n\n原题：${question.content}${optionsText}\n\n要求：提供完整的题目、选项（如有）、正确答案和解析。`);
+                          }}
                         />
                       </div>
                     ) : (
@@ -731,7 +737,14 @@ export function LeftPanel(props: LeftPanelProps) {
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-medium truncate ${completedTasks.has(task.id) ? 'text-green-700' : 'text-gray-700'}`}>{task.title}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className={`text-sm font-medium truncate ${completedTasks.has(task.id) ? 'text-green-700' : 'text-gray-700'}`}>{task.title}</p>
+                              {task.required && (
+                                <span className="flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600">
+                                  {t('必修')}
+                                </span>
+                              )}
+                            </div>
                             <div className="flex items-center gap-2 text-xs text-gray-400">
                               {task.type === 'quiz' && task.questionCount && (
                                 <span>{task.questionCount} {t('道题')}</span>

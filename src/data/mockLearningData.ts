@@ -616,17 +616,58 @@ export const mockTasks: Task[] = [
     required: false,
     questions: [
       {
-        id: 'q3',
+        id: 'q9',
+        type: 'single_choice',
+        content: '水培营养液的pH值通常应该控制在什么范围内？',
+        options: [
+          '3.0-4.0',
+          '5.5-6.5',
+          '7.5-8.5',
+          '9.0-10.0'
+        ],
+        answer: '5.5-6.5',
+        explanation: '大多数植物在pH 5.5-6.5的微酸性环境中生长最好，这个范围内营养元素的溶解度和可吸收性最佳。'
+      },
+      {
+        id: 'q10',
         type: 'multiple_choice',
         content: '植物工厂中通常需要控制哪些环境因素？（多选）',
         options: [
-          'A. 光照强度和光周期',
-          'B. 温度和湿度',
-          'C. CO2浓度',
-          'D. 土壤pH值'
+          '光照强度和光周期',
+          '温度和湿度',
+          'CO2浓度',
+          '土壤pH值'
         ],
-        answer: ['A', 'B', 'C'],
+        answer: ['光照强度和光周期', '温度和湿度', 'CO2浓度'],
         explanation: '植物工厂采用无土栽培，不涉及土壤。主要控制光、温、湿、气（CO2）等因素。'
+      },
+      {
+        id: 'q11',
+        type: 'single_choice',
+        content: '水培系统中，EC值（电导率）主要用来测量什么？',
+        options: [
+          '水的温度',
+          '营养液的浓度',
+          '水的流速',
+          '溶解氧含量'
+        ],
+        answer: '营养液的浓度',
+        explanation: 'EC值反映了营养液中离子的总浓度。EC值越高，说明盐分浓度越高。通过监测EC值可以判断营养液是否需要补充或稀释。'
+      },
+      {
+        id: 'q12',
+        type: 'true_false',
+        content: '水培系统中，营养液需要定期更换，不能一直循环使用。',
+        options: ['正确', '错误'],
+        answer: '正确',
+        explanation: '长期使用会导致某些元素消耗、盐分积累、pH值变化等问题。通常需要7-10天更换一次营养液。'
+      },
+      {
+        id: 'q13',
+        type: 'fill_in_blank',
+        content: '水培系统中，根系需要充足的______才能正常呼吸。如果营养液中溶解氧不足，会导致根系______，影响植物生长。',
+        answer: '氧气；腐烂',
+        explanation: '植物根系需要有氧呼吸。如果营养液溶解氧不足，根系会因缺氧而腐烂变黑。需要通过气泵增氧或定期更换营养液来保证充足的溶解氧。'
       }
     ],
     relatedResourceIds: ['resource_1', 'resource_2']
