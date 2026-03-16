@@ -672,19 +672,6 @@ export default function SelfStudyWorkbench({
 
   // [资源/任务] 统一的资源点击处理 - 所有资源默认全屏打开
   const handleResourceClick = (resource: Resource | typeof aiGeneratedResources[0]) => {
-    const viewResource: InlineViewResource = {
-      id: resource.id,
-      title: resource.title,
-      type: resource.type,
-      url: 'url' in resource ? resource.url : undefined,
-      interactiveCategory: 'interactiveCategory' in resource ? resource.interactiveCategory as InlineViewResource['interactiveCategory'] : undefined,
-      description: 'description' in resource ? resource.description : undefined,
-      textContent: 'textContent' in resource ? resource.textContent : undefined,
-      icon: 'icon' in resource ? resource.icon : undefined,
-      toolId: 'toolId' in resource ? resource.toolId : undefined,
-      data: 'data' in resource ? resource.data : undefined,
-    };
-
     // 所有资源统一打开全屏 modal
     setInlineViewingResource(null);
     setViewingResource({
