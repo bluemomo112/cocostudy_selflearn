@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { ChevronDown, ChevronUp, Send, Bot } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 import type { TaskQuestion } from '../../types/shared-context';
 
 interface ErrorQuestionChatProps {
@@ -44,6 +45,7 @@ export default function ErrorQuestionChat({
   chatHistory,
   onSendMessage,
 }: ErrorQuestionChatProps) {
+  const { t } = useLanguage();
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -85,7 +87,7 @@ export default function ErrorQuestionChat({
         className="h-12 bg-gray-50 border-t border-gray-200 rounded-b-xl cursor-pointer hover:bg-gray-100 flex items-center justify-center gap-2 text-sm text-gray-500"
       >
         <Bot className="w-4 h-4" />
-        <span>🤖 点击展开 AI 讲解</span>
+        <span>{t('🤖 点击展开 AI 讲解')}</span>
         <ChevronUp className="w-4 h-4" />
       </div>
     );
@@ -97,14 +99,11 @@ export default function ErrorQuestionChat({
       {/* Header */}
       <div className="px-4 py-3 flex justify-between items-center border-b border-gray-100">
         <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-          <Bot className="w-4 h-4" />
-          🤖 AI 讲解
-        </div>
+          <Bot className="w-4 h-4" />{t('🤖 AI 讲解')}</div>
         <button
           onClick={onToggle}
           className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1"
-        >
-          收起 <ChevronDown className="w-3 h-3" />
+        >{t('收起')}<ChevronDown className="w-3 h-3" />
         </button>
       </div>
 
@@ -131,7 +130,7 @@ export default function ErrorQuestionChat({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="输入你的问题..."
+          placeholder={t('输入你的问题...')}
           className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
         />
         <button

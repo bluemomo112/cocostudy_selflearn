@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ChevronUp, ChevronDown, TrendingUp } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 import {
   CompetencyType,
   CompetencyRating,
@@ -24,13 +25,14 @@ function CompactCompetencyBar({
 }: {
   competencyProfile: Partial<Record<CompetencyType, number>>;
 }) {
+  const { t } = useLanguage();
   const entries = Object.entries(competencyProfile) as [CompetencyType, number][];
   if (entries.length === 0) return null;
 
   return (
     <div className="bg-gradient-to-br from-primary-50 to-accent-50 rounded-xl p-3 border border-primary-100">
       <div className="flex items-center gap-1.5 mb-2">
-        <span className="text-xs font-bold text-primary-700">能力快照</span>
+        <span className="text-xs font-bold text-primary-700">{t('能力快照')}</span>
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1.5">
         {entries.map(([type, rating]) => {
@@ -132,6 +134,7 @@ export default function GrowthTimelinePanel({
 }: {
   competencyProfile: Partial<Record<CompetencyType, number>>;
 }) {
+  const { t } = useLanguage();
   const [showCrossCourse, setShowCrossCourse] = useState(false);
 
   const sortedLog = [...mockLearningLog].sort(
@@ -144,7 +147,7 @@ export default function GrowthTimelinePanel({
 
       <div>
         <div className="flex items-center gap-1.5 mb-2 px-1">
-          <span className="text-xs font-bold text-gray-700">今日学习轨迹</span>
+          <span className="text-xs font-bold text-gray-700">{t('今日学习轨迹')}</span>
           <span className="text-[10px] text-gray-400">{sortedLog.length} 条记录</span>
         </div>
         <div className="pl-1">
@@ -161,7 +164,7 @@ export default function GrowthTimelinePanel({
         >
           <div className="flex items-center gap-2">
             <TrendingUp size={14} className="text-emerald-600" />
-            <span className="text-xs font-bold text-emerald-700">我的跨课程能力画像</span>
+            <span className="text-xs font-bold text-emerald-700">{t('我的跨课程能力画像')}</span>
           </div>
           {showCrossCourse ? (
             <ChevronUp size={14} className="text-emerald-600" />

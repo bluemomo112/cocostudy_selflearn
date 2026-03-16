@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { X, Search, CheckSquare, Square, FileText, Presentation, Video, Check, Globe, BookOpen, ClipboardList, FileEdit, Monitor } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 import { Resource } from '../types/shared-context';
 import { mockResources } from '../data/mockLearningData';
 import type { ErrorQuestion, HistoricalTest, Note, InteractiveWebpage } from '../data/mockKnowledgeBase';
@@ -36,6 +37,7 @@ export default function UnifiedResourceLibraryModal({
   onImportNotes,
   onImportWebpages
 }: UnifiedResourceLibraryModalProps) {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<TabType>('resources');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -243,7 +245,7 @@ export default function UnifiedResourceLibraryModal({
       <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl z-50 w-[90%] max-w-4xl max-h-[85vh] flex flex-col">
         {/* 头部 */}
         <div className="p-6 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
-          <h3 className="text-xl font-semibold text-gray-900">资源库</h3>
+          <h3 className="text-xl font-semibold text-gray-900">{t('资源库')}</h3>
           <button
             onClick={handleClose}
             className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
@@ -263,9 +265,7 @@ export default function UnifiedResourceLibraryModal({
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              <BookOpen size={16} />
-              学习资料
-            </button>
+              <BookOpen size={16} />{t('学习资料')}</button>
             <button
               onClick={() => handleTabChange('error_questions')}
               className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
@@ -274,9 +274,7 @@ export default function UnifiedResourceLibraryModal({
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              <ClipboardList size={16} />
-              错题本
-            </button>
+              <ClipboardList size={16} />{t('错题本')}</button>
             <button
               onClick={() => handleTabChange('historical_tests')}
               className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
@@ -285,9 +283,7 @@ export default function UnifiedResourceLibraryModal({
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              <FileText size={16} />
-              历史测验
-            </button>
+              <FileText size={16} />{t('历史测验')}</button>
             <button
               onClick={() => handleTabChange('notes')}
               className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
@@ -296,9 +292,7 @@ export default function UnifiedResourceLibraryModal({
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              <FileEdit size={16} />
-              笔记
-            </button>
+              <FileEdit size={16} />{t('笔记')}</button>
             <button
               onClick={() => handleTabChange('webpages')}
               className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
@@ -307,9 +301,7 @@ export default function UnifiedResourceLibraryModal({
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              <Monitor size={16} />
-              互动网页
-            </button>
+              <Monitor size={16} />{t('互动网页')}</button>
           </div>
         </div>
 
@@ -327,8 +319,7 @@ export default function UnifiedResourceLibraryModal({
                     activeTab === 'resources' ? '搜索资源...' :
                     activeTab === 'error_questions' ? '搜索题目内容...' :
                     activeTab === 'historical_tests' ? '搜索测验...' :
-                    activeTab === 'notes' ? '搜索笔记...' :
-                    '搜索互动网页...'
+                    activeTab === 'notes' ? '搜索笔记...' : t('搜索互动网页...')
                   }
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -344,11 +335,11 @@ export default function UnifiedResourceLibraryModal({
                     onChange={(e) => setFilterType(e.target.value)}
                     className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
-                    <option value="all">全部题型</option>
-                    <option value="single_choice">单选题</option>
-                    <option value="multiple_choice">多选题</option>
-                    <option value="fill_in_blank">填空题</option>
-                    <option value="true_false">判断题</option>
+                    <option value="all">{t('全部题型')}</option>
+                    <option value="single_choice">{t('单选题')}</option>
+                    <option value="multiple_choice">{t('多选题')}</option>
+                    <option value="fill_in_blank">{t('填空题')}</option>
+                    <option value="true_false">{t('判断题')}</option>
                   </select>
 
                   <select
@@ -356,7 +347,7 @@ export default function UnifiedResourceLibraryModal({
                     onChange={(e) => setFilterTag(e.target.value)}
                     className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
-                    <option value="all">全部标签</option>
+                    <option value="all">{t('全部标签')}</option>
                     {allTags.map(tag => (
                       <option key={tag} value={tag}>{tag}</option>
                     ))}
@@ -394,7 +385,7 @@ export default function UnifiedResourceLibraryModal({
                       <Square className="w-4 h-4" />
                     );
                   })()}
-                  <span>全选</span>
+                  <span>{t('全选')}</span>
                 </button>
               </div>
             )}
@@ -404,7 +395,7 @@ export default function UnifiedResourceLibraryModal({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {filteredResources.length === 0 ? (
                   <div className="col-span-2 text-center py-12 text-gray-400">
-                    <p>没有找到相关资源</p>
+                    <p>{t('没有找到相关资源')}</p>
                   </div>
                 ) : (
                   filteredResources.map((resource) => {
@@ -432,18 +423,18 @@ export default function UnifiedResourceLibraryModal({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2 mb-1">
                             <h4 className="text-sm font-semibold text-gray-900 line-clamp-1">
-                              {resource.title}
+                              {t(resource.title)}
                             </h4>
                             {isSelected && (
                               <Check className="w-5 h-5 text-primary-600 flex-shrink-0" />
                             )}
                           </div>
                           <p className="text-xs text-gray-600 line-clamp-2 mb-2">
-                            {resource.description}
+                            {t(resource.description || '')}
                           </p>
                           <div className="flex items-center gap-2">
                             <span className="text-xs px-2 py-0.5 rounded-full bg-primary-100 text-primary-700">
-                              {resource.source === 'personal' ? '我的资源' : '共享资源'}
+                              {resource.source === 'personal' ? '我的资源' : t('共享资源')}
                             </span>
                             {resource.duration && (
                               <span className="text-xs text-gray-500">
@@ -464,7 +455,7 @@ export default function UnifiedResourceLibraryModal({
               <div className="space-y-2">
                 {filteredErrorQuestions.length === 0 ? (
                   <div className="text-center py-12 text-gray-400">
-                    <p>暂无符合条件的错题</p>
+                    <p>{t('暂无符合条件的错题')}</p>
                   </div>
                 ) : (
                   filteredErrorQuestions.map(eq => (
@@ -513,7 +504,7 @@ export default function UnifiedResourceLibraryModal({
               <div className="space-y-2 min-h-[300px]">
                 {filteredHistoricalTests.length === 0 ? (
                   <div className="text-center py-12 text-gray-400">
-                    <p>没有找到相关测验</p>
+                    <p>{t('没有找到相关测验')}</p>
                   </div>
                 ) : (
                   filteredHistoricalTests.map(test => (
@@ -563,7 +554,7 @@ export default function UnifiedResourceLibraryModal({
               <div className="space-y-3">
                 {filteredNotes.length === 0 ? (
                   <div className="text-center py-12 text-gray-400">
-                    <p>没有找到相关笔记</p>
+                    <p>{t('没有找到相关笔记')}</p>
                   </div>
                 ) : (
                   filteredNotes.map(note => (
@@ -587,15 +578,15 @@ export default function UnifiedResourceLibraryModal({
 
                         <div className="flex-1 min-w-0">
                           <h4 className="text-sm font-semibold text-gray-900 mb-2">
-                            {note.title}
+                            {t(note.title)}
                           </h4>
                           <p className="text-xs text-gray-600 line-clamp-2 mb-2">
-                            {note.content.substring(0, 100)}...
+                            {t(note.content.substring(0, 100))}...
                           </p>
                           <div className="flex items-center gap-2 flex-wrap">
                             {note.tags?.map(tag => (
                               <span key={tag} className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
-                                {tag}
+                                {t(tag)}
                               </span>
                             ))}
                             <span className="text-xs text-gray-500">
@@ -615,7 +606,7 @@ export default function UnifiedResourceLibraryModal({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {filteredWebpages.length === 0 ? (
                   <div className="col-span-2 text-center py-12 text-gray-400">
-                    <p>没有找到相关互动网页</p>
+                    <p>{t('没有找到相关互动网页')}</p>
                   </div>
                 ) : (
                   filteredWebpages.map(webpage => {
@@ -642,14 +633,14 @@ export default function UnifiedResourceLibraryModal({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2 mb-1">
                             <h4 className="text-sm font-semibold text-gray-900 line-clamp-1">
-                              {webpage.title}
+                              {t(webpage.title)}
                             </h4>
                             {isSelected && (
                               <Check className="w-5 h-5 text-primary-600 flex-shrink-0" />
                             )}
                           </div>
                           <p className="text-xs text-gray-600 line-clamp-2 mb-2">
-                            {webpage.description}
+                            {t(webpage.description)}
                           </p>
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
@@ -675,7 +666,7 @@ export default function UnifiedResourceLibraryModal({
         <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between flex-shrink-0">
           <div className="text-sm text-gray-600">
             {activeTab === 'historical_tests'
-              ? selectedIds.size > 0 ? '已选择 1 条测验记录' : '请选择一条测验记录'
+              ? selectedIds.size > 0 ? '已选择 1 条测验记录' : t('请选择一条测验记录')
               : `已选择 ${selectedIds.size} 项`
             }
           </div>
@@ -683,16 +674,12 @@ export default function UnifiedResourceLibraryModal({
             <button
               onClick={handleClose}
               className="px-4 py-2 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
-            >
-              取消
-            </button>
+            >{t('取消')}</button>
             <button
               onClick={handleImport}
               disabled={selectedIds.size === 0}
               className="px-4 py-2 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-            >
-              导入选中内容
-            </button>
+            >{t('导入选中内容')}</button>
           </div>
         </div>
       </div>

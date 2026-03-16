@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { X, Search, FileText, Presentation, Video, Check, Globe } from 'lucide-react';
 import { Resource } from '../types/shared-context';
 import { mockResources } from '../data/mockLearningData';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ResourceLibraryModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface ResourceLibraryModalProps {
 }
 
 export default function ResourceLibraryModal({ isOpen, onClose, onSelect }: ResourceLibraryModalProps) {
+  const { t } = useLanguage();
   const [selectedResources, setSelectedResources] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -81,7 +83,7 @@ export default function ResourceLibraryModal({ isOpen, onClose, onSelect }: Reso
         {/* 头部 */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-semibold text-gray-900">从资源库选择</h3>
+            <h3 className="text-xl font-semibold text-gray-900">{t('从资源库选择')}</h3>
             <button
               onClick={handleClose}
               className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
@@ -95,7 +97,7 @@ export default function ResourceLibraryModal({ isOpen, onClose, onSelect }: Reso
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
-              placeholder="搜索资源..."
+              placeholder={t('搜索资源...')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -107,7 +109,7 @@ export default function ResourceLibraryModal({ isOpen, onClose, onSelect }: Reso
         <div className="p-6 max-h-[60vh] overflow-y-auto">
           {filteredResources.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500">没有找到相关资源</p>
+              <p className="text-gray-500">{t('没有找到相关资源')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -136,14 +138,14 @@ export default function ResourceLibraryModal({ isOpen, onClose, onSelect }: Reso
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <h4 className="text-sm font-semibold text-gray-900 line-clamp-1">
-                          {resource.title}
+                          {t(resource.title)}
                         </h4>
                         {isSelected && (
                           <Check className="w-5 h-5 text-primary-600 flex-shrink-0" />
                         )}
                       </div>
                       <p className="text-xs text-gray-600 line-clamp-2 mb-2">
-                        {resource.description}
+                        {t(resource.description || '')}
                       </p>
                       <div className="flex items-center gap-2">
                         <span className={`text-xs px-2 py-0.5 rounded-full ${
@@ -151,7 +153,7 @@ export default function ResourceLibraryModal({ isOpen, onClose, onSelect }: Reso
                             ? 'bg-primary-100 text-primary-700'
                             : 'bg-primary-100 text-primary-700'
                         }`}>
-                          {resource.source === 'personal' ? '我的资源' : '共享资源'}
+                          {resource.source === 'personal' ? t('我的资源') : t('共享资源')}
                         </span>
                         {resource.duration && (
                           <span className="text-xs text-gray-500">
@@ -170,21 +172,21 @@ export default function ResourceLibraryModal({ isOpen, onClose, onSelect }: Reso
         {/* 底部按钮 */}
         <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
           <p className="text-sm text-gray-600">
-            已选择 {selectedResources.size} 个资源
+            {t('已选择')} {selectedResources.size} {t('个资源')}
           </p>
           <div className="flex gap-3">
             <button
               onClick={handleClose}
               className="px-4 py-2 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
             >
-              取消
+              {t('取消')}
             </button>
             <button
               onClick={handleConfirm}
               disabled={selectedResources.size === 0}
               className="px-4 py-2 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
-              确认选择
+              {t('确认选择')}
             </button>
           </div>
         </div>

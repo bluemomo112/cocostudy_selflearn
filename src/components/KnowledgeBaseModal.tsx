@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { X, Search, CheckSquare, Square } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 import type { ErrorQuestion } from '../data/mockKnowledgeBase';
 import { mockErrorQuestions } from '../data/mockKnowledgeBase';
 
@@ -12,7 +13,7 @@ interface KnowledgeBaseModalProps {
   onImportHistoricalTest?: (testRecord: any) => void;
 }
 
-// 题型映射
+// 题型映射 - 将在组件内部使用 t() 转换
 const QUESTION_TYPE_MAP: Record<string, string> = {
   'single_choice': '单选',
   'multiple_choice': '多选',
@@ -26,6 +27,7 @@ export default function KnowledgeBaseModal({
   onImport,
   onImportHistoricalTest
 }: KnowledgeBaseModalProps) {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'error_questions' | 'historical_tests'>('error_questions');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,7 +42,7 @@ export default function KnowledgeBaseModal({
   const historicalTests = [
     {
       id: 'test-record-001',
-      title: '2024-03-01 数学测验',
+      title: t('2024-03-01 数学测验'),
       date: '2024-03-01',
       score: 78,
       totalScore: 100,
@@ -49,7 +51,7 @@ export default function KnowledgeBaseModal({
     },
     {
       id: 'test-record-002',
-      title: '2024-02-15 英语测验',
+      title: t('2024-02-15 英语测验'),
       date: '2024-02-15',
       score: 85,
       totalScore: 100,
@@ -58,7 +60,7 @@ export default function KnowledgeBaseModal({
     },
     {
       id: 'test-record-003',
-      title: '2024-01-20 物理测验',
+      title: t('2024-01-20 物理测验'),
       date: '2024-01-20',
       score: 72,
       totalScore: 100,
@@ -154,7 +156,7 @@ export default function KnowledgeBaseModal({
       <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl z-50 w-[90%] max-w-3xl">
         {/* 头部 */}
         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-          <h3 className="text-xl font-semibold text-gray-900">从知识库导入</h3>
+          <h3 className="text-xl font-semibold text-gray-900">{t('从知识库导入')}</h3>
           <button
             onClick={handleClose}
             className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
@@ -173,9 +175,7 @@ export default function KnowledgeBaseModal({
                   ? 'border-primary-600 text-primary-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
-            >
-              错题本
-            </button>
+            >{t('错题本')}</button>
             <button
               onClick={() => setActiveTab('historical_tests')}
               className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
@@ -183,21 +183,15 @@ export default function KnowledgeBaseModal({
                   ? 'border-primary-600 text-primary-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
-            >
-              历史测验
-            </button>
+            >{t('历史测验')}</button>
             <button
               disabled
               className="pb-3 px-1 text-sm font-medium border-b-2 border-transparent text-gray-300 cursor-not-allowed"
-            >
-              笔记
-            </button>
+            >{t('笔记')}</button>
             <button
               disabled
               className="pb-3 px-1 text-sm font-medium border-b-2 border-transparent text-gray-300 cursor-not-allowed"
-            >
-              收藏的资料
-            </button>
+            >{t('收藏的资料')}</button>
           </div>
         </div>
 
@@ -212,7 +206,7 @@ export default function KnowledgeBaseModal({
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="搜索题目内容..."
+                    placeholder={t('搜索题目内容...')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -226,11 +220,11 @@ export default function KnowledgeBaseModal({
                     onChange={(e) => setFilterType(e.target.value)}
                     className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
-                    <option value="all">全部题型</option>
-                    <option value="single_choice">单选题</option>
-                    <option value="multiple_choice">多选题</option>
-                    <option value="fill_in_blank">填空题</option>
-                    <option value="true_false">判断题</option>
+                    <option value="all">{t('全部题型')}</option>
+                    <option value="single_choice">{t('单选题')}</option>
+                    <option value="multiple_choice">{t('多选题')}</option>
+                    <option value="fill_in_blank">{t('填空题')}</option>
+                    <option value="true_false">{t('判断题')}</option>
                   </select>
 
                   <select
@@ -238,7 +232,7 @@ export default function KnowledgeBaseModal({
                     onChange={(e) => setFilterTag(e.target.value)}
                     className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
-                    <option value="all">全部标签</option>
+                    <option value="all">{t('全部标签')}</option>
                     {allTags.map(tag => (
                       <option key={tag} value={tag}>{tag}</option>
                     ))}
@@ -258,7 +252,7 @@ export default function KnowledgeBaseModal({
                     ) : (
                       <Square className="w-4 h-4" />
                     )}
-                    <span>全选</span>
+                    <span>{t('全选')}</span>
                   </button>
                 </div>
               )}
@@ -267,7 +261,7 @@ export default function KnowledgeBaseModal({
               <div className="space-y-2">
                 {filteredQuestions.length === 0 ? (
                   <div className="text-center py-12 text-gray-400">
-                    <p>暂无符合条件的错题</p>
+                    <p>{t('暂无符合条件的错题')}</p>
                   </div>
                 ) : (
                   filteredQuestions.map(eq => (
@@ -294,7 +288,7 @@ export default function KnowledgeBaseModal({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">
-                              {QUESTION_TYPE_MAP[eq.question.type]}
+                              {t(QUESTION_TYPE_MAP[eq.question.type])}
                             </span>
                             <span className="text-sm text-gray-900 truncate">
                               {eq.question.content.length > 50
@@ -359,25 +353,23 @@ export default function KnowledgeBaseModal({
         <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
           <div className="text-sm text-gray-600">
             {activeTab === 'error_questions'
-              ? `已选择 ${selectedIds.size} 道题目`
+              ? t(`已选择 ${selectedIds.size} 道题目`)
               : selectedTestId
-                ? '已选择 1 条测验记录'
-                : '请选择一条测验记录'
+                ? t('已选择 1 条测验记录')
+                : t('请选择一条测验记录')
             }
           </div>
           <div className="flex gap-3">
             <button
               onClick={handleClose}
               className="px-4 py-2 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
-            >
-              取消
-            </button>
+            >{t('取消')}</button>
             <button
               onClick={handleImport}
               disabled={activeTab === 'error_questions' ? selectedIds.size === 0 : !selectedTestId}
               className="px-4 py-2 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
-              {activeTab === 'error_questions' ? '导入选中题目' : '导入测验记录'}
+              {activeTab === 'error_questions' ? t('导入选中题目') : t('导入测验记录')}
             </button>
           </div>
         </div>

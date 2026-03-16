@@ -58,7 +58,7 @@ export default function TaskInlineViewer({
               {isCorrect ? '✓' : '✗'}
             </span>
             <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-medium rounded-full">
-              {getQuestionTypeLabel(explainQuestion.type)}
+              {getQuestionTypeLabel(explainQuestion.type, t)}
             </span>
             <span className="text-xs text-gray-400 ml-auto">{currentIdx + 1} / {totalQuestions}</span>
           </div>

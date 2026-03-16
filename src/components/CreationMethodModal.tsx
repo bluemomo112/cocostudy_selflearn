@@ -1,6 +1,7 @@
 'use client';
 
 import { Sparkles, Upload, Library, FileText, X } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface CreationMethodModalProps {
   isOpen: boolean;
@@ -9,35 +10,37 @@ interface CreationMethodModalProps {
 }
 
 export default function CreationMethodModal({ isOpen, onClose, onSelectMethod }: CreationMethodModalProps) {
+  const { t } = useLanguage();
+
   if (!isOpen) return null;
 
   const methods = [
     {
       id: 'ai' as const,
       icon: Sparkles,
-      title: '从AI创建',
-      description: 'AI自动生成教学内容',
+      title: t('从AI创建'),
+      description: t('AI自动生成教学内容'),
       recommended: true,
     },
     {
       id: 'upload' as const,
       icon: Upload,
-      title: '上传我的文件',
-      description: '上传PPT、Word或PDF',
+      title: t('上传我的文件'),
+      description: t('上传PPT、Word或PDF'),
       recommended: false,
     },
     {
       id: 'library' as const,
       icon: Library,
-      title: '从资源库导入',
-      description: '从资源库选择学习资料、题目等',
+      title: t('从资源库导入'),
+      description: t('从资源库选择学习资料、题目等'),
       recommended: false,
     },
     {
       id: 'blank' as const,
       icon: FileText,
-      title: '创建空白',
-      description: '从零开始自定义',
+      title: t('创建空白'),
+      description: t('从零开始自定义'),
       recommended: false,
     },
   ];
@@ -52,8 +55,8 @@ export default function CreationMethodModal({ isOpen, onClose, onSelectMethod }:
         {/* 头部 */}
         <div className="px-8 pt-8 pb-4 flex items-center justify-between">
           <div className="text-center flex-1">
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">创建新课程</h3>
-            <p className="text-sm text-gray-500">选择一种方式开始创建您的互动课</p>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">{t('创建新课程')}</h3>
+            <p className="text-sm text-gray-500">{t('选择一种方式开始创建您的互动课')}</p>
           </div>
           <button
             onClick={onClose}
@@ -80,7 +83,7 @@ export default function CreationMethodModal({ isOpen, onClose, onSelectMethod }:
                 >
                   {method.recommended && (
                     <div className="absolute top-4 right-4 px-3 py-1 bg-primary-500 text-white text-xs font-medium rounded-full">
-                      推荐
+                      {t('推荐')}
                     </div>
                   )}
                   <div className="flex flex-col items-center gap-3">

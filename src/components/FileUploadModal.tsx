@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { X, Upload, File, Trash2 } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface FileUploadModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface FileUploadModalProps {
 }
 
 export default function FileUploadModal({ isOpen, onClose, onUpload }: FileUploadModalProps) {
+  const { t } = useLanguage();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -68,7 +70,7 @@ export default function FileUploadModal({ isOpen, onClose, onUpload }: FileUploa
       <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl z-50 w-[90%] max-w-2xl">
         {/* 头部 */}
         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-          <h3 className="text-xl font-semibold text-gray-900">上传学习资料</h3>
+          <h3 className="text-xl font-semibold text-gray-900">{t('上传学习资料')}</h3>
           <button
             onClick={handleClose}
             className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
@@ -92,16 +94,16 @@ export default function FileUploadModal({ isOpen, onClose, onUpload }: FileUploa
           >
             <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-base font-medium text-gray-900 mb-2">
-              拖拽文件到这里，或点击选择文件
+              {t('拖拽文件到这里，或点击选择文件')}
             </p>
             <p className="text-sm text-gray-500 mb-4">
-              支持 PDF、Word、PPT、TXT、Markdown 等格式
+              {t('支持 PDF、Word、PPT、TXT、Markdown 等格式')}
             </p>
             <button
               onClick={() => fileInputRef.current?.click()}
               className="px-4 py-2 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors"
             >
-              选择文件
+              {t('选择文件')}
             </button>
             <input
               ref={fileInputRef}
@@ -117,7 +119,7 @@ export default function FileUploadModal({ isOpen, onClose, onUpload }: FileUploa
           {selectedFiles.length > 0 && (
             <div className="mt-6">
               <h4 className="text-sm font-medium text-gray-900 mb-3">
-                已选择 {selectedFiles.length} 个文件
+                {t('已选择')} {selectedFiles.length} {t('个文件')}
               </h4>
               <div className="space-y-2">
                 {selectedFiles.map((file, index) => (
@@ -153,14 +155,14 @@ export default function FileUploadModal({ isOpen, onClose, onUpload }: FileUploa
             onClick={handleClose}
             className="flex-1 px-4 py-2 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
           >
-            取消
+            {t('取消')}
           </button>
           <button
             onClick={handleUpload}
             disabled={selectedFiles.length === 0}
             className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
-            确认上传
+            {t('确认上传')}
           </button>
         </div>
       </div>

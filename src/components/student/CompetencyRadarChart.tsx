@@ -16,6 +16,7 @@ import {
   COMPETENCY_METADATA,
   getCompetencyStars
 } from '../../data/mockCompetencyData';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 /**
  * 能力雷达图数据项
@@ -64,6 +65,7 @@ export default function CompetencyRadarChart({
   showLegend = true,
   className = ''
 }: CompetencyRadarChartProps) {
+  const { t } = useLanguage();
 
   // 将能力数据转换为雷达图数据格式
   const radarData: RadarDataItem[] = Object.entries(competencies)
@@ -93,8 +95,7 @@ export default function CompetencyRadarChart({
       return (
         <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3">
           <p className="font-semibold text-gray-900 mb-1">{data.competency}</p>
-          <p className="text-sm text-gray-600">
-            评分: <span className="font-medium text-primary-600">{getCompetencyStars(data.rating as CompetencyRating)}</span>
+          <p className="text-sm text-gray-600">{t('评分: t(')}<span className="font-medium text-primary-600">{getCompetencyStars(data.rating as CompetencyRating)}</span>
           </p>
           <p className="text-xs text-gray-500 mt-1">
             {data.rating}/4 分
@@ -113,7 +114,7 @@ export default function CompetencyRadarChart({
           <PolarGrid stroke="#e5e7eb" />
           <PolarAngleAxis
             dataKey="competency"
-            tick={{ fill: '#6b7280', fontSize: 12 }}
+            tick={{ fill: ')#6b7280', fontSize: 12 }}
           />
           <PolarRadiusAxis
             angle={90}
@@ -122,7 +123,7 @@ export default function CompetencyRadarChart({
             tickCount={5}
           />
           <Radar
-            name="能力评分"
+            name={t('能力评分')}
             dataKey="rating"
             stroke="#3b82f6"
             fill="#3b82f6"
@@ -162,12 +163,8 @@ export default function CompetencyRadarChart({
       {radarData.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <div className="text-4xl mb-3">📊</div>
-          <p className="text-gray-500 text-sm">
-            暂无能力评估数据
-          </p>
-          <p className="text-gray-400 text-xs mt-1">
-            完成课程后将生成能力雷达图
-          </p>
+          <p className="text-gray-500 text-sm">{t('暂无能力评估数据')}</p>
+          <p className="text-gray-400 text-xs mt-1">{t('完成课程后将生成能力雷达图')}</p>
         </div>
       )}
     </div>

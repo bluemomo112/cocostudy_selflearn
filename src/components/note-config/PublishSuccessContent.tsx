@@ -1,4 +1,5 @@
 import { Copy, CheckCircle } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { useState } from 'react';
 
 interface PublishSuccessContentProps {
@@ -13,6 +14,7 @@ interface PublishSuccessContentProps {
  * 可被 PublishSuccessModal 和 PublishConfirmModal 复用
  */
 export function PublishSuccessContent({ courseTitle, courseLink, accessCode }: PublishSuccessContentProps) {
+  const { t } = useLanguage();
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
 
@@ -31,13 +33,13 @@ export function PublishSuccessContent({ courseTitle, courseLink, accessCode }: P
     <div className="space-y-5">
       {/* 课程名称 */}
       <div>
-        <label className="block text-sm font-medium text-gray-600 mb-1">课程名称</label>
+        <label className="block text-sm font-medium text-gray-600 mb-1">{t('课程名称')}</label>
         <div className="text-base font-semibold text-gray-900">{courseTitle}</div>
       </div>
 
       {/* 学生端链接 */}
       <div>
-        <label className="block text-sm font-medium text-gray-600 mb-2">学生端课程链接</label>
+        <label className="block text-sm font-medium text-gray-600 mb-2">{t('学生端课程链接')}</label>
         <div className="flex items-center gap-2">
           <input
             type="text"
@@ -51,14 +53,10 @@ export function PublishSuccessContent({ courseTitle, courseLink, accessCode }: P
           >
             {copiedLink ? (
               <>
-                <CheckCircle size={14} />
-                已复制
-              </>
+                <CheckCircle size={14} />{t('已复制')}</>
             ) : (
               <>
-                <Copy size={14} />
-                复制
-              </>
+                <Copy size={14} />{t('复制')}</>
             )}
           </button>
         </div>
@@ -66,7 +64,7 @@ export function PublishSuccessContent({ courseTitle, courseLink, accessCode }: P
 
       {/* 随机码 */}
       <div>
-        <label className="block text-sm font-medium text-gray-600 mb-2">课程随机码</label>
+        <label className="block text-sm font-medium text-gray-600 mb-2">{t('课程随机码')}</label>
         <div className="flex items-center gap-2">
           <input
             type="text"
@@ -80,18 +78,14 @@ export function PublishSuccessContent({ courseTitle, courseLink, accessCode }: P
           >
             {copiedCode ? (
               <>
-                <CheckCircle size={14} />
-                已复制
-              </>
+                <CheckCircle size={14} />{t('已复制')}</>
             ) : (
               <>
-                <Copy size={14} />
-                复制
-              </>
+                <Copy size={14} />{t('复制')}</>
             )}
           </button>
         </div>
-        <p className="text-xs text-gray-500 mt-1.5">学生可使用此随机码快速访问课程</p>
+        <p className="text-xs text-gray-500 mt-1.5">{t('学生可使用此随机码快速访问课程')}</p>
       </div>
     </div>
   );

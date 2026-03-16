@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Award, TrendingUp, Users, User, Layers, Target, ArrowUp, ArrowRight, ArrowDown } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 import CompetencyRadarChart from './CompetencyRadarChart';
 import {
   CompetencyType,
@@ -36,6 +37,7 @@ interface GroupCompetencyData {
 // ============ 1-2维度：水平进度条可视化 ============
 
 export function LinearCompetencyView({ competencies }: { competencies: CompetencyData[] }) {
+  const { t } = useLanguage();
   if (competencies.length === 0) return null;
 
   return (
@@ -56,9 +58,7 @@ export function LinearCompetencyView({ competencies }: { competencies: Competenc
                   {metadata.icon} {metadata.name}
                 </span>
                 {comp.isNew && (
-                  <span className="text-xs bg-accent-100 text-accent-700 px-2 py-0.5 rounded-full font-medium">
-                    新维度
-                  </span>
+                  <span className="text-xs bg-accent-100 text-accent-700 px-2 py-0.5 rounded-full font-medium">{t('新维度')}</span>
                 )}
               </div>
               <div className="flex items-center gap-2">
@@ -289,6 +289,7 @@ export function GroupCollaborationView({
   personalCompetencies: CompetencyData[];
   groupData: GroupCompetencyData;
 }) {
+  const { t } = useLanguage();
   const [viewMode, setViewMode] = useState<'personal' | 'group' | 'contribution'>('personal');
 
   if (personalCompetencies.length === 0) return null;
@@ -305,9 +306,7 @@ export function GroupCollaborationView({
               : 'text-gray-600 hover:text-gray-800'
           }`}
         >
-          <User size={12} className="inline mr-1" />
-          我的能力
-        </button>
+          <User size={12} className="inline mr-1" />{t('我的能力')}</button>
         <button
           onClick={() => setViewMode('group')}
           className={`flex-1 px-2 py-1.5 rounded-md text-xs font-medium transition-all ${
@@ -316,9 +315,7 @@ export function GroupCollaborationView({
               : 'text-gray-600 hover:text-gray-800'
           }`}
         >
-          <Users size={12} className="inline mr-1" />
-          小组平均
-        </button>
+          <Users size={12} className="inline mr-1" />{t('小组平均')}</button>
         <button
           onClick={() => setViewMode('contribution')}
           className={`flex-1 px-2 py-1.5 rounded-md text-xs font-medium transition-all ${
@@ -327,9 +324,7 @@ export function GroupCollaborationView({
               : 'text-gray-600 hover:text-gray-800'
           }`}
         >
-          <Target size={12} className="inline mr-1" />
-          我的贡献
-        </button>
+          <Target size={12} className="inline mr-1" />{t('我的贡献')}</button>
       </div>
 
       {/* 视图内容 */}
@@ -452,9 +447,7 @@ export function GroupCollaborationView({
 
           <div className="mt-3 p-2 bg-amber-50 rounded-lg border border-amber-200">
             <p className="text-xs text-amber-700">
-              <Target size={12} className="inline mr-1" />
-              贡献度反映你在小组任务中的参与程度
-            </p>
+              <Target size={12} className="inline mr-1" />{t('贡献度反映你在小组任务中的参与程度')}</p>
           </div>
         </div>
       )}

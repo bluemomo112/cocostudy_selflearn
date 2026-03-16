@@ -44,7 +44,7 @@ export default function TaskResultReview({
 
   const typeStats: Record<string, { total: number; correct: number }> = {};
   questions.forEach(q => {
-    const l = getQuestionTypeLabel(q.type);
+    const l = getQuestionTypeLabel(q.type, t);
     if (!typeStats[l]) typeStats[l] = { total: 0, correct: 0 };
     typeStats[l].total++;
     if (getResult(q.id)?.correct) typeStats[l].correct++;
@@ -140,8 +140,9 @@ function ReviewQuestion({ q, idx, detail, answer, onExplainQuestion }: {
   answer: string | string[] | undefined;
   onExplainQuestion?: () => void;
 }) {
+  const { t } = useLanguage();
   const isCorrect = detail?.correct ?? false;
-  const typeLabel = getQuestionTypeLabel(q.type);
+  const typeLabel = getQuestionTypeLabel(q.type, t);
   const [removedFromErrorBook, setRemovedFromErrorBook] = useState(false);
 
   return (

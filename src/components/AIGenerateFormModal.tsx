@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { X, Sparkles, Activity } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface AIGenerateFormModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ interface AIGenerateFormModalProps {
 }
 
 export default function AIGenerateFormModal({ isOpen, onClose, onGenerate }: AIGenerateFormModalProps) {
+  const { t } = useLanguage();
   const [topic, setTopic] = useState('');
   const [learningStyle, setLearningStyle] = useState('self');
   const [level, setLevel] = useState('beginner');
@@ -24,7 +26,7 @@ export default function AIGenerateFormModal({ isOpen, onClose, onGenerate }: AIG
 
   const handleSubmit = () => {
     if (!topic.trim()) {
-      alert('请输入学习主题');
+      alert(t('请输入学习主题'));
       return;
     }
 
@@ -57,7 +59,7 @@ export default function AIGenerateFormModal({ isOpen, onClose, onGenerate }: AIG
         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary-600" />
-            <h3 className="text-xl font-semibold text-gray-900">AI 生成学习空间</h3>
+            <h3 className="text-xl font-semibold text-gray-900">{t('AI 生成学习空间')}</h3>
           </div>
           <button
             onClick={onClose}
@@ -72,13 +74,13 @@ export default function AIGenerateFormModal({ isOpen, onClose, onGenerate }: AIG
           {/* 学习主题 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              学习主题 <span className="text-red-500">*</span>
+              {t('学习主题')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              placeholder="例如：Python 数据分析、量子力学基础..."
+              placeholder={t('例如：Python 数据分析、量子力学基础...')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
@@ -86,13 +88,13 @@ export default function AIGenerateFormModal({ isOpen, onClose, onGenerate }: AIG
           {/* 选择学习方式 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              选择学习方式
+              {t('选择学习方式')}
             </label>
             <div className="space-y-2">
               {[
-                { value: 'self', label: '我自己学', desc: '自由探索，按自己的节奏' },
-                { value: 'guided', label: '你带我学', desc: 'AI 引导，系统化学习' },
-                { value: 'test', label: '先测测我的水平', desc: '评估现有知识，定制学习' },
+                { value: 'self', label: t('我自己学'), desc: t('自由探索，按自己的节奏') },
+                { value: 'guided', label: t('你带我学'), desc: t('AI 引导，系统化学习') },
+                { value: 'test', label: t('先测测我的水平'), desc: t('评估现有知识，定制学习') },
               ].map((option) => (
                 <label
                   key={option.value}
@@ -122,13 +124,13 @@ export default function AIGenerateFormModal({ isOpen, onClose, onGenerate }: AIG
           {/* 你目前的水平 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              你目前的水平
+              {t('你目前的水平')}
             </label>
             <div className="space-y-2">
               {[
-                { value: 'beginner', label: '完全零基础', desc: '从头开始学习' },
-                { value: 'basic', label: '知道一些基本概念', desc: '有初步了解' },
-                { value: 'intermediate', label: '有一定基础，想深入', desc: '进阶学习' },
+                { value: 'beginner', label: t('完全零基础'), desc: t('从头开始学习') },
+                { value: 'basic', label: t('知道一些基本概念'), desc: t('有初步了解') },
+                { value: 'intermediate', label: t('有一定基础，想深入'), desc: t('进阶学习') },
               ].map((option) => (
                 <label
                   key={option.value}
@@ -163,7 +165,7 @@ export default function AIGenerateFormModal({ isOpen, onClose, onGenerate }: AIG
             disabled={isGenerating}
             className="flex-1 px-6 py-3 bg-white border border-gray-300 text-gray-700 text-base font-medium rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
           >
-            取消
+            {t('取消')}
           </button>
           <button
             onClick={handleSubmit}
@@ -173,12 +175,12 @@ export default function AIGenerateFormModal({ isOpen, onClose, onGenerate }: AIG
             {isGenerating ? (
               <>
                 <Activity size={18} className="animate-spin" />
-                生成中...
+                {t('生成中...')}
               </>
             ) : (
               <>
                 <Sparkles size={18} />
-                开始生成学习空间
+                {t('开始生成学习空间')}
               </>
             )}
           </button>

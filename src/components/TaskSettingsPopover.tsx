@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Settings, X, Eye, EyeOff, BookOpen, Monitor, Unlock } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 import type { TaskSettings } from '../types/shared-context';
 
 interface TaskSettingsPopoverProps {
@@ -50,6 +51,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 }
 
 export default function TaskSettingsPopover({ task, onSave, onClose }: TaskSettingsPopoverProps) {
+  const { t } = useLanguage();
   const defaults = getDefaults(task.settings?.source);
   const [settings, setSettings] = useState({
     showAnswersAfterSubmit: task.settings?.showAnswersAfterSubmit ?? defaults.showAnswersAfterSubmit,
@@ -93,19 +95,17 @@ export default function TaskSettingsPopover({ task, onSave, onClose }: TaskSetti
           {/* 答案与解析 */}
           <div className="bg-gray-50 rounded-xl p-4 space-y-3">
             <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-1">
-              <Eye className="w-3.5 h-3.5" />
-              答案与解析
-            </div>
+              <Eye className="w-3.5 h-3.5" />{t('答案与解析')}</div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">提交后显示正确答案</span>
+              <span className="text-sm text-gray-700">{t('提交后显示正确答案')}</span>
               <Toggle checked={settings.showAnswersAfterSubmit} onChange={update('showAnswersAfterSubmit')} />
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">提交后显示解析</span>
+              <span className="text-sm text-gray-700">{t('提交后显示解析')}</span>
               <Toggle checked={settings.showExplanationsAfterSubmit} onChange={update('showExplanationsAfterSubmit')} />
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">允许重做错题</span>
+              <span className="text-sm text-gray-700">{t('允许重做错题')}</span>
               <Toggle checked={settings.allowRetry} onChange={update('allowRetry')} />
             </div>
           </div>
@@ -113,17 +113,15 @@ export default function TaskSettingsPopover({ task, onSave, onClose }: TaskSetti
           {/* 考试模式 */}
           <div className="bg-gray-50 rounded-xl p-4 space-y-3">
             <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-1">
-              <Monitor className="w-3.5 h-3.5" />
-              考试模式
-            </div>
+              <Monitor className="w-3.5 h-3.5" />{t('考试模式')}</div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">全屏答题模式</span>
+              <span className="text-sm text-gray-700">{t('全屏答题模式')}</span>
               <Toggle checked={settings.fullscreenMode} onChange={update('fullscreenMode')} />
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1">
-                <span className="text-sm text-gray-700">允许查看资料</span>
-                <span className="text-xs text-gray-400">(开卷)</span>
+                <span className="text-sm text-gray-700">{t('允许查看资料')}</span>
+                <span className="text-xs text-gray-400">{t('(开卷)')}</span>
               </div>
               <Toggle checked={settings.allowViewResources} onChange={update('allowViewResources')} />
             </div>
@@ -135,15 +133,11 @@ export default function TaskSettingsPopover({ task, onSave, onClose }: TaskSetti
           <button
             onClick={onClose}
             className="px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            取消
-          </button>
+          >{t('取消')}</button>
           <button
             onClick={handleSave}
             className="px-4 py-1.5 text-sm text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
-          >
-            保存
-          </button>
+          >{t('保存')}</button>
         </div>
       </div>
     </div>

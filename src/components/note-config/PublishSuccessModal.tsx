@@ -1,4 +1,5 @@
 import { X, ExternalLink, CheckCircle } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { PublishSuccessContent } from './PublishSuccessContent';
 
 interface PublishSuccessModalProps {
@@ -9,6 +10,7 @@ interface PublishSuccessModalProps {
 }
 
 export function PublishSuccessModal({ courseTitle, courseLink, accessCode, onClose }: PublishSuccessModalProps) {
+  const { t } = useLanguage();
   const openStudentPage = () => {
     window.open(courseLink, '_blank');
   };
@@ -29,8 +31,8 @@ export function PublishSuccessModal({ courseTitle, courseLink, accessCode, onClo
               <CheckCircle size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-bold">发布成功！</h2>
-              <p className="text-sm text-white/90 mt-1">课程已成功发布到学生端</p>
+              <h2 className="text-xl font-bold">{t('发布成功！')}</h2>
+              <p className="text-sm text-white/90 mt-1">{t('课程已成功发布到学生端')}</p>
             </div>
           </div>
         </div>
@@ -49,16 +51,12 @@ export function PublishSuccessModal({ courseTitle, courseLink, accessCode, onClo
           <button
             onClick={onClose}
             className="px-5 py-2 text-gray-600 hover:text-gray-800 font-medium"
-          >
-            关闭
-          </button>
+          >{t('关闭')}</button>
           <button
             onClick={openStudentPage}
             className="px-5 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium transition-colors flex items-center gap-2"
           >
-            <ExternalLink size={16} />
-            前往学生端
-          </button>
+            <ExternalLink size={16} />{t('前往学生端')}</button>
         </div>
       </div>
     </div>

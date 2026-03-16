@@ -2,6 +2,7 @@
 
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface RichContentProps {
   content: string;
@@ -25,6 +26,7 @@ function preprocessContent(content: string): string {
 }
 
 export default function RichContent({ content, className = '', compact = false }: RichContentProps) {
+  const { t } = useLanguage();
   const processed = preprocessContent(content);
 
   return (
@@ -48,9 +50,7 @@ export default function RichContent({ content, className = '', compact = false }
             if (videoMatch) {
               return (
                 <div className={compact ? 'my-2 rounded-lg overflow-hidden bg-black' : 'my-4 rounded-xl overflow-hidden bg-black'}>
-                  <video src={videoMatch[1]} controls className={compact ? 'w-full max-h-[160px]' : 'w-full max-h-[400px]'} preload="metadata">
-                    您的浏览器不支持视频播放
-                  </video>
+                  <video src={videoMatch[1]} controls className={compact ? 'w-full max-h-[160px]' : 'w-full max-h-[400px]'} preload="metadata">{t('您的浏览器不支持视频播放')}</video>
                 </div>
               );
             }
@@ -59,7 +59,7 @@ export default function RichContent({ content, className = '', compact = false }
             if (iframeMatch) {
               return (
                 <div className={compact ? 'my-2 rounded-lg overflow-hidden border border-gray-200' : 'my-4 rounded-xl overflow-hidden border border-gray-200'}>
-                  <iframe src={iframeMatch[1]} className={compact ? 'w-full h-[160px]' : 'w-full h-[400px]'} sandbox="allow-scripts allow-same-origin" loading="lazy" title="嵌入内容" />
+                  <iframe src={iframeMatch[1]} className={compact ? 'w-full h-[160px]' : 'w-full h-[400px]'} sandbox="allow-scripts allow-same-origin" loading="lazy" title={t('嵌入内容')} />
                 </div>
               );
             }

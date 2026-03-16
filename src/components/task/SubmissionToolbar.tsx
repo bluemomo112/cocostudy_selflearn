@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { FileText, Camera, Mic, Paperclip, X, Square } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface SubmissionToolbarProps {
   value: string;
@@ -10,6 +11,7 @@ interface SubmissionToolbarProps {
 }
 
 export default function SubmissionToolbar({ value, onChange, disabled }: SubmissionToolbarProps) {
+  const { t } = useLanguage();
   const [activeMode, setActiveMode] = useState<'text' | 'file' | 'photo' | 'voice'>('text');
   const [isRecording, setIsRecording] = useState(false);
 
@@ -23,36 +25,28 @@ export default function SubmissionToolbar({ value, onChange, disabled }: Submiss
             activeMode === 'text' ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
-          <FileText size={16} />
-          文字
-        </button>
+          <FileText size={16} />{t('文字')}</button>
         <button
           onClick={() => setActiveMode('file')}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
             activeMode === 'file' ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
-          <Paperclip size={16} />
-          文件
-        </button>
+          <Paperclip size={16} />{t('文件')}</button>
         <button
           onClick={() => setActiveMode('photo')}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
             activeMode === 'photo' ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
-          <Camera size={16} />
-          照片
-        </button>
+          <Camera size={16} />{t('照片')}</button>
         <button
           onClick={() => setActiveMode('voice')}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
             activeMode === 'voice' ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
-          <Mic size={16} />
-          语音
-        </button>
+          <Mic size={16} />{t('语音')}</button>
       </div>
 
       {/* 文字输入 */}
@@ -60,7 +54,7 @@ export default function SubmissionToolbar({ value, onChange, disabled }: Submiss
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="请在这里输入你的答案..."
+          placeholder={t('请在这里输入你的答案...')}
           disabled={disabled}
           className="w-full h-48 p-4 border-2 border-gray-200 rounded-xl focus:border-primary-500 focus:outline-none resize-none text-base disabled:bg-gray-50"
         />
@@ -70,8 +64,8 @@ export default function SubmissionToolbar({ value, onChange, disabled }: Submiss
       {activeMode === 'file' && (
         <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-primary-400 transition-colors cursor-pointer">
           <Paperclip size={32} className="mx-auto text-gray-400 mb-3" />
-          <p className="text-sm text-gray-600">点击或拖拽文件到此处上传</p>
-          <p className="text-xs text-gray-400 mt-1">支持 PDF、Word、图片等格式</p>
+          <p className="text-sm text-gray-600">{t('点击或拖拽文件到此处上传')}</p>
+          <p className="text-xs text-gray-400 mt-1">{t('支持 PDF、Word、图片等格式')}</p>
         </div>
       )}
 
@@ -79,8 +73,8 @@ export default function SubmissionToolbar({ value, onChange, disabled }: Submiss
       {activeMode === 'photo' && (
         <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-primary-400 transition-colors cursor-pointer">
           <Camera size={32} className="mx-auto text-gray-400 mb-3" />
-          <p className="text-sm text-gray-600">点击拍照或上传图片</p>
-          <p className="text-xs text-gray-400 mt-1">支持 JPG、PNG 格式</p>
+          <p className="text-sm text-gray-600">{t('点击拍照或上传图片')}</p>
+          <p className="text-xs text-gray-400 mt-1">{t('支持 JPG、PNG 格式')}</p>
         </div>
       )}
 
@@ -98,7 +92,7 @@ export default function SubmissionToolbar({ value, onChange, disabled }: Submiss
             {isRecording ? <Square size={28} /> : <Mic size={28} />}
           </button>
           <p className="text-sm text-gray-600 mt-4">
-            {isRecording ? '录音中...点击停止' : '点击开始录音'}
+            {isRecording ? '录音中...点击停止' : t('点击开始录音')}
           </p>
           {isRecording && (
             <div className="flex items-center justify-center gap-1 mt-3">

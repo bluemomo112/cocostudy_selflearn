@@ -800,7 +800,6 @@ export function LeftPanel(props: LeftPanelProps) {
           setEditLocalTask={setEditLocalTask}
           onSave={handleUnifiedEditSave}
           onClose={closeUnifiedEditModal}
-          t={t}
         />
       )}
 

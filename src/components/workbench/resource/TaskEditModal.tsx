@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { X, Plus, Sparkles, Activity, ChevronDown } from 'lucide-react';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import QuestionEditCard from './QuestionEditCard';
 
 interface TaskEditModalProps {
@@ -9,7 +10,6 @@ interface TaskEditModalProps {
   setEditLocalTask: (task: any) => void;
   onSave: () => void;
   onClose: () => void;
-  t: (key: string) => string;
 }
 
 export default function TaskEditModal({
@@ -17,8 +17,8 @@ export default function TaskEditModal({
   setEditLocalTask,
   onSave,
   onClose,
-  t,
 }: TaskEditModalProps) {
+  const { t } = useLanguage();
   const [draggedQuestionId, setDraggedQuestionId] = useState<string | null>(null);
   const [showAIGenConfig, setShowAIGenConfig] = useState(false);
   const [isAIGenModalLoading, setIsAIGenModalLoading] = useState(false);
@@ -30,11 +30,11 @@ export default function TaskEditModal({
   });
 
   const typeLabels: Record<string, string> = {
-    single_choice: '单选题',
-    multiple_choice: '多选题',
-    true_false: '判断题',
-    fill_blank: '填空题',
-    short_answer: '简答题',
+    single_choice: t('单选题'),
+    multiple_choice: t('多选题'),
+    true_false: t('判断题'),
+    fill_blank: t('填空题'),
+    short_answer: t('简答题'),
   };
 
   const handleQuestionEdit = (questionId: string, field: string, value: any, optionIndex?: number) => {

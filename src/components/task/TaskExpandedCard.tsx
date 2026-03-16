@@ -118,7 +118,7 @@ function FullscreenMode({ task, idx, selectedAnswers, submissionText, onAnswer, 
                 <div className="space-y-8">
                   <div className="flex items-center gap-3">
                     <span className="px-3 py-1 bg-blue-50 text-blue-600 text-sm font-medium rounded-full">
-                      {getQuestionTypeLabel(q.type)}
+                      {getQuestionTypeLabel(q.type, t)}
                     </span>
                     {showFeedback && (
                       <span className={`px-3 py-1 text-sm font-medium rounded-full flex items-center gap-1.5 ${

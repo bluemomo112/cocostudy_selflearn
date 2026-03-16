@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ArrowLeft, Maximize2, Loader2, Sparkles, FileText, Play, Pause, Volume2, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -33,6 +34,7 @@ interface ResourceInlineViewerProps {
 
 // Flashcard 组件
 function FlashcardViewer({ cards }: { cards: Array<{ front: string; back: string }> }) {
+  const { t } = useLanguage();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
 
@@ -69,9 +71,9 @@ function FlashcardViewer({ cards }: { cards: Array<{ front: string; back: string
             className="absolute inset-0 bg-white rounded-xl shadow-lg border-2 border-blue-200 p-8 flex flex-col items-center justify-center backface-hidden"
             style={{ backfaceVisibility: 'hidden' }}
           >
-            <div className="text-xs text-blue-600 font-medium mb-4">正面</div>
+            <div className="text-xs text-blue-600 font-medium mb-4">{t('正面')}</div>
             <div className="text-lg text-gray-800 text-center">{currentCard.front}</div>
-            <div className="text-xs text-gray-400 mt-6">點擊翻轉</div>
+            <div className="text-xs text-gray-400 mt-6">{t('點擊翻轉')}</div>
           </div>
 
           {/* 背面 */}
@@ -79,9 +81,9 @@ function FlashcardViewer({ cards }: { cards: Array<{ front: string; back: string
             className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-lg border-2 border-indigo-200 p-8 flex flex-col items-center justify-center backface-hidden rotate-y-180"
             style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
           >
-            <div className="text-xs text-indigo-600 font-medium mb-4">背面</div>
+            <div className="text-xs text-indigo-600 font-medium mb-4">{t('背面')}</div>
             <div className="text-lg text-gray-800 text-center">{currentCard.back}</div>
-            <div className="text-xs text-gray-400 mt-6">點擊翻轉</div>
+            <div className="text-xs text-gray-400 mt-6">{t('點擊翻轉')}</div>
           </div>
         </div>
       </div>
@@ -97,7 +99,7 @@ function FlashcardViewer({ cards }: { cards: Array<{ front: string; back: string
         <button
           onClick={(e) => { e.stopPropagation(); setIsFlipped(false); setCurrentIndex(0); }}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          title="重新開始"
+          title={t('重新開始')}
         >
           <RotateCcw size={18} className="text-gray-600" />
         </button>
@@ -115,6 +117,7 @@ function FlashcardViewer({ cards }: { cards: Array<{ front: string; back: string
 
 // Audio Overview 组件
 function AudioOverviewViewer({ chapters }: { chapters: Array<{ time: string; title: string; content: string }> }) {
+  const { t } = useLanguage();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const totalDuration = 900; // 15分钟 = 900秒
@@ -135,7 +138,7 @@ function AudioOverviewViewer({ chapters }: { chapters: Array<{ time: string; tit
             )}
           </button>
           <div className="flex-1">
-            <div className="text-sm font-medium text-gray-700 mb-1">光合作用音頻概述</div>
+            <div className="text-sm font-medium text-gray-700 mb-1">{t('光合作用音頻概述')}</div>
             <div className="text-xs text-gray-500">
               {Math.floor(currentTime / 60)}:{(currentTime % 60).toString().padStart(2, '0')} / 15:00
             </div>
@@ -264,6 +267,7 @@ function MindMapViewer({ nodes }: { nodes: { center: string; branches: Array<{ t
 }
 
 export default function ResourceInlineViewer({ resource, onBack, onFullscreen }: ResourceInlineViewerProps) {
+  const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(true);
 
   const hasIframeContent = !!resource.url;
@@ -280,7 +284,7 @@ export default function ResourceInlineViewer({ resource, onBack, onFullscreen }:
         <button
           onClick={onBack}
           className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
-          title="返回"
+          title={t('返回')}
         >
           <ArrowLeft size={16} className="text-gray-500" />
         </button>
@@ -297,7 +301,7 @@ export default function ResourceInlineViewer({ resource, onBack, onFullscreen }:
           <button
             onClick={onFullscreen}
             className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
-            title="全屏查看"
+            title={t('全屏查看')}
           >
             <Maximize2 size={16} className="text-gray-500" />
           </button>
@@ -312,7 +316,7 @@ export default function ResourceInlineViewer({ resource, onBack, onFullscreen }:
               <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 size={24} className="text-gray-400 animate-spin" />
-                  <p className="text-xs text-gray-400">加载中...</p>
+                  <p className="text-xs text-gray-400">{t('加载中...')}</p>
                 </div>
               </div>
             )}
@@ -367,7 +371,7 @@ export default function ResourceInlineViewer({ resource, onBack, onFullscreen }:
                 )}
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <Sparkles size={24} className="text-gray-300 mb-2" />
-                  <p className="text-sm text-gray-400">此资源内容将在此处展示</p>
+                  <p className="text-sm text-gray-400">{t('此资源内容将在此处展示')}</p>
                 </div>
               </div>
             )}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useLanguage } from '../../contexts/LanguageContext';
 import {
   Brain,
   Network,
@@ -236,13 +237,14 @@ export function CompetencyRadarChart({
   assessments: CompetencyAssessment[];
   size?: number;
 }) {
+  const { t } = useLanguage();
   if (assessments.length === 0) {
     return (
       <div
         className="flex items-center justify-center bg-gray-50 rounded-xl border border-gray-200"
         style={{ width: size, height: size }}
       >
-        <p className="text-sm text-gray-400">暂无能力数据</p>
+        <p className="text-sm text-gray-400">{t('暂无能力数据')}</p>
       </div>
     );
   }
@@ -363,6 +365,7 @@ export function CompetencyDetailCard({
   expanded?: boolean;
   onToggle?: () => void;
 }) {
+  const { t } = useLanguage();
   const def = COMPETENCY_DEFINITIONS[assessment.type];
   const Icon = def.icon;
 
@@ -395,7 +398,7 @@ export function CompetencyDetailCard({
         <div className="px-5 pb-5 space-y-4 border-t border-gray-100">
           {/* 描述性评价 */}
           <div className="pt-4">
-            <h5 className="text-sm font-semibold text-gray-700 mb-2">评价</h5>
+            <h5 className="text-sm font-semibold text-gray-700 mb-2">{t('评价')}</h5>
             <p className="text-sm text-gray-600 leading-relaxed">{assessment.description}</p>
           </div>
 
@@ -403,9 +406,7 @@ export function CompetencyDetailCard({
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-emerald-50 rounded-lg p-4">
               <h5 className="text-xs font-semibold text-emerald-700 mb-2 flex items-center gap-1">
-                <Sparkles size={12} />
-                亮点
-              </h5>
+                <Sparkles size={12} />{t('亮点')}</h5>
               <ul className="space-y-1">
                 {assessment.highlights.map((item, idx) => (
                   <li key={idx} className="text-xs text-gray-600 flex items-start gap-1.5">
@@ -417,9 +418,7 @@ export function CompetencyDetailCard({
             </div>
             <div className="bg-amber-50 rounded-lg p-4">
               <h5 className="text-xs font-semibold text-amber-700 mb-2 flex items-center gap-1">
-                <Target size={12} />
-                待提升
-              </h5>
+                <Target size={12} />{t('待提升')}</h5>
               <ul className="space-y-1">
                 {assessment.areasForImprovement.map((item, idx) => (
                   <li key={idx} className="text-xs text-gray-600 flex items-start gap-1.5">
@@ -434,9 +433,7 @@ export function CompetencyDetailCard({
           {/* 建议 */}
           <div className="bg-primary-50 rounded-lg p-4">
             <h5 className="text-xs font-semibold text-primary-700 mb-2 flex items-center gap-1">
-              <Lightbulb size={12} />
-              建议
-            </h5>
+              <Lightbulb size={12} />{t('建议')}</h5>
             <ul className="space-y-1">
               {assessment.suggestions.map((item, idx) => (
                 <li key={idx} className="text-xs text-gray-600 flex items-start gap-1.5">
@@ -451,9 +448,7 @@ export function CompetencyDetailCard({
           {assessment.evidence.length > 0 && (
             <div>
               <h5 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
-                <FileText size={12} />
-                证据支撑
-              </h5>
+                <FileText size={12} />{t('证据支撑')}</h5>
               <div className="space-y-2">
                 {assessment.evidence.map((ev) => (
                   <div key={ev.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
@@ -483,10 +478,11 @@ export function CrossCourseTimeline({
 }: {
   profiles: CrossCourseProfile[];
 }) {
+  const { t } = useLanguage();
   if (profiles.length === 0) {
     return (
       <div className="bg-gray-50 rounded-xl p-6 text-center">
-        <p className="text-sm text-gray-400">暂无跨课程数据</p>
+        <p className="text-sm text-gray-400">{t('暂无跨课程数据')}</p>
       </div>
     );
   }
@@ -520,7 +516,7 @@ export function CrossCourseTimeline({
                   ? 'bg-red-100 text-red-700'
                   : 'bg-gray-100 text-gray-700'
               }`}>
-                {profile.trend === 'rising' ? '↗ 上升' : profile.trend === 'declining' ? '↘ 下降' : '→ 稳定'}
+                {profile.trend === 'rising' ? '↗ 上升' : profile.trend === 'declining' ? '↘ 下降' : t('→ 稳定')}
               </span>
             </div>
 
@@ -558,6 +554,7 @@ export function CompetencyDistributionChart({
 }: {
   distribution: ClassCompetencyDistribution;
 }) {
+  const { t } = useLanguage();
   const def = COMPETENCY_DEFINITIONS[distribution.competencyType];
   const Icon = def.icon;
   const { star1, star2, star3, star4 } = distribution.distribution;
@@ -583,7 +580,7 @@ export function CompetencyDistributionChart({
           <p className="text-xs text-gray-500">{def.description}</p>
         </div>
         <div className="text-right">
-          <div className="text-sm text-gray-500">班级平均</div>
+          <div className="text-sm text-gray-500">{t('班级平均')}</div>
           <div className="text-xl font-bold text-primary-600">{distribution.averageStars.toFixed(1)} ★</div>
         </div>
       </div>
@@ -627,6 +624,7 @@ export function StudentListItem({
   aiDetectedTypes: CompetencyType[];
   onClick?: () => void;
 }) {
+  const { t } = useLanguage();
   // 从当前评估中获取星级
   const getStarsForCompetency = (type: CompetencyType): number => {
     const assessment = profile.currentCourseAssessments.find(a => a.type === type);
@@ -668,7 +666,7 @@ export function StudentListItem({
               profile.status === 'online' ? 'bg-green-500' : 'bg-gray-400'
             }`}
           />
-          {profile.status === 'online' ? '在线' : '离线'}
+          {profile.status === 'online' ? '在线' : t('离线')}
         </span>
       </td>
 
@@ -716,9 +714,7 @@ export function StudentListItem({
 
       {/* 操作 */}
       <td className="px-5 py-4">
-        <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
-          查看详情
-        </button>
+        <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">{t('查看详情')}</button>
       </td>
     </tr>
   );
@@ -734,6 +730,7 @@ export function StudentDetailPanel({
   profile: StudentCompetencyProfile;
   onClose: () => void;
 }) {
+  const { t } = useLanguage();
   const [expandedCompetency, setExpandedCompetency] = useState<CompetencyType | null>(null);
 
   // 计算平均星级
@@ -744,8 +741,7 @@ export function StudentDetailPanel({
   // 转换为 CrossCourseProfile 格式
   const crossCourseProfiles: CrossCourseProfile[] = profile.crossCourseProfiles;
 
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm" onClick={onClose}>
+  return (<div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm" onClick={onClose}>
       <div
         className="bg-white w-[900px] max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
@@ -764,7 +760,7 @@ export function StudentDetailPanel({
             </div>
             <div className="text-right">
               <div className="text-4xl font-bold">{avgStars} ★</div>
-              <p className="text-xs opacity-90 mt-1">综合能力评级</p>
+              <p className="text-xs opacity-90 mt-1">{t('综合能力评级')}</p>
             </div>
           </div>
         </div>
@@ -774,9 +770,7 @@ export function StudentDetailPanel({
           {/* 1. 本课程能力评估（使用雷达图） */}
           <div className="bg-gradient-to-br from-gray-50 to-primary-50/30 rounded-xl p-6 border border-gray-200">
             <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Target size={18} className="text-primary-600" />
-              本课程能力评估
-            </h3>
+              <Target size={18} className="text-primary-600" />{t('本课程能力评估')}</h3>
 
             <div className="flex gap-6">
               {/* 雷达图 */}
@@ -808,9 +802,7 @@ export function StudentDetailPanel({
           {/* 2. 能力详情（使用 CompetencyDetailCard） */}
           <div>
             <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <FileText size={18} className="text-primary-600" />
-              能力详情
-            </h3>
+              <FileText size={18} className="text-primary-600" />{t('能力详情')}</h3>
 
             <div className="space-y-3">
               {profile.currentCourseAssessments.map((assessment) => (
@@ -830,9 +822,7 @@ export function StudentDetailPanel({
           {crossCourseProfiles.length > 0 && (
             <div className="bg-gradient-to-br from-accent-50 to-cyan-50/30 rounded-xl p-6 border border-accent-200">
               <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <Network size={18} className="text-accent-600" />
-                跨课程能力画像
-              </h3>
+                <Network size={18} className="text-accent-600" />{t('跨课程能力画像')}</h3>
               <CrossCourseTimeline profiles={crossCourseProfiles} />
             </div>
           )}
@@ -842,19 +832,17 @@ export function StudentDetailPanel({
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               <div className="px-5 py-3 border-b border-gray-200">
                 <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
-                  <CheckCircle size={16} className="text-primary-600" />
-                  任务完成情况
-                </h3>
+                  <CheckCircle size={16} className="text-primary-600" />{t('任务完成情况')}</h3>
               </div>
               <div className="p-4">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200">
-                      <th className="text-left py-2 text-xs font-semibold text-gray-600">任务</th>
-                      <th className="text-left py-2 text-xs font-semibold text-gray-600">类型</th>
-                      <th className="text-left py-2 text-xs font-semibold text-gray-600">得分</th>
-                      <th className="text-left py-2 text-xs font-semibold text-gray-600">能力标签</th>
-                      <th className="text-left py-2 text-xs font-semibold text-gray-600">状态</th>
+                      <th className="text-left py-2 text-xs font-semibold text-gray-600">{t('任务')}</th>
+                      <th className="text-left py-2 text-xs font-semibold text-gray-600">{t('类型')}</th>
+                      <th className="text-left py-2 text-xs font-semibold text-gray-600">{t('得分')}</th>
+                      <th className="text-left py-2 text-xs font-semibold text-gray-600">{t('能力标签')}</th>
+                      <th className="text-left py-2 text-xs font-semibold text-gray-600">{t('状态')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -867,7 +855,7 @@ export function StudentDetailPanel({
                               ? 'bg-green-100 text-green-700'
                               : 'bg-primary-100 text-primary-700'
                           }`}>
-                            {task.taskType === 'quiz' ? '客观题' : '主观题'}
+                            {task.taskType === 'quiz' ? '客观题' : t('主观题')}
                           </span>
                         </td>
                         <td className="py-2 font-semibold">{task.score}/{task.maxScore}</td>
@@ -892,7 +880,7 @@ export function StudentDetailPanel({
                               ? 'text-amber-600'
                               : 'text-gray-500'
                           }`}>
-                            {task.status === 'completed' ? '✅ 完成' : task.status === 'in_progress' ? '⏳ 进行中' : '⏸ 待完成'}
+                            {task.status === 'completed' ? '✅ 完成' : task.status === 'in_progress' ? '⏳ 进行中' : t('⏸ 待完成')}
                           </span>
                         </td>
                       </tr>
@@ -908,7 +896,7 @@ export function StudentDetailPanel({
             <div className="bg-gradient-to-br from-accent-50 to-primary-50 rounded-xl p-4 border border-accent-200">
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles size={16} className="text-accent-600" />
-                <h4 className="text-sm font-bold text-gray-800">AI 发现的额外能力表现</h4>
+                <h4 className="text-sm font-bold text-gray-800">{t('AI 发现的额外能力表现')}</h4>
               </div>
               <div className="space-y-2">
                 {profile.aiDetectedCompetencies.map((detected) => {
@@ -939,11 +927,9 @@ export function StudentDetailPanel({
           <div className="bg-primary-50 rounded-xl p-4 border border-primary-200">
             <div className="flex items-center gap-2 mb-2">
               <Route size={16} className="text-primary-600" />
-              <h4 className="text-sm font-semibold text-gray-800">学习轨迹</h4>
+              <h4 className="text-sm font-semibold text-gray-800">{t('学习轨迹')}</h4>
             </div>
-            <p className="text-xs text-gray-600">
-              点击"展开查看详细时间线"可以查看该学生的完整学习轨迹，包括资源访问、任务提交、AI对话等所有活动记录。
-            </p>
+            <p className="text-xs text-gray-600">{t('点击"展开查看详细时间线"可以查看该学生的完整学习轨迹，包括资源访问、任务提交、AI对话等所有活动记录。')}</p>
           </div>
         </div>
 
@@ -952,15 +938,11 @@ export function StudentDetailPanel({
           <button
             onClick={onClose}
             className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 font-medium"
-          >
-            返回班级概览
-          </button>
+          >{t('返回班级概览')}</button>
           <button
             onClick={onClose}
             className="px-5 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium shadow-sm"
-          >
-            关闭
-          </button>
+          >{t('关闭')}</button>
         </div>
       </div>
     </div>

@@ -1,14 +1,16 @@
 'use client';
 
 import { Check, X } from 'lucide-react';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import { QuestionProps } from '../taskTypes';
 
 export default function TrueFalseQuestion({
   question, selectedAnswer, onAnswer, disabled, showResult, isCorrect, correctAnswer, compact,
 }: QuestionProps) {
+  const { t } = useLanguage();
   const options = [
-    { value: 'true', label: '✓ 正确', icon: Check },
-    { value: 'false', label: '✗ 错误', icon: X },
+    { value: 'true', label: t('✓ 正确'), icon: Check },
+    { value: 'false', label: t('✗ 错误'), icon: X },
   ];
 
   return (
@@ -47,8 +49,8 @@ export default function TrueFalseQuestion({
           >
             <Icon size={compact ? 20 : 40} strokeWidth={2.5} />
             <span className={`${compact ? 'text-xs' : 'text-lg'} font-semibold`}>{label}</span>
-            {showResult && showCheckmark && <span className={`${compact ? 'text-xs' : 'text-sm'} text-green-600 font-medium`}>正确答案</span>}
-            {showResult && showCross && <span className={`${compact ? 'text-xs' : 'text-sm'} text-red-600 font-medium`}>你的选择</span>}
+            {showResult && showCheckmark && <span className={`${compact ? 'text-xs' : 'text-sm'} text-green-600 font-medium`}>{t('正确答案')}</span>}
+            {showResult && showCross && <span className={`${compact ? 'text-xs' : 'text-sm'} text-red-600 font-medium`}>{t('你的选择')}</span>}
           </button>
         );
       })}

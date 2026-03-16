@@ -1,11 +1,13 @@
 'use client';
 
 import { Check, X } from 'lucide-react';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import { QuestionProps } from '../taskTypes';
 
 export default function FillInBlankQuestion({
   question, selectedAnswer, onAnswer, disabled, showResult, isCorrect, correctAnswer, compact,
 }: QuestionProps) {
+  const { t } = useLanguage();
   const currentValue = (selectedAnswer as string) || '';
   const blankCount = question.blanks || (question.content.match(/___/g) || []).length || 1;
   const answers = currentValue.split('|');
@@ -24,7 +26,7 @@ export default function FillInBlankQuestion({
     return (
       <div className={compact ? 'space-y-3' : 'space-y-6'}>
         <div className={compact ? 'space-y-1.5' : 'space-y-3'}>
-          <p className={`${compact ? 'text-xs' : 'text-sm'} font-medium text-gray-500`}>你的答案：</p>
+          <p className={`${compact ? 'text-xs' : 'text-sm'} font-medium text-gray-500`}>{t('你的答案：')}</p>
           {Array.from({ length: blankCount }).map((_, idx) => (
             <div key={idx} className={`${compact ? 'p-2 rounded-lg border' : 'p-4 rounded-xl border-2'} ${
               isCorrect ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'
@@ -39,7 +41,7 @@ export default function FillInBlankQuestion({
         </div>
         {!isCorrect && (
           <div className={compact ? 'space-y-1.5' : 'space-y-3'}>
-            <p className={`${compact ? 'text-xs' : 'text-sm'} font-medium text-gray-500`}>正确答案：</p>
+            <p className={`${compact ? 'text-xs' : 'text-sm'} font-medium text-gray-500`}>{t('正确答案：')}</p>
             {correctAnswers.map((ans, idx) => (
               <div key={idx} className={`${compact ? 'p-2 rounded-lg border' : 'p-4 rounded-xl border-2'} border-green-500 bg-green-50`}>
                 <div className="flex items-center gap-2">
@@ -60,7 +62,7 @@ export default function FillInBlankQuestion({
         <textarea
           value={currentValue}
           onChange={(e) => onAnswer(question.id, e.target.value, false)}
-          placeholder="请在此输入你的答案..."
+          placeholder={t('请在此输入你的答案...')}
           disabled={disabled}
           className={`w-full ${compact ? 'h-16 p-2 text-sm rounded-lg border' : 'h-32 p-4 text-lg rounded-xl border-2'} border-gray-200 focus:border-primary-500 focus:outline-none resize-none disabled:bg-gray-50 disabled:text-gray-400`}
         />
