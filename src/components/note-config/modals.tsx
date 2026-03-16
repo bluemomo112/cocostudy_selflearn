@@ -67,49 +67,6 @@ import {
   COMPETENCY_DEFINITIONS as RESULTS_COMPETENCY_DEFINITIONS,
 } from './results-view';
 
-// 能力维度类型定义（跨学科通用能力）
-type CrossCompetencyType =
-  | 'critical_thinking'      // 批判性思维
-  | 'information_synthesis'  // 信息整合
-  | 'metacognition'          // 元认知
-  | 'question_quality'       // 提问质量
-  | 'creativity'             // 创造性
-  | 'persistence';           // 坚持性
-
-// 跨学科能力定义（通用能力，所有学科共享）
-const CROSS_COMPETENCY_DEFINITIONS: Record<CrossCompetencyType, { name: string; description: string; icon: any }> = {
-  critical_thinking: {
-    name: '批判性思维',
-    description: '评估信息、识别假设、分析论证的能力',
-    icon: Brain,
-  },
-  information_synthesis: {
-    name: '信息整合',
-    description: '从多个来源整合信息、建立联系的能力',
-    icon: Network,
-  },
-  metacognition: {
-    name: '元认知',
-    description: '反思学习过程、调整学习策略的能力',
-    icon: Eye,
-  },
-  question_quality: {
-    name: '提问质量',
-    description: '提出有深度、有洞察力问题的能力',
-    icon: HelpCircle,
-  },
-  creativity: {
-    name: '创造性',
-    description: '产生新颖想法、解决方案的能力',
-    icon: Lightbulb,
-  },
-  persistence: {
-    name: '坚持性',
-    description: '面对挑战持续努力、不轻易放弃的品质',
-    icon: Target,
-  },
-};
-
 // 学科能力定义（学科特定的核心素养）
 interface SubjectCompetency {
   id: string;
@@ -244,7 +201,7 @@ const generateCoverRecommendation = (title: string): string => {
 };
 
 const generateTagRecommendations = (title: string, subjects: string[]): string[] => {
-  const allTags = ['知识点', '实验', '探究', '跨学科', '项目式学习', '观察', '分析', '创新'];
+  const allTags = ['知识点', '实验', '探究', '项目式学习', '观察', '分析', '创新'];
 
   // 基于标题和学科推荐标签
   const recommendedTags: string[] = [];
@@ -256,7 +213,7 @@ const generateTagRecommendations = (title: string, subjects: string[]): string[]
     recommendedTags.push('探究', '分析');
   }
   if (subjects.length > 1) {
-    recommendedTags.push('跨学科');
+    recommendedTags.push('探究');
   }
   if (title.includes('项目') || title.includes('设计')) {
     recommendedTags.push('项目式学习', '创新');
@@ -270,13 +227,6 @@ const generateTagRecommendations = (title: string, subjects: string[]): string[]
   return [...new Set(recommendedTags)]; // 去重
 };
 
-// 跨学科标签（精选推荐，限制在10个以内）
-const CROSS_DISCIPLINARY_TAGS = [
-  '系统与平衡', '生态系统', '数据分析', '逻辑思维',
-  '文化传承', '可持续发展', '创新思维', '批判性思考',
-  '问题解决', '信息素养',
-];
-
 // 完整学科列表
 const ALL_SUBJECTS = [
   '语文', '数学', '英语', '物理', '化学', '生物',
@@ -284,7 +234,7 @@ const ALL_SUBJECTS = [
   '音乐', '美术', '体育', '心理健康', '劳动技术', '综合实践',
 ];
 
-// NoteInfoModal - 跨学科配置模态框
+// NoteInfoModal - 配置模态框
 export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grades, classes }: any) {
   const { t } = useLanguage();
   const [localConfig, setLocalConfig] = useState({
@@ -538,92 +488,6 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
                     重新生成
                   </button>
                 </div>
-              </div>
-            </div>
-
-            {/* 跨学科标签 */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2.5 flex items-center gap-2">
-                <div className="w-1 h-4 bg-primary-600 rounded-full"></div>
-                {isGeneratingAI ? (
-                  <Loader2 size={16} className="text-primary-600 animate-spin" />
-                ) : (
-                  <Sparkles size={16} className="text-primary-600" />
-                )}
-                跨学科标签
-                <span className="text-xs font-normal text-gray-500 ml-1">{t('AI 推荐，可自定义')}</span>
-              </label>
-
-              {/* 已选标签展示 */}
-              {localConfig.tags.length > 0 && (
-                <div className="mb-3 flex flex-wrap gap-2">
-                  {localConfig.tags.map((tag: string) => (
-                    <div
-                      key={tag}
-                      className="px-3.5 py-2 rounded-xl text-sm font-medium bg-primary-600 text-white shadow-md shadow-primary-200 flex items-center gap-2"
-                    >
-                      {tag}
-                      <button
-                        onClick={() => toggleTag(tag)}
-                        className="hover:bg-white/20 rounded-full p-0.5 transition-colors"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* 推荐标签 */}
-              <div className="flex flex-wrap gap-2.5 mb-3">
-                {isGeneratingAI && localConfig.tags.length === 0 ? (
-                  <div className="text-sm text-gray-500 flex items-center gap-2 py-2">
-                    <Loader2 size={16} className="animate-spin" />{t('AI 推荐中...')}</div>
-                ) : (
-                  CROSS_DISCIPLINARY_TAGS.filter((tag: string) => !localConfig.tags.includes(tag)).map((tag: string) => (
-                    <button
-                      key={tag}
-                      onClick={() => toggleTag(tag)}
-                      className="px-3.5 py-2 rounded-xl text-sm font-medium transition-all bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
-                    >
-                      {tag}
-                    </button>
-                  ))
-                )}
-              </div>
-
-              {/* 自定义标签输入 */}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={customTagInput}
-                  onChange={(e) => setCustomTagInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && customTagInput.trim()) {
-                      e.preventDefault();
-                      const newTag = customTagInput.trim();
-                      if (!localConfig.tags.includes(newTag)) {
-                        setLocalConfig({ ...localConfig, tags: [...localConfig.tags, newTag] });
-                      }
-                      setCustomTagInput('');
-                    }
-                  }}
-                  placeholder={t('输入自定义标签，按回车添加')}
-                  className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all hover:border-gray-300"
-                />
-                <button
-                  onClick={() => {
-                    if (customTagInput.trim()) {
-                      const newTag = customTagInput.trim();
-                      if (!localConfig.tags.includes(newTag)) {
-                        setLocalConfig({ ...localConfig, tags: [...localConfig.tags, newTag] });
-                      }
-                      setCustomTagInput('');
-                    }
-                  }}
-                  className="px-4 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium transition-all flex items-center gap-2"
-                >
-                  <Plus size={16} />{t('添加')}</button>
               </div>
             </div>
 
@@ -1230,19 +1094,16 @@ export function MetaModal({ config, inheritedStrategies, onSave, onClose }: any)
               {config.tasks && config.tasks.length > 0 ? (
                 (() => {
                   // 收集所有已配置的能力维度
-                  const allCompetencies = new Set<CrossCompetencyType>();
+                  const allCompetencies = new Set<ResultsCompetencyType>();
                   config.tasks.forEach((task: any) => {
                     if (task.assignedCompetencies) {
-                      task.assignedCompetencies.forEach((comp: CrossCompetencyType) => allCompetencies.add(comp));
-                    }
-                    if (task.crossCompetencies) {
-                      task.crossCompetencies.forEach((comp: CrossCompetencyType) => allCompetencies.add(comp));
+                      task.assignedCompetencies.forEach((comp: ResultsCompetencyType) => allCompetencies.add(comp));
                     }
                   });
 
                   return allCompetencies.size > 0 ? (
                     Array.from(allCompetencies).map((competency) => {
-                      const def = CROSS_COMPETENCY_DEFINITIONS[competency];
+                      const def = RESULTS_COMPETENCY_DEFINITIONS[competency];
                       const Icon = def.icon;
                       return (
                         <div
@@ -1865,46 +1726,6 @@ export function TaskEditModal({ task, onSave, onClose }: any) {
                         <p className="mt-2 text-xs text-gray-500">{t('选择本测验重点评估的学科核心素养，这些能力与学科教学目标直接相关')}</p>
                       </div>
 
-                      {/* 跨学科能力维度 */}
-                      <div className="pt-4 border-t border-amber-200">
-                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1.5">
-                          <Network size={14} className="text-indigo-500" />{t('跨学科能力维度')}<span className="text-xs text-gray-500 font-normal ml-1">{t('(通用能力，可跨课程追踪)')}</span>
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                          {(Object.keys(CROSS_COMPETENCY_DEFINITIONS) as CrossCompetencyType[]).map((competency) => {
-                            const def = CROSS_COMPETENCY_DEFINITIONS[competency];
-                            const Icon = def.icon;
-                            const isSelected = localTask.crossCompetencies?.includes(competency) || false;
-
-                            return (
-                              <button
-                                key={`cross-${competency}`}
-                                type="button"
-                                onClick={() => {
-                                  const current = localTask.crossCompetencies || [];
-                                  const updated = isSelected
-                                    ? current.filter((c: CrossCompetencyType) => c !== competency)
-                                    : [...current, competency];
-                                  updateField('crossCompetencies', updated.length > 0 ? updated : undefined);
-                                }}
-                                className={`
-                                  flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all
-                                  ${
-                                    isSelected
-                                      ? 'bg-indigo-100 text-indigo-700 border-2 border-indigo-400 shadow-sm'
-                                      : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
-                                  }
-                                `}
-                                title={def.description}
-                              >
-                                <Icon size={14} />
-                                {def.name}
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <p className="mt-2 text-xs text-gray-500">{t('选择跨学科通用能力维度，这些能力将跨课程追踪学生的发展')}</p>
-                      </div>
                     </div>
                   )}
                 </div>
@@ -1996,47 +1817,6 @@ export function TaskEditModal({ task, onSave, onClose }: any) {
                           })}
                         </div>
                         <p className="mt-2 text-xs text-gray-500">{t('选择本次作业重点培养的学科核心素养，这些能力与学科教学目标直接相关')}</p>
-                      </div>
-
-                      {/* 跨学科能力维度 */}
-                      <div className="pt-4 border-t border-amber-200">
-                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1.5">
-                          <Network size={14} className="text-indigo-500" />{t('跨学科能力维度')}<span className="text-xs text-gray-500 font-normal ml-1">{t('(通用能力，可跨课程追踪)')}</span>
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                          {(Object.keys(CROSS_COMPETENCY_DEFINITIONS) as CrossCompetencyType[]).map((competency) => {
-                            const def = CROSS_COMPETENCY_DEFINITIONS[competency];
-                            const Icon = def.icon;
-                            const isSelected = localTask.crossCompetencies?.includes(competency) || false;
-
-                            return (
-                              <button
-                                key={`cross-${competency}`}
-                                type="button"
-                                onClick={() => {
-                                  const current = localTask.crossCompetencies || [];
-                                  const updated = isSelected
-                                    ? current.filter((c: CrossCompetencyType) => c !== competency)
-                                    : [...current, competency];
-                                  updateField('crossCompetencies', updated.length > 0 ? updated : undefined);
-                                }}
-                                className={`
-                                  flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all
-                                  ${
-                                    isSelected
-                                      ? 'bg-indigo-100 text-indigo-700 border-2 border-indigo-400 shadow-sm'
-                                      : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
-                                  }
-                                `}
-                                title={def.description}
-                              >
-                                <Icon size={14} />
-                                {def.name}
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <p className="mt-2 text-xs text-gray-500">{t('选择跨学科通用能力维度，这些能力将跨课程追踪学生的发展')}</p>
                       </div>
 
                       {/* AI智能批改 */}
@@ -2523,7 +2303,7 @@ export function ResultsViewHeader({ config, onBack, onSwitchToUse, onPublish }: 
 // Results视角仪表板 - 学习数据展示
 export function ResultsViewDashboard({ config }: any) {
   const { t } = useLanguage();
-  // 模拟学生列表数据（增强版 - 包含详细的能力评估、任务完成、跨课程画像）
+  // 模拟学生列表数据（增强版 - 包含详细的能力评估、任务完成）
   const mockStudentsRaw = [
     { id: 1, name: '张晓明', avatar: '👦', status: 'online' as const, progress: 85, lastActive: t('2分钟前'), competencies: { critical_thinking: 4, information_synthesis: 3, metacognition: 4 } },
     { id: 2, name: '李思琪', avatar: '👧', status: 'online' as const, progress: 92, lastActive: t('刚刚'), competencies: { critical_thinking: 3, information_synthesis: 4, metacognition: 3 } },
@@ -2569,9 +2349,9 @@ export function ResultsViewDashboard({ config }: any) {
       information_synthesis: {
         4: {
           description: '能够熟练地从多个资源中提取关键信息，建立概念之间的联系，形成结构化的知识体系。在学习水循环时，成功整合了地理、化学、生态等多学科知识。',
-          highlights: ['建立了清晰的知识网络', '能跨学科整合信息', '善于使用图表组织信息'],
+          highlights: ['建立了清晰的知识网络', '能整合多来源信息', '善于使用图表组织信息'],
           areasForImprovement: ['可以尝试更复杂的信息整合任务'],
-          suggestions: ['尝试制作跨学科的概念图', '练习用自己的话综合不同来源的信息', '挑战整合相互矛盾的信息源'],
+          suggestions: ['尝试制作综合性的概念图', '练习用自己的话综合不同来源的信息', '挑战整合相互矛盾的信息源'],
           evidence: [
             { id: 'e5', type: 'note' as const, content: t('笔记中绘制了一张完整的水循环思维导图，连接了蒸发、降水、径流等概念，并标注了人类活动的影响。'), timestamp: '2024-01-08 14:50', sourceRef: t('康奈尔笔记') },
             { id: 'e6', type: 'behavior' as const, content: t('观看了3个不同的视频资源后，主动对比总结了共同点和差异。'), timestamp: '2024-01-08 15:20', sourceRef: t('学习行为') },
@@ -2670,53 +2450,6 @@ export function ResultsViewDashboard({ config }: any) {
     ];
   };
 
-  // 生成跨课程能力画像
-  const generateCrossCourseProfiles = (studentId: number, competencies: Record<string, number>) => {
-    const profiles: any[] = [];
-
-    // 为每个能力维度生成跨课程记录
-    Object.entries(competencies).forEach(([type, currentStars]) => {
-      const records = [
-        {
-          courseId: 'course_geo_01',
-          courseName: t('地理-气候变化'),
-          date: '2023-12',
-          competencyType: type as ResultsCompetencyType,
-          stars: Math.max(1, Math.min(4, currentStars - 1 + Math.floor(Math.random() * 2))) as 1 | 2 | 3 | 4,
-        },
-        {
-          courseId: 'course_bio_01',
-          courseName: t('生物-生态系统'),
-          date: '2024-01',
-          competencyType: type as ResultsCompetencyType,
-          stars: Math.max(1, Math.min(4, currentStars - 1 + Math.floor(Math.random() * 3))) as 1 | 2 | 3 | 4,
-        },
-        {
-          courseId: 'course_current',
-          courseName: config.noteInfo.title,
-          date: '2024-01',
-          competencyType: type as ResultsCompetencyType,
-          stars: currentStars as 1 | 2 | 3 | 4,
-        },
-      ];
-
-      // 计算趋势
-      const firstStars = records[0].stars;
-      const lastStars = records[records.length - 1].stars;
-      const trend = lastStars > firstStars ? 'rising' : lastStars < firstStars ? 'declining' : 'stable';
-      const averageStars = records.reduce((sum, r) => sum + r.stars, 0) / records.length;
-
-      profiles.push({
-        competencyType: type as ResultsCompetencyType,
-        records,
-        trend: trend as 'rising' | 'stable' | 'declining',
-        averageStars: parseFloat(averageStars.toFixed(1)),
-      });
-    });
-
-    return profiles;
-  };
-
   // 转换为 StudentCompetencyProfile 格式
   const mockStudents: StudentCompetencyProfile[] = mockStudentsRaw.map((student) => ({
     studentId: String(student.id),
@@ -2728,7 +2461,7 @@ export function ResultsViewDashboard({ config }: any) {
     lastActive: student.lastActive,
     currentCourseAssessments: generateEnhancedAssessments(student.id, student.competencies),
     taskCompletions: generateTaskCompletions(student.id, student.competencies),
-    crossCourseProfiles: generateCrossCourseProfiles(student.id, student.competencies),
+
     aiDetectedCompetencies: student.id === 1 || student.id === 4 || student.id === 6
       ? [{ type: 'metacognition' as ResultsCompetencyType, confidence: 0.85, description: '在学习过程中展现了良好的自我反思能力，能主动调整学习策略' }]
       : student.id === 2
@@ -2755,13 +2488,10 @@ export function ResultsViewDashboard({ config }: any) {
   }));
 
   // 收集所有已配置的能力维度
-  const allCompetencies = new Set<CrossCompetencyType>();
+  const allCompetencies = new Set<ResultsCompetencyType>();
   config.tasks?.forEach((task: any) => {
     if (task.assignedCompetencies) {
-      task.assignedCompetencies.forEach((comp: CrossCompetencyType) => allCompetencies.add(comp));
-    }
-    if (task.crossCompetencies) {
-      task.crossCompetencies.forEach((comp: CrossCompetencyType) => allCompetencies.add(comp));
+      task.assignedCompetencies.forEach((comp: ResultsCompetencyType) => allCompetencies.add(comp));
     }
   });
   const competencyList = Array.from(allCompetencies);
@@ -2860,7 +2590,7 @@ export function ResultsViewDashboard({ config }: any) {
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                     <Target size={18} className="text-primary-600" />{t('能力维度分布（本课程关注的能力）')}</h3>
-                  <span className="text-xs text-gray-600 bg-white px-3 py-1 rounded-full border border-primary-200">{t('跨学科核心能力评估')}</span>
+                  <span className="text-xs text-gray-600 bg-white px-3 py-1 rounded-full border border-primary-200">{t('核心能力评估')}</span>
                 </div>
               </div>
 
@@ -2931,7 +2661,7 @@ export function ResultsViewDashboard({ config }: any) {
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-600">{t('状态')}</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-600">{t('进度')}</th>
                   {competencyList.map((comp) => {
-                    const def = CROSS_COMPETENCY_DEFINITIONS[comp];
+                    const def = RESULTS_COMPETENCY_DEFINITIONS[comp];
                     return (
                       <th key={comp} className="text-center px-3 py-3 text-xs font-semibold text-gray-600">
                         {def.name}

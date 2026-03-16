@@ -3,7 +3,6 @@
 import { LearningMode } from '../../../types/self-study';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { EnhancedNotesPanel } from './EnhancedNotesPanel';
-import GrowthTimelinePanel from '../../student/GrowthTimelinePanel';
 import { COLLAPSED_WIDTH } from '../shared/constants';
 import {
   ChevronLeft, ChevronRight, Pencil, Activity, Sparkles, ChevronDown, ChevronUp
@@ -216,11 +215,9 @@ export function RightPanel({
             </div>
           ) : (
             <div className="flex-1 overflow-y-auto p-3">
-              <GrowthTimelinePanel competencyProfile={{
-                critical_thinking: 2,
-                information_synthesis: 2,
-                metacognition: 2,
-              }} />
+              <div className="text-center text-gray-400 text-sm mt-8">
+                {t('学习状态')}
+              </div>
             </div>
           )}
         </>

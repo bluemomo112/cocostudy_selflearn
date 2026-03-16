@@ -156,16 +156,16 @@ export interface Resource {
 export const heroTools: Resource[] = [
   {
     id: 't1',
-    title: '教案工坊 (C-POTE)',
-    description: '使用C-POTE六步设计法，系统化创建你的跨学科教案。',
+    title: '教案工坊',
+    description: '系统化创建你的教学教案。',
     type: 'tool',
     cover: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&h=500&fit=crop',
-    tags: ['教案设计', '跨学科', '系统化']
+    tags: ['教案设计', '系统化']
   },
   {
     id: 't2',
-    title: 'AI跨学科训练场',
-    description: '在AI模拟情境中，练习你的跨学科概念引导与课堂互动。',
+    title: 'AI训练场',
+    description: '在AI模拟情境中，练习你的教学概念引导与课堂互动。',
     type: 'tool',
     cover: 'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800&h=500&fit=crop',
     tags: ['AI辅助', '情境模拟', '互动练习']
@@ -175,8 +175,8 @@ export const heroTools: Resource[] = [
 export const abilityPacks: Resource[] = [
   {
     id: 'a1',
-    title: '跨学科融合入门',
-    description: '从零开始理解跨学科教学的核心理念与实践方法。',
+    title: '教学融合入门',
+    description: '从零开始理解教学的核心理念与实践方法。',
     type: 'ability-pack',
     cover: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=400&h=300&fit=crop',
     tags: ['入门', '理论基础'],

@@ -3,7 +3,7 @@
  * 用于「我的能力成长」tab 的时间线展示
  */
 
-import type { CompetencyType } from './mockCompetencyData';
+import type { CompetencyType } from '../components/note-config/results-view';
 
 // ============ 类型定义 ============
 

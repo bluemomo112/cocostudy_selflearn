@@ -32,7 +32,6 @@ import { PublishScope } from '../types/self-study';
 import type { ErrorQuestion, HistoricalTest, Note as KnowledgeNote, InteractiveWebpage } from '../data/mockKnowledgeBase';
 import TaskExpandedCard from './task/TaskExpandedCard';
 import TaskResultReview from './task/TaskResultReview';
-import GrowthTimelinePanel from './student/GrowthTimelinePanel';
 import { QuickResultData, ExamProcessingConfig, ExamProcessingStep } from './task/taskTypes';
 import ExamDetectedModal from './ExamDetectedModal';
 import TaskSettingsPopover from './TaskSettingsPopover';

@@ -117,23 +117,6 @@ export interface TaskCompletion {
   status: 'completed' | 'pending' | 'in_progress';
 }
 
-// 跨课程能力记录
-export interface CrossCourseCompetencyRecord {
-  courseId: string;
-  courseName: string;
-  date: string;
-  competencyType: CompetencyType;
-  stars: 1 | 2 | 3 | 4;
-}
-
-// 跨课程能力画像
-export interface CrossCourseProfile {
-  competencyType: CompetencyType;
-  records: CrossCourseCompetencyRecord[];
-  trend: 'rising' | 'stable' | 'declining';
-  averageStars: number;
-}
-
 // 学生能力档案
 export interface StudentCompetencyProfile {
   studentId: string;
@@ -149,9 +132,6 @@ export interface StudentCompetencyProfile {
 
   // 任务完成情况
   taskCompletions: TaskCompletion[];
-
-  // 跨课程能力画像
-  crossCourseProfiles: CrossCourseProfile[];
 
   // AI 发现的额外能力
   aiDetectedCompetencies: {
@@ -471,82 +451,6 @@ export function CompetencyDetailCard({
 }
 
 // ============================================
-// 组件: 跨课程能力时间线
-// ============================================
-export function CrossCourseTimeline({
-  profiles,
-}: {
-  profiles: CrossCourseProfile[];
-}) {
-  const { t } = useLanguage();
-  if (profiles.length === 0) {
-    return (
-      <div className="bg-gray-50 rounded-xl p-6 text-center">
-        <p className="text-sm text-gray-400">{t('暂无跨课程数据')}</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {profiles.map((profile) => {
-        const def = COMPETENCY_DEFINITIONS[profile.competencyType];
-        const Icon = def.icon;
-        const maxStars = Math.max(...profile.records.map(r => r.stars));
-
-        return (
-          <div key={profile.competencyType} className="bg-white rounded-xl p-5 border border-gray-200">
-            {/* 头部 */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-lg bg-${def.color}-100 flex items-center justify-center`}>
-                  <Icon size={20} className={`text-${def.color}-600`} />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-800">{def.name}</h4>
-                  <p className="text-xs text-gray-500">
-                    平均 {profile.averageStars.toFixed(1)} 星
-                  </p>
-                </div>
-              </div>
-              <span className={`text-xs px-3 py-1 rounded-full font-medium ${
-                profile.trend === 'rising'
-                  ? 'bg-green-100 text-green-700'
-                  : profile.trend === 'declining'
-                  ? 'bg-red-100 text-red-700'
-                  : 'bg-gray-100 text-gray-700'
-              }`}>
-                {profile.trend === 'rising' ? '↗ 上升' : profile.trend === 'declining' ? '↘ 下降' : t('→ 稳定')}
-              </span>
-            </div>
-
-            {/* 时间线 */}
-            <div className="space-y-3">
-              {profile.records.map((record, idx) => (
-                <div key={idx} className="flex items-center gap-4">
-                  <div className="w-28 text-sm text-gray-600 shrink-0">
-                    {record.courseName}
-                  </div>
-                  <div className="flex-1 bg-gray-100 rounded-full h-7 flex items-center relative overflow-hidden">
-                    <div
-                      className={`h-full bg-gradient-to-r ${getStarLevelColor(record.stars)} rounded-full flex items-center justify-end pr-3 transition-all`}
-                      style={{ width: `${(record.stars / 4) * 100}%` }}
-                    >
-                      <span className="text-xs font-bold text-white">{record.stars}★</span>
-                    </div>
-                  </div>
-                  <span className="text-xs text-gray-500 w-20 shrink-0">{record.date}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// ============================================
 // 组件: 能力分布条形图
 // ============================================
 export function CompetencyDistributionChart({
@@ -738,9 +642,6 @@ export function StudentDetailPanel({
     ? (profile.currentCourseAssessments.reduce((sum, a) => sum + a.stars, 0) / profile.currentCourseAssessments.length).toFixed(1)
     : '--';
 
-  // 转换为 CrossCourseProfile 格式
-  const crossCourseProfiles: CrossCourseProfile[] = profile.crossCourseProfiles;
-
   return (<div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm" onClick={onClose}>
       <div
         className="bg-white w-[900px] max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col"
@@ -817,15 +718,6 @@ export function StudentDetailPanel({
               ))}
             </div>
           </div>
-
-          {/* 3. 跨课程能力画像（使用 CrossCourseTimeline） */}
-          {crossCourseProfiles.length > 0 && (
-            <div className="bg-gradient-to-br from-accent-50 to-cyan-50/30 rounded-xl p-6 border border-accent-200">
-              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <Network size={18} className="text-accent-600" />{t('跨课程能力画像')}</h3>
-              <CrossCourseTimeline profiles={crossCourseProfiles} />
-            </div>
-          )}
 
           {/* 4. 任务完成情况 */}
           {profile.taskCompletions.length > 0 && (
