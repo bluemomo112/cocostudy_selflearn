@@ -78,8 +78,6 @@ interface LeftPanelProps {
   onSetExplainQuestion?: (q: TaskQuestion | null) => void;
   onExplainQuestion?: (question: TaskQuestion, userAnswer: string | string[], correctAnswer: string | string[]) => void;
   onSendMessage?: (message: string) => void;
-  isResourceCollapsed?: boolean;
-  onSetResourceCollapsed?: (collapsed: boolean) => void;
 }
 
 export function LeftPanel(props: LeftPanelProps) {
@@ -104,24 +102,12 @@ export function LeftPanel(props: LeftPanelProps) {
     onSetViewingResource,
     explainQuestion, onSetExpandedTask, onSetTaskDisplayMode, onSetExplainQuestion,
     onExplainQuestion, onSendMessage,
-    isResourceCollapsed: externalIsResourceCollapsed,
-    onSetResourceCollapsed,
   } = props;
 
   // 粘贴文本弹窗状态
   const [showPasteTextModal, setShowPasteTextModal] = useState(false);
   const [pasteTextContent, setPasteTextContent] = useState('');
 
-  // 资源区域折叠状态（支持受控和非受控）
-  const [internalIsResourceCollapsed, setInternalIsResourceCollapsed] = useState(false);
-  const isResourceCollapsed = externalIsResourceCollapsed ?? internalIsResourceCollapsed;
-  const setIsResourceCollapsed = (collapsed: boolean) => {
-    if (onSetResourceCollapsed) {
-      onSetResourceCollapsed(collapsed);
-    } else {
-      setInternalIsResourceCollapsed(collapsed);
-    }
-  };
 
   // 统一编辑任务弹窗状态
   const [unifiedEditTask, setUnifiedEditTask] = useState<any>(null);
@@ -284,7 +270,7 @@ export function LeftPanel(props: LeftPanelProps) {
             {/* 面板顶部标题栏 - 与右侧面板tab栏高度对齐 */}
             <div className="h-12 px-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
               <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                <><FolderOpen size={16} className="text-gray-500" />{t('学习资源')}</>
+                <><BookOpen size={16} className="text-gray-500" />{t('学习输入')}</>
               </h2>
               <button
                 onClick={() => onSetLeftCollapsed(true)}
@@ -299,30 +285,35 @@ export function LeftPanel(props: LeftPanelProps) {
               <div
                 className="flex flex-col min-h-0 overflow-hidden transition-all"
                 style={{
-                  flex: isResourceCollapsed
+                  flex: collapsedPanels.resources
                     ? '0 0 auto'
                     : collapsedPanels.tasks
                     ? '1 1 auto'
                     : '0 0 50%'
                 }}
               >
-                {/* 资源区域折叠标题栏 */}
+                {/* 资源区域标题栏 - 可点击折叠 */}
                 <div
-                  className={`px-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-all flex items-center justify-between ${isResourceCollapsed ? 'h-10' : 'h-0'}`}
-                  onClick={() => setIsResourceCollapsed(!isResourceCollapsed)}
+                  className="h-10 px-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-all flex items-center justify-between"
+                  onClick={() => onTogglePanel('resources')}
                 >
-                  {isResourceCollapsed && (
-                    <>
-                      <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                        <FolderOpen size={16} className="text-gray-500" />
-                        {t('学习资源')}
-                      </h3>
-                      <ChevronDown size={16} className="text-gray-400" />
-                    </>
+                  <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                    <FolderOpen size={16} className="text-gray-500" />
+                    {t('学习资源')}
+                    {(config.resources.length + aiGeneratedResources.length + mockAIResources.length) > 0 && (
+                      <span className="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">
+                        {config.resources.length + aiGeneratedResources.length + mockAIResources.length}
+                      </span>
+                    )}
+                  </h3>
+                  {collapsedPanels.resources ? (
+                    <ChevronRight size={16} className="text-gray-400" />
+                  ) : (
+                    <ChevronDown size={16} className="text-gray-400" />
                   )}
                 </div>
 
-                {!isResourceCollapsed && (
+                {!collapsedPanels.resources && (
                 <>
 
                 {/* 添加资源入口 */}
@@ -528,18 +519,6 @@ export function LeftPanel(props: LeftPanelProps) {
                   </>
                   )}
                 </div>
-                {/* 资源区域折叠按钮 */}
-                {!isResourceCollapsed && (
-                  <div className="px-4 py-1.5 border-t border-gray-100 flex justify-center flex-shrink-0">
-                    <button
-                      onClick={() => setIsResourceCollapsed(true)}
-                      className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 hover:bg-gray-100 px-3 py-1 rounded-lg transition-colors"
-                    >
-                      <ChevronUp size={12} />
-                      {t('收起资源')}
-                    </button>
-                  </div>
-                )}
                 </>
                 )}
               </div>
@@ -548,35 +527,28 @@ export function LeftPanel(props: LeftPanelProps) {
               <div
                 className="flex flex-col min-h-0 border-t border-gray-200 transition-all overflow-hidden"
                 style={{
-                  flex: collapsedPanels.tasks ? '0 0 auto' : isResourceCollapsed ? '1 1 auto' : '0 0 50%'
+                  flex: collapsedPanels.tasks ? '0 0 auto' : collapsedPanels.resources ? '1 1 auto' : '0 0 50%'
                 }}
               >
-                {/* 可折叠的标题栏 - 收起时高度与中间对话区输入框对齐 */}
+                {/* 任务区域标题栏 - 可点击折叠 */}
                 <div
-                  className={`px-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-all flex flex-col justify-center ${collapsedPanels.tasks ? 'h-[70px]' : 'h-12'}`}
+                  className="h-10 px-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-all flex items-center justify-between"
                   onClick={() => onTogglePanel('tasks')}
                 >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                        <ListChecks size={16} className="text-gray-500" />
-                        {t('学习任务')}
-                        {generatedTasks.length > 0 && (
-                          <span className="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">
-                            {generatedTasks.length}
-                          </span>
-                        )}
-                      </h3>
-                      <p className="text-xs text-gray-500 mt-1">{t('AI 生成的测试和练习')}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {collapsedPanels.tasks ? (
-                        <ChevronDown size={16} className="text-gray-400" />
-                      ) : (
-                        <ChevronUp size={16} className="text-gray-400" />
-                      )}
-                    </div>
-                  </div>
+                  <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                    <ListChecks size={16} className="text-gray-500" />
+                    {t('学习任务')}
+                    {generatedTasks.length > 0 && (
+                      <span className="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">
+                        {generatedTasks.length}
+                      </span>
+                    )}
+                  </h3>
+                  {collapsedPanels.tasks ? (
+                    <ChevronRight size={16} className="text-gray-400" />
+                  ) : (
+                    <ChevronDown size={16} className="text-gray-400" />
+                  )}
                 </div>
 
                 {/* 可折叠的内容区域 */}

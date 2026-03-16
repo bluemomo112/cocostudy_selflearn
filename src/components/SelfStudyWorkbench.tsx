@@ -522,15 +522,13 @@ export default function SelfStudyWorkbench({
   // 面板折叠状态
   const [collapsedPanels, setCollapsedPanels] = useState<Record<string, boolean>>({
     sources: false,
+    resources: false, // 资源区域
     tasks: true, // 初始收起
     aiResources: false,
     learningPath: false,
     studio: false,
   });
 
-
-  // 资源区域折叠状态（独立控制）
-  const [isResourceCollapsed, setIsResourceCollapsed] = useState(false);
   // 生成的任务列表（初始为空）
   const [generatedTasks, setGeneratedTasks] = usePersistedState<typeof MOCK_GENERATED_TASKS>(`self-study:wb:${config.id}:generatedTasks`, []);
   const [isGeneratingTask, setIsGeneratingTask] = useState(false);
@@ -2698,8 +2696,6 @@ export default function SelfStudyWorkbench({
           onSetTaskDisplayMode={setTaskDisplayMode}
           onSetExplainQuestion={setExplainQuestion}
           onExplainQuestion={handleExplainQuestion}
-          isResourceCollapsed={isResourceCollapsed}
-          onSetResourceCollapsed={setIsResourceCollapsed}
         />
 
         {/* 左侧调整器 - 仅在未折叠时显示 */}
