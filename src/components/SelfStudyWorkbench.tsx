@@ -236,7 +236,8 @@ export default function SelfStudyWorkbench({
       id: 'gen_task_1',
       type: 'quiz' as const,
       title: t('AI生成：植物工厂基础测验'),
-      status: 'optional' as const,
+      status: 'available' as const,
+      required: true,
       questionCount: 8,
       questions: [
         {
@@ -343,7 +344,8 @@ export default function SelfStudyWorkbench({
       id: 'gen_task_2',
       type: 'assignment' as const,
       title: t('AI生成：学习反思'),
-      status: 'optional' as const,
+      status: 'available' as const,
+      required: false,
       teacherHint: t('请结合今天学习的内容，思考以下问题：\n1. 你学到了哪些新知识？\n2. 哪些概念你还不太理解？\n3. 你打算如何应用这些知识？'),
       wordLimit: { min: 200, max: 500 },
       generatedAt: new Date(Date.now() - 1000 * 60 * 5),
@@ -1094,7 +1096,8 @@ export default function SelfStudyWorkbench({
             id: `gen_task_${Date.now()}`,
             type: 'quiz' as const,
             title: `🔄 ${t('变种练习题')}`,
-            status: 'optional' as const,
+            status: 'available' as const,
+            required: false,
             questionCount: 3,
             questions: [
               {
@@ -1146,7 +1149,8 @@ export default function SelfStudyWorkbench({
             id: `gen_task_${Date.now()}`,
             type: 'quiz' as const,
             title: `🤖 ${t('AI生成')}：${tool.label}`,
-            status: 'optional' as const,
+            status: 'available' as const,
+            required: false,
             questionCount: 3,
             questions: [
               {
