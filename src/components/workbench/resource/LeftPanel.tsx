@@ -368,21 +368,22 @@ export function LeftPanel(props: LeftPanelProps) {
               >
                 {/* 资源区域标题栏 - 可点击折叠 */}
                 <div
-                  className="px-4 py-2 cursor-pointer transition-all flex items-center justify-between"
+                  className="h-10 px-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-all flex items-center justify-between"
                   onClick={() => onTogglePanel('resources')}
                 >
-                  <h3 className="text-sm font-medium text-gray-500 flex items-center gap-1.5">
+                  <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                    <FolderOpen size={16} className="text-gray-500" />
                     {t('学习资源')}
                     {(config.resources.length + aiGeneratedResources.length + mockAIResources.length) > 0 && (
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">
                         {config.resources.length + aiGeneratedResources.length + mockAIResources.length}
                       </span>
                     )}
                   </h3>
                   {collapsedPanels.resources ? (
-                    <ChevronRight size={14} className="text-gray-300" />
+                    <ChevronRight size={16} className="text-gray-400" />
                   ) : (
-                    <ChevronDown size={14} className="text-gray-300" />
+                    <ChevronDown size={16} className="text-gray-400" />
                   )}
                 </div>
 
@@ -572,38 +573,30 @@ export function LeftPanel(props: LeftPanelProps) {
 
               {/* 任务区域 - 可折叠，资源收起时自动扩展，展开时占50% */}
               <div
-                className="flex flex-col min-h-0 transition-all overflow-hidden"
+                className="flex flex-col min-h-0 border-t border-gray-200 transition-all overflow-hidden"
                 style={{
                   flex: collapsedPanels.tasks ? '0 0 auto' : collapsedPanels.resources ? '1 1 auto' : '0 0 50%'
                 }}
               >
                 {/* 任务区域标题栏 - 可点击折叠 */}
                 <div
-                  className="px-4 py-2 cursor-pointer transition-all flex items-center justify-between"
+                  className="h-10 px-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-all flex items-center justify-between"
                   onClick={() => onTogglePanel('tasks')}
                 >
-                  <h3 className="text-sm font-medium text-gray-500 flex items-center gap-1.5">
+                  <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                    <ListChecks size={16} className="text-gray-500" />
                     {t('学习任务')}
                     {generatedTasks.length > 0 && (
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">
                         {generatedTasks.length}
                       </span>
                     )}
                   </h3>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleAddManualTask(); }}
-                      className="p-1 rounded hover:bg-gray-100 transition-colors"
-                      title={t('手动添加任务')}
-                    >
-                      <Plus size={14} className="text-gray-400" />
-                    </button>
-                    {collapsedPanels.tasks ? (
-                      <ChevronRight size={14} className="text-gray-300" />
-                    ) : (
-                      <ChevronDown size={14} className="text-gray-300" />
-                    )}
-                  </div>
+                  {collapsedPanels.tasks ? (
+                    <ChevronRight size={16} className="text-gray-400" />
+                  ) : (
+                    <ChevronDown size={16} className="text-gray-400" />
+                  )}
                 </div>
 
                 {/* 可折叠的内容区域 */}
@@ -653,19 +646,36 @@ export function LeftPanel(props: LeftPanelProps) {
                     {generatedTasks.length === 0 ? (
                       <div className="text-center py-6 text-gray-400">
                         <Zap size={24} className="mx-auto mb-2 opacity-50" />
-                        <p className="text-xs">{t('暂无学习任务')}</p>
+                        <p className="text-xs mb-3">{t('暂无学习任务')}</p>
+                        <button
+                          onClick={handleAddManualTask}
+                          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium rounded-lg transition-colors flex items-center gap-2 mx-auto"
+                        >
+                          <Plus size={14} />
+                          {t('手动添加')}
+                        </button>
                       </div>
                     ) : (
                       <>
-                        {/* 全选控制 */}
+                        {/* 全选控制 + 手动添加 */}
                         <div className="flex items-center justify-between px-1 mb-1">
                           <span className="text-xs text-gray-500">{generatedTasks.length} {t('个任务')}</span>
-                          <button
-                            onClick={() => toggleAllTasks()}
-                            className="text-xs text-gray-600 hover:text-gray-800 font-medium p-2 rounded-lg"
-                          >
-                            {selectedTaskIds.size === generatedTasks.length ? t('取消全选') : t('全选')}
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={handleAddManualTask}
+                              className="text-xs text-gray-600 hover:text-gray-800 font-medium p-2 rounded-lg flex items-center gap-1"
+                              title={t('手动添加任务')}
+                            >
+                              <Plus size={12} />
+                              {t('手动添加')}
+                            </button>
+                            <button
+                              onClick={() => toggleAllTasks()}
+                              className="text-xs text-gray-600 hover:text-gray-800 font-medium p-2 rounded-lg"
+                            >
+                              {selectedTaskIds.size === generatedTasks.length ? t('取消全选') : t('全选')}
+                            </button>
+                          </div>
                         </div>
                         {generatedTasks.map((task) => (
                         <div
