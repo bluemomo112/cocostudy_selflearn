@@ -83,6 +83,8 @@ export interface Task {
   submissionPlaceholder?: string;
   relatedResourceIds?: string[];
   settings?: TaskSettings;
+  // AI 批改状态（测试任务使用）
+  aiGradingStatus?: 'pending' | 'grading' | 'completed' | 'failed';
   // 内容来源标记（用于区分教师发布内容和学生添加内容）
   source?: 'teacher' | 'student';
 }

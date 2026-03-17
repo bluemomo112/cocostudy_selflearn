@@ -709,6 +709,19 @@ export function LeftPanel(props: LeftPanelProps) {
                                 </span>
                               )}
                             </div>
+                            {/* AI 批改狀態 */}
+                            {task.aiGradingStatus === 'grading' && (
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                <span className="text-xs text-blue-600 font-medium">AI 批改中...</span>
+                              </div>
+                            )}
+                            {task.aiGradingStatus === 'completed' && (
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <CheckCircle2 size={12} className="text-green-500" />
+                                <span className="text-xs text-green-600 font-medium">批改完成</span>
+                              </div>
+                            )}
                             <div className="flex items-center gap-2 text-xs text-gray-400">
                               {task.type === 'quiz' && task.questionCount && (
                                 <span>{task.questionCount} {t('道题')}</span>

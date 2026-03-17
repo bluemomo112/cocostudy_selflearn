@@ -82,18 +82,18 @@ export default function SelfStudyWorkbench({
   // ─────────────────────────────────────────────────────────────
   // 使用 t() 的 Mock 数据（支持简繁转换）
   const GRADES = [
-    t('一年级'), t('二年级'), t('三年级'), t('四年级'), t('五年级'),
-    t('六年级'), t('七年级'), t('八年级'), t('九年级')
+    t('中一'), t('中二'), t('中三'), t('中四'), t('中五'),
+    t('中六')
   ];
 
   const MOCK_CLASSES = [
-    t('四年级1班'), t('四年级2班'), t('四年级3班'),
-    t('五年级1班'), t('五年级2班'), t('五年级3班')
+    t('中三(1)班'), t('中三(2)班'), t('中三(3)班'),
+    t('中四(1)班'), t('中四(2)班'), t('中四(3)班')
   ];
 
   const KNOWLEDGE_POINTS_LIBRARY = [
-    { id: 'kp1', title: t('水循环的概念'), subject: t('地理'), grade: t('四年级') },
-    { id: 'kp2', title: t('光合作用原理'), subject: t('生物'), grade: t('五年级') }
+    { id: 'kp1', title: t('水循環的概念'), subject: t('地理'), grade: t('中三') },
+    { id: 'kp2', title: t('光合作用原理'), subject: t('生物'), grade: t('中四') }
   ];
 
   // 如果传入 spaceId，从 localStorage 加载配置（学生模式）
@@ -1501,7 +1501,7 @@ export default function SelfStudyWorkbench({
     // 添加试卷资源
     const examResource: Resource = {
       id: `resource_exam_${Date.now()}`,
-      title: fileName || '数学试卷',
+      title: fileName || '數學試卷',
       type: 'document',
       description: '试卷原文件',
       sourceType: 'exam_paper',
@@ -1515,7 +1515,7 @@ export default function SelfStudyWorkbench({
     const blankExamTask = {
       id: taskId,
       type: 'quiz' as const,
-      title: fileName?.replace(/\.[^.]+$/, '') || '数学试卷测试',
+      title: fileName?.replace(/\.[^.]+$/, '') || '數學試卷測試',
       status: 'available' as const,
       questionCount: blankExamScenario.questions.length,
       generatedAt: new Date().toISOString(),
@@ -1560,7 +1560,7 @@ export default function SelfStudyWorkbench({
     const cleanExamTask = {
       id: taskId,
       type: 'quiz' as const,
-      title: fileName?.replace(/\.[^.]+$/, '') || '数学试卷（原题）',
+      title: fileName?.replace(/\.[^.]+$/, '') || '數學試卷（原題）',
       status: 'available' as const,
       questionCount: multiStudentScenario.originalQuestions.length,
       generatedAt: new Date().toISOString(),

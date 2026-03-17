@@ -67,9 +67,12 @@ export interface PublishMetadata {
   spaceName?: string;          // 学习空间名称
   isAnonymous?: boolean;       // 是否匿名模式
   accessCode?: string;         // 访问码（匿名模式使用）
-  grade?: string;              // 年级，如 "四年级"
-  subjects?: string[];         // 学科，如 ["科学", "地理"]
-  bindClasses?: string[];      // 绑定班级，如 ["四年级1班", "四年级2班"]
+  grade?: string;              // 年级，如 "中二"
+  subjects?: string[];         // 学科，如 ["物理", "數學"]
+  bindClasses?: string[];      // 绑定班级，如 ["中二(1)班", "中二(2)班"]
+  chapter?: string;            // 章节，如 "第三章 流體壓強"
+  sourceTestId?: string;       // 来源测试 ID（从测试创建时自动填入）
+  sourceTestName?: string;     // 来源测试名称
   publishedAt?: Date;          // 发布时间
   publishedBy?: string;        // 发布者
 }
@@ -127,6 +130,10 @@ export interface SpaceConfig {
 
   // 笔记模板
   noteTemplate: 'blank' | 'cornell' | 'sky_rain_umbrella';
+  noteTemplateContent?: string; // 笔记模板预制内容
+
+  // AI 助手配置模式
+  aiAssistantMode?: 'personalized' | 'unified'; // 个性化Agent vs 统一配置
 
   // AI 交互配置
   freeConfig?: {
@@ -144,6 +151,12 @@ export interface SpaceConfig {
   metaConfig?: {
     selectedStrategyId: string;
     teacherPrompt: string;
+  };
+
+  // AI 监督配置（学习状态面板）
+  supervisionConfig?: {
+    selectedAgentId: string;   // 默认 'metacognition_tutor'
+    teacherPrompt: string;     // 个性化提示词
   };
 
   // 能力追踪维度（通用版可自定义）
