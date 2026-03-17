@@ -30,13 +30,6 @@ interface RightPanelProps {
   flashingToolId: string | null;
   elapsedTime: number;
   learningPath: LearningPathNode[];
-  observations: Array<{
-    id: string;
-    type: 'praise' | 'suggestion' | 'insight';
-    icon: string;
-    message: string;
-    timestamp: Date;
-  }>;
   getThemeClass: (type: 'bg' | 'bgHover' | 'text' | 'border' | 'icon') => string;
   onSetRightCollapsed: (collapsed: boolean) => void;
   onSetRightTab: (tab: 'workspace' | 'status') => void;
@@ -58,7 +51,6 @@ export function RightPanel({
   flashingToolId,
   elapsedTime,
   learningPath,
-  observations,
   getThemeClass,
   onSetRightCollapsed,
   onSetRightTab,
@@ -231,7 +223,6 @@ export function RightPanel({
               elapsedTime={elapsedTime}
               learningMode={learningMode}
               learningPath={learningPath}
-              observations={observations}
             />
           )}
         </>
