@@ -1,8 +1,9 @@
 'use client';
 
-import { LearningMode } from '../../../types/self-study';
+import { LearningMode, LearningPathNode } from '../../../types/self-study';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { EnhancedNotesPanel } from './EnhancedNotesPanel';
+import { LearningStatusPanel } from './LearningStatusPanel';
 import { COLLAPSED_WIDTH } from '../shared/constants';
 import {
   ChevronLeft, ChevronRight, Pencil, Activity, Sparkles, ChevronDown, ChevronUp
@@ -27,6 +28,15 @@ interface RightPanelProps {
   collapsedPanels: Record<string, boolean>;
   generatingToolId: string | null;
   flashingToolId: string | null;
+  elapsedTime: number;
+  learningPath: LearningPathNode[];
+  observations: Array<{
+    id: string;
+    type: 'praise' | 'suggestion' | 'insight';
+    icon: string;
+    message: string;
+    timestamp: Date;
+  }>;
   getThemeClass: (type: 'bg' | 'bgHover' | 'text' | 'border' | 'icon') => string;
   onSetRightCollapsed: (collapsed: boolean) => void;
   onSetRightTab: (tab: 'workspace' | 'status') => void;
@@ -46,6 +56,9 @@ export function RightPanel({
   collapsedPanels,
   generatingToolId,
   flashingToolId,
+  elapsedTime,
+  learningPath,
+  observations,
   getThemeClass,
   onSetRightCollapsed,
   onSetRightTab,
@@ -214,11 +227,12 @@ export function RightPanel({
               </div>
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto p-3">
-              <div className="text-center text-gray-400 text-sm mt-8">
-                {t('学习状态')}
-              </div>
-            </div>
+            <LearningStatusPanel
+              elapsedTime={elapsedTime}
+              learningMode={learningMode}
+              learningPath={learningPath}
+              observations={observations}
+            />
           )}
         </>
       )}

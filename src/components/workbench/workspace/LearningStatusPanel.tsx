@@ -5,8 +5,9 @@ import { LearningMode, LearningPathNode } from '../../../types/self-study';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import {
   Activity, Map, CheckCircle2, Circle, Award, TrendingUp, Sparkles,
-  ChevronDown, ChevronUp, BookOpen
+  ChevronDown, ChevronUp, BookOpen, Clock
 } from 'lucide-react';
+import { mockLearningLog, LOG_ENTRY_CONFIG } from '../../../data/mockLearningLogData';
 
 // 5.1 根据节点标题/描述判断事件类别，映射到对应颜色
 function getNodeCategoryColor(node: LearningPathNode): {
@@ -48,20 +49,12 @@ interface LearningStatusPanelProps {
   elapsedTime: number;
   learningMode: LearningMode;
   learningPath: LearningPathNode[];
-  observations: Array<{
-    id: string;
-    type: 'praise' | 'suggestion' | 'insight';
-    icon: string;
-    message: string;
-    timestamp: Date
-  }>;
 }
 
 export function LearningStatusPanel({
   elapsedTime,
   learningMode,
   learningPath,
-  observations,
 }: LearningStatusPanelProps) {
   const { t } = useLanguage();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -74,19 +67,9 @@ export function LearningStatusPanel({
   const totalCount = learningPath.length;
   const progressPercent = totalCount > 0 ? Math.round((masteredCount / totalCount) * 100) : 0;
 
-  // 简化版能力画像数据
-  const competencies = [
-    { name: t('批判性思维'), value: 65, color: 'primary' },
-    { name: t('信息整合'), value: 72, color: 'emerald' },
-    { name: t('元认知'), value: 58, color: 'amber' },
-  ];
-
-  // 当前学习节点
-  const currentNode = learningPath.find((n) => n.status === 'learning');
-
   // 5.2 折叠摘要数据
   const elapsedMins = Math.floor(elapsedTime / 60);
-  const hasLearningData = totalCount > 0 || observations.length > 0 || elapsedTime > 0;
+  const hasLearningData = totalCount > 0 || mockLearningLog.length > 0 || elapsedTime > 0;
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -222,51 +205,40 @@ export function LearningStatusPanel({
                 </div>
               )}
 
-              {/* 能力画像 */}
-              <div className="bg-gradient-to-br from-accent-50 to-accent-100 rounded-lg p-4 border border-accent-200">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Award size={14} className="text-accent-600" />
-                    <span className="text-xs font-bold text-accent-600">{t('能力画像')}</span>
-                  </div>
-                  <span className="text-xs text-accent-600">
-                    <TrendingUp size={10} className="inline mr-1" />
-                    {t('实时更新')}
-                  </span>
+              {/* 学习日志（含 AI 观察） */}
+              <div className="rounded-lg border border-gray-200 overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+                  <Clock size={14} className="text-gray-500" />
+                  <span className="text-xs font-bold text-gray-700">{t('学习日志')}</span>
+                  <span className="text-xs text-gray-400 ml-auto">{mockLearningLog.length} {t('条记录')}</span>
                 </div>
-                <div className="space-y-3">
-                  {competencies.map((comp) => (
-                    <div key={comp.name}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-gray-600">{comp.name}</span>
-                        <span className="text-xs font-medium text-gray-700">{comp.value}%</span>
+                <div className="divide-y divide-gray-100">
+                  {mockLearningLog.map((log) => {
+                    const cfg = LOG_ENTRY_CONFIG[log.type];
+                    const isAI = log.type === 'ai_observation';
+                    const isMilestone = log.type === 'milestone';
+                    return (
+                      <div
+                        key={log.id}
+                        className={`px-4 py-2.5 flex items-start gap-2.5 ${
+                          isAI ? 'bg-pink-50/60' : isMilestone ? 'bg-amber-50/60' : 'bg-white'
+                        }`}
+                      >
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${cfg.dotColor}`}>
+                          <span className="text-xs leading-none">{cfg.icon}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-medium text-gray-800 truncate">{log.title}</span>
+                            <span className="text-xs text-gray-400 flex-shrink-0">
+                              {log.timestamp.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500 leading-relaxed mt-0.5 line-clamp-2">{log.description}</p>
+                        </div>
                       </div>
-                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full bg-${comp.color}-500 rounded-full transition-all`}
-                          style={{ width: `${comp.value}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* AI 观察记录 */}
-              <div className="bg-gradient-to-br from-accent-50 to-primary-50 rounded-lg p-4 border border-accent-200">
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles size={14} className="text-accent-600" />
-                  <span className="text-xs font-bold text-accent-700">{t('AI 观察记录')}</span>
-                </div>
-                <div className="space-y-2">
-                  {observations.slice(0, 3).map((obs) => (
-                    <div key={obs.id} className="bg-white/80 rounded-lg p-2 border border-accent-100">
-                      <div className="flex items-start gap-2">
-                        <span className="text-sm flex-shrink-0">{obs.icon}</span>
-                        <p className="text-xs text-gray-600 leading-relaxed line-clamp-2">{obs.message}</p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </>

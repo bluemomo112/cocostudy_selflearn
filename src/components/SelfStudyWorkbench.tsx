@@ -438,6 +438,31 @@ export default function SelfStudyWorkbench({
   const [learningPath, setLearningPath] = usePersistedState<LearningPathNode[]>(`self-study:wb:${config.id}:learningPath`, MOCK_LEARNING_PATH);
   const [currentNodeId, setCurrentNodeId] = usePersistedState<string>(`self-study:wb:${config.id}:currentNodeId`, MOCK_CURRENT_NODE);
 
+  // AI 观察记录（mock 数据）
+  const [observations] = useState([
+    {
+      id: 'obs-1',
+      type: 'praise' as const,
+      icon: '👍',
+      message: t('你在追问环节展现了优秀的批判性思维——不满足于表面答案，主动探究因果关系。'),
+      timestamp: new Date(),
+    },
+    {
+      id: 'obs-2',
+      type: 'suggestion' as const,
+      icon: '💡',
+      message: t('建议进一步了解实验设计中的变量控制方法，这将提升你的元认知能力。'),
+      timestamp: new Date(),
+    },
+    {
+      id: 'obs-3',
+      type: 'insight' as const,
+      icon: '✨',
+      message: t('你对跨学科知识的整合能力正在快速提升，继续保持这种学习节奏。'),
+      timestamp: new Date(),
+    },
+  ]);
+
   // 设置弹窗
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -2737,6 +2762,9 @@ export default function SelfStudyWorkbench({
           collapsedPanels={collapsedPanels}
           generatingToolId={generatingToolId}
           flashingToolId={flashingToolId}
+          elapsedTime={elapsedTime}
+          learningPath={learningPath}
+          observations={observations}
           getThemeClass={getThemeClass}
           onSetRightCollapsed={setIsRightCollapsed}
           onSetRightTab={setRightTab}

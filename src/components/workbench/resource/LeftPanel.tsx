@@ -267,19 +267,6 @@ export function LeftPanel(props: LeftPanelProps) {
             </div>
           ) : (
             <>
-            {/* 面板顶部标题栏 - 与右侧面板tab栏高度对齐 */}
-            <div className="h-12 px-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
-              <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                <><BookOpen size={16} className="text-gray-500" />{t('学习输入')}</>
-              </h2>
-              <button
-                onClick={() => onSetLeftCollapsed(true)}
-                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                title={t('折叠面板')}
-              >
-                <ChevronLeft size={16} className="text-gray-400" />
-              </button>
-            </div>
             <div className="flex-1 flex flex-col overflow-hidden">
               {/* 顶层条件分支：内嵌查看器占满面板 vs 两板块列表视图 */}
               {inlineViewingResource ? (
@@ -368,7 +355,7 @@ export function LeftPanel(props: LeftPanelProps) {
               >
                 {/* 资源区域标题栏 - 可点击折叠 */}
                 <div
-                  className="h-10 px-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-all flex items-center justify-between"
+                  className="h-12 px-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-all flex items-center justify-between"
                   onClick={() => onTogglePanel('resources')}
                 >
                   <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
@@ -380,11 +367,20 @@ export function LeftPanel(props: LeftPanelProps) {
                       </span>
                     )}
                   </h3>
-                  {collapsedPanels.resources ? (
-                    <ChevronRight size={16} className="text-gray-400" />
-                  ) : (
-                    <ChevronDown size={16} className="text-gray-400" />
-                  )}
+                  <div className="flex items-center gap-1">
+                    {collapsedPanels.resources ? (
+                      <ChevronRight size={16} className="text-gray-400" />
+                    ) : (
+                      <ChevronDown size={16} className="text-gray-400" />
+                    )}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onSetLeftCollapsed(true); }}
+                      className="p-1 hover:bg-gray-200 rounded-md transition-colors ml-1"
+                      title={t('折叠面板')}
+                    >
+                      <ChevronLeft size={15} className="text-gray-400" />
+                    </button>
+                  </div>
                 </div>
 
                 {!collapsedPanels.resources && (
@@ -580,7 +576,7 @@ export function LeftPanel(props: LeftPanelProps) {
               >
                 {/* 任务区域标题栏 - 可点击折叠 */}
                 <div
-                  className="h-10 px-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-all flex items-center justify-between"
+                  className="h-12 px-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-all flex items-center justify-between"
                   onClick={() => onTogglePanel('tasks')}
                 >
                   <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
