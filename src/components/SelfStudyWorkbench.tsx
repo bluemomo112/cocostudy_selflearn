@@ -2298,6 +2298,9 @@ export default function SelfStudyWorkbench({
       }
 
       // 调用任务提交API
+      const subjectiveIds = (task.questions || [])
+        .filter((q: any) => q.type === 'short_answer')
+        .map((q: any) => q.id);
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -2308,6 +2311,7 @@ export default function SelfStudyWorkbench({
           action: 'submit_task',
           taskId,
           taskAnswer: answer || '已完成任务',
+          subjectiveQuestionIds: subjectiveIds,
         }),
       });
 
