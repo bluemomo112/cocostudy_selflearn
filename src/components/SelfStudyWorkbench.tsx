@@ -1003,14 +1003,15 @@ export default function SelfStudyWorkbench({
           };
           setMessages(prev => [...prev, confirmMsg]);
         } else {
-          // 普通任务生成：从 mockTasks 中随机抽取真实题目
+          // 普通任务生成：从 mockTasks 中随机抽取真实题目（客观题3道 + 简答题2道）
           const quizTasks = mockTasks.filter(t => t.type === 'quiz' && t.questions && t.questions.length > 0);
           const sourceQuestions = quizTasks.flatMap(t => t.questions || []);
-          const shuffled = [...sourceQuestions].sort(() => Math.random() - 0.5);
-          const pickedQuestions = shuffled.slice(0, 3).map((q, i) => ({
-            ...q,
-            id: `q_${Date.now()}_${i}`,
-          }));
+          const objectiveQuestions = sourceQuestions.filter((q: any) => q.type !== 'short_answer');
+          const subjectiveQuestions = sourceQuestions.filter((q: any) => q.type === 'short_answer');
+          const shuffledObj = [...objectiveQuestions].sort(() => Math.random() - 0.5);
+          const pickedObjective = shuffledObj.slice(0, 3).map((q, i) => ({ ...q, id: `q_${Date.now()}_${i}` }));
+          const pickedSubjective = subjectiveQuestions.map((q, i) => ({ ...q, id: `q_${Date.now()}_s${i}` }));
+          const pickedQuestions = [...pickedObjective, ...pickedSubjective];
 
           const newTaskId = `gen_task_${Date.now()}`;
           if (tool.id === 'quiz') {
