@@ -2318,16 +2318,60 @@ export default function SelfStudyWorkbench({
 
       // 处理客观题（quiz）- 两阶段流程
       if (data.taskType === 'quiz' && data.quickResult) {
-        // 立即显示快速判题结果
-        setQuickResultMap(prev => { return { ...prev, [taskId]: data.quickResult }; });
+        // 找出主观题（short_answer），为其注入 grading 状态
+        const subjectiveQuestionIds = (task.questions || [])
+          .filter((q: any) => q.type === 'short_answer')
+          .map((q: any) => q.id);
+
+        // 构建初始 details：客观题 instant，主观题 grading
+        const initialDetails = data.quickResult.details.map((d: any) => {
+          if (subjectiveQuestionIds.includes(d.questionId)) {
+            return { ...d, gradingStatus: 'grading' as const };
+          }
+          return { ...d, gradingStatus: 'instant' as const };
+        });
+
+        const initialResult = { ...data.quickResult, details: initialDetails };
+        setQuickResultMap(prev => ({ ...prev, [taskId]: initialResult }));
 
         // 全屏模式下自动进入结果回顾
         if (taskDisplayMode === 'fullscreen') {
           setTaskDisplayMode('result_review');
         }
 
+        // 模拟并行 AI 批改主观题（每题独立延迟 2-3 秒）
+        const subjectiveFeedbacks: Record<string, { score: number; feedback: string }> = {
+          'q9_short': {
+            score: 88,
+            feedback: '回答思路清晰，从环境控制、光照管理和营养供给三个维度进行了系统阐述。\n\n✅ 亮点：准确指出密闭环境隔绝外界气候影响，LED光源可灵活调控光周期，营养液循环系统精确调控EC值和pH。\n\n💡 建议：可进一步补充"温控系统的具体参数范围"（如18-25°C），以及"营养液循环频率"对稳定生产的影响，会使论述更加完整。',
+          },
+          'q10_short': {
+            score: 75,
+            feedback: '能够联系所学知识提出多条可能原因，具备一定的系统性思维。\n\n✅ 亮点：提到了EC值、光照和pH三个关键因素，排查方案有一定可操作性。\n\n💡 建议：①根系病害和溶氧不足是重要原因，建议补充；②排查方案可以更具体，例如"EC值低于1.2 mS/cm时补充浓缩液"；③可以按"先排查最常见原因"的逻辑组织答案，体现诊断思维。',
+          },
+        };
+
+        if (subjectiveQuestionIds.length > 0) {
+          subjectiveQuestionIds.forEach((qId: string, idx: number) => {
+            const delay = 2500 + idx * 800 + Math.random() * 500;
+            setTimeout(() => {
+              const fb = subjectiveFeedbacks[qId] || { score: 70, feedback: '回答基本正确，思路清晰，建议进一步深化分析。' };
+              setQuickResultMap(prev => {
+                const current = prev[taskId];
+                if (!current) return prev;
+                const updatedDetails = current.details.map((d: any) =>
+                  d.questionId === qId
+                    ? { ...d, gradingStatus: 'graded' as const, aiScore: fb.score, aiFeedback: fb.feedback, correct: fb.score >= 60 }
+                    : d
+                );
+                return { ...prev, [taskId]: { ...current, details: updatedDetails } };
+              });
+            }, delay);
+          });
+        }
+
         // 只有全对才标记任务为已完成
-        if (data.quickResult.allCorrect) {
+        if (data.quickResult.allCorrect && subjectiveQuestionIds.length === 0) {
           setTaskStatus('completed');
           // Delay the completion state update so result review shows first
           setTimeout(() => {
@@ -2338,10 +2382,10 @@ export default function SelfStudyWorkbench({
             });
           }, 500);
         } else {
-          // 未全对，重置状态允许重做
+          // 未全���或有主观题，重置状态允许继续
           setTimeout(() => {
             setTaskStatus('idle');
-          }, 2000); // 2秒后重置，让用户看到结果
+          }, 2000);
         }
 
         // 保存任务历史记录

@@ -21,6 +21,10 @@ export interface QuickResultData {
     correctAnswer?: string | string[];
     userAnswer?: string | string[];
     explanation?: string;
+    // 主观题批改状态
+    gradingStatus?: 'instant' | 'grading' | 'graded';
+    aiScore?: number;       // 0-100
+    aiFeedback?: string;    // AI 评语
   }>;
 }
 

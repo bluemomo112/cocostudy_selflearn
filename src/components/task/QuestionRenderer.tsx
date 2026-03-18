@@ -5,9 +5,16 @@ import SingleChoiceQuestion from './questions/SingleChoiceQuestion';
 import MultipleChoiceQuestion from './questions/MultipleChoiceQuestion';
 import TrueFalseQuestion from './questions/TrueFalseQuestion';
 import FillInBlankQuestion from './questions/FillInBlankQuestion';
+import ShortAnswerQuestion from './questions/ShortAnswerQuestion';
 import { useLanguage } from '../../contexts/LanguageContext';
 
-export default function QuestionRenderer(props: QuestionProps) {
+interface ExtendedQuestionProps extends QuestionProps {
+  gradingStatus?: 'instant' | 'grading' | 'graded';
+  aiScore?: number;
+  aiFeedback?: string;
+}
+
+export default function QuestionRenderer(props: ExtendedQuestionProps) {
   const { t } = useLanguage();
   switch (props.question.type) {
     case 'single_choice':
@@ -18,6 +25,8 @@ export default function QuestionRenderer(props: QuestionProps) {
       return <TrueFalseQuestion {...props} />;
     case 'fill_in_blank':
       return <FillInBlankQuestion {...props} />;
+    case 'short_answer':
+      return <ShortAnswerQuestion {...props} />;
     default:
       return <SingleChoiceQuestion {...props} />;
   }
@@ -30,6 +39,7 @@ export function getQuestionTypeLabel(type: string, t: (s: string) => string): st
     case 'multiple_choice': return t('多选题');
     case 'true_false': return t('判断题');
     case 'fill_in_blank': return t('填空题');
+    case 'short_answer': return t('简答题');
     default: return t('选择题');
   }
 }

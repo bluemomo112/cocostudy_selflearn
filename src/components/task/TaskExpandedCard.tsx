@@ -3,7 +3,7 @@
 import {
   ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
   Check, X, Zap, Brain, FileEdit, Activity, AlertCircle,
-  CheckCircle, XCircle, Minimize2,
+  CheckCircle, XCircle, Minimize2, Loader2,
 } from 'lucide-react';
 import { Task } from '../../types/shared-context';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -76,6 +76,11 @@ function FullscreenMode({ task, idx, selectedAnswers, submissionText, onAnswer, 
     return quickResult.details.find((d: any) => d.questionId === questionId) || null;
   };
 
+  // 所有题目是否全部批改完成（含主观题）
+  const allGraded = quickResult
+    ? quickResult.details.every((d: any) => !d.gradingStatus || d.gradingStatus === 'instant' || d.gradingStatus === 'graded')
+    : false;
+
   return (
     <>
       {/* 背景遮罩 */}
@@ -111,8 +116,13 @@ function FullscreenMode({ task, idx, selectedAnswers, submissionText, onAnswer, 
             {task.type === 'quiz' && task.questions?.[idx] && (() => {
               const q = task.questions[idx];
               const feedback = getQuestionFeedback(q.id);
-              const hasAnswered = selectedAnswers[q.id] !== undefined && selectedAnswers[q.id] !== '';
+              const isShortAnswer = q.type === 'short_answer';
+              const gradingStatus = feedback?.gradingStatus;
               const showFeedback = !!feedback;
+              // 简答题批改中时不显示对错 badge
+              const showResultBadge = showFeedback && !isShortAnswer;
+              // 简答题只有 graded 后才传 showResult
+              const showResult = showFeedback && (!isShortAnswer || gradingStatus === 'graded' || gradingStatus === 'grading');
 
               return (
                 <div className="space-y-8">
@@ -120,12 +130,27 @@ function FullscreenMode({ task, idx, selectedAnswers, submissionText, onAnswer, 
                     <span className="px-3 py-1 bg-blue-50 text-blue-600 text-sm font-medium rounded-full">
                       {getQuestionTypeLabel(q.type, t)}
                     </span>
-                    {showFeedback && (
+                    {showResultBadge && (
                       <span className={`px-3 py-1 text-sm font-medium rounded-full flex items-center gap-1.5 ${
                         feedback.correct ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
                       }`}>
                         {feedback.correct ? <CheckCircle size={14} /> : <XCircle size={14} />}
                         {feedback.correct ? t('回答正确') : t('回答错误')}
+                      </span>
+                    )}
+                    {isShortAnswer && gradingStatus === 'grading' && (
+                      <span className="px-3 py-1 text-sm font-medium rounded-full flex items-center gap-1.5 bg-blue-50 text-blue-600">
+                        <Loader2 size={14} className="animate-spin" />
+                        {t('正在批改中…')}
+                      </span>
+                    )}
+                    {isShortAnswer && gradingStatus === 'graded' && feedback.aiScore !== undefined && (
+                      <span className={`px-3 py-1 text-sm font-medium rounded-full flex items-center gap-1.5 ${
+                        feedback.aiScore >= 80 ? 'bg-green-50 text-green-600'
+                        : feedback.aiScore >= 60 ? 'bg-yellow-50 text-yellow-600'
+                        : 'bg-red-50 text-red-600'
+                      }`}>
+                        {t('AI 评分')}：{feedback.aiScore} {t('分')}
                       </span>
                     )}
                   </div>
@@ -136,13 +161,16 @@ function FullscreenMode({ task, idx, selectedAnswers, submissionText, onAnswer, 
                     question={q}
                     selectedAnswer={selectedAnswers[q.id]}
                     onAnswer={onAnswer}
-                    showResult={showFeedback}
+                    showResult={showResult}
                     isCorrect={feedback?.correct}
                     correctAnswer={feedback?.correctAnswer}
+                    gradingStatus={gradingStatus}
+                    aiScore={feedback?.aiScore}
+                    aiFeedback={feedback?.aiFeedback}
                   />
 
-                  {/* 答题反馈区域 */}
-                  {showFeedback && !feedback.correct && (
+                  {/* 客观题答题反馈区域 */}
+                  {showFeedback && !isShortAnswer && !feedback.correct && (
                     <div className="rounded-xl border border-red-200 bg-red-50/50 p-5 space-y-3">
                       <div className="flex items-center gap-2 text-red-600">
                         <XCircle size={18} />
@@ -164,7 +192,7 @@ function FullscreenMode({ task, idx, selectedAnswers, submissionText, onAnswer, 
                     </div>
                   )}
 
-                  {showFeedback && feedback.correct && feedback.explanation && (
+                  {showFeedback && !isShortAnswer && feedback.correct && feedback.explanation && (
                     <div className="rounded-xl border border-green-200 bg-green-50/50 p-5 space-y-2">
                       <div className="flex items-center gap-2 text-green-600">
                         <CheckCircle size={18} />
@@ -205,15 +233,22 @@ function FullscreenMode({ task, idx, selectedAnswers, submissionText, onAnswer, 
                   const qId = task.questions[i].id;
                   const answered = selectedAnswers[qId];
                   const fb = getQuestionFeedback(qId);
+                  const isGrading = fb?.gradingStatus === 'grading';
+                  const isGraded = fb?.gradingStatus === 'graded';
+                  const isInstant = !fb?.gradingStatus || fb?.gradingStatus === 'instant';
                   return (
                     <button key={i} onClick={() => goTo(i)}
-                      className={`w-8 h-8 rounded-full text-xs font-medium transition-all ${
+                      className={`w-8 h-8 rounded-full text-xs font-medium transition-all flex items-center justify-center ${
                         i === idx ? 'bg-primary-500 text-white ring-2 ring-primary-200'
-                        : fb?.correct ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                        : fb && !fb.correct ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                        : isGrading ? 'bg-blue-100 text-blue-600 hover:bg-blue-200 ring-1 ring-blue-300'
+                        : (isGraded && fb?.aiScore !== undefined) ? (fb.aiScore >= 60 ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200')
+                        : (isInstant && fb?.correct) ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                        : (isInstant && fb && !fb.correct) ? 'bg-red-100 text-red-700 hover:bg-red-200'
                         : answered ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}>{i + 1}</button>
+                      }`}>
+                      {isGrading ? <Loader2 size={10} className="animate-spin" /> : i + 1}
+                    </button>
                   );
                 })}
               </div>
@@ -227,7 +262,7 @@ function FullscreenMode({ task, idx, selectedAnswers, submissionText, onAnswer, 
               </button>
             )}
             {((task.type === 'quiz' && task.questions && idx === task.questions.length - 1) || task.type !== 'quiz') && (
-              <SubmitButton taskStatus={taskStatus} isCompleted={isCompleted} quickResult={quickResult} onSubmit={submit} size="lg" />
+              <SubmitButton taskStatus={taskStatus} isCompleted={isCompleted} quickResult={quickResult} allGraded={allGraded} onSubmit={submit} size="lg" />
             )}
           </div>
         </div>
@@ -325,22 +360,26 @@ function EmbeddedMode({ task, selectedAnswers, submissionText, onAnswer, submit,
   );
 }
 
-function SubmitButton({ taskStatus, isCompleted, quickResult, onSubmit, size }: any) {
+function SubmitButton({ taskStatus, isCompleted, quickResult, allGraded, onSubmit, size }: any) {
   const { t } = useLanguage();
   const isSm = size === 'sm';
   const base = isSm ? 'mt-3 w-full py-2 rounded-lg text-xs' : 'px-8 py-3 rounded-xl';
   const disabled = taskStatus === 'submitting' || taskStatus === 'grading';
   const done = isCompleted && quickResult?.allCorrect;
+  // 有主观题且还在批改中时，禁用提交/查看总结
+  const pendingGrading = quickResult && !allGraded;
 
   return (
-    <button onClick={onSubmit} disabled={disabled || done}
+    <button onClick={onSubmit} disabled={disabled || done || pendingGrading}
       className={`${base} font-medium transition-all flex items-center justify-center gap-2 ${
         disabled ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
         : done ? 'bg-green-100 text-green-700 cursor-not-allowed'
+        : pendingGrading ? 'bg-blue-50 text-blue-400 cursor-not-allowed'
         : 'bg-primary-600 text-white hover:bg-primary-700'
       }`}>
       {taskStatus === 'submitting' ? (<><Activity size={isSm ? 16 : 18} className="animate-spin" />{t('提交中...')}</>)
       : taskStatus === 'grading' ? (<><Activity size={isSm ? 16 : 18} className="animate-spin" />{t('批改中...')}</>)
+      : pendingGrading ? (<><Loader2 size={isSm ? 16 : 18} className="animate-spin" />{t('等待批改完成…')}</>)
       : done ? (<><Check size={isSm ? 16 : 18} />{t('已完成')}</>)
       : (<><Check size={isSm ? 16 : 18} />{quickResult && !quickResult.allCorrect ? t('重新提交') : t('提交任务')}</>)}
     </button>

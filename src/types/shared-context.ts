@@ -36,7 +36,7 @@ export interface Resource {
 
 export interface TaskQuestion {
   id: string;
-  type: 'single_choice' | 'multiple_choice' | 'fill_in_blank' | 'true_false';
+  type: 'single_choice' | 'multiple_choice' | 'fill_in_blank' | 'true_false' | 'short_answer';
   content: string;           // Markdown 格式，支持 ![img](url)、视频嵌入等
   options?: string[];         // Markdown 格式选项
   answer: string | string[];
