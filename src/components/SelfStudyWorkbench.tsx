@@ -2320,6 +2320,7 @@ export default function SelfStudyWorkbench({
       }
 
       const data = await response.json();
+      console.log('[submit_task] API response:', JSON.stringify(data, null, 2));
 
       // 处理客观题（quiz）- 两阶段流程
       if (data.taskType === 'quiz' && data.quickResult) {
@@ -2327,6 +2328,8 @@ export default function SelfStudyWorkbench({
         const subjectiveQuestionIds = (task.questions || [])
           .filter((q: any) => q.type === 'short_answer')
           .map((q: any) => q.id);
+        console.log('[submit_task] subjectiveQuestionIds:', subjectiveQuestionIds);
+        console.log('[submit_task] details questionIds:', data.quickResult.details.map((d: any) => d.questionId));
 
         // 构建初始 details：客观题 instant，主观题 grading
         const initialDetails = data.quickResult.details.map((d: any) => {

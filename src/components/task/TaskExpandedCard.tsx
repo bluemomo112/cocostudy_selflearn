@@ -53,8 +53,16 @@ export default function TaskExpandedCard(props: TaskExpandedCardProps) {
   };
 
   const submit = () => {
-    const answer = task.type === 'quiz' ? JSON.stringify(selectedAnswers) : submissionText;
-    onComplete(task.id, answer);
+    if (task.type === 'quiz') {
+      // 确保所有题目（含未作答的简答题）都有 key
+      const fullAnswers = { ...selectedAnswers };
+      (task.questions || []).forEach((q: any) => {
+        if (!(q.id in fullAnswers)) fullAnswers[q.id] = '';
+      });
+      onComplete(task.id, JSON.stringify(fullAnswers));
+    } else {
+      onComplete(task.id, submissionText);
+    }
   };
 
   const goNext = () => { if (task.questions && idx < task.questions.length - 1) onStateUpdate?.({ currentQuestionIndex: idx + 1 }); };
