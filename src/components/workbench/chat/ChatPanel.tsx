@@ -428,52 +428,6 @@ export function ChatPanel(props: ChatPanelProps) {
               </div>
             )}
 
-            {/* 阶段性反思引导卡片 */}
-            {messages.length >= 6 && !isReflectionDismissed && (
-              <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-sm relative">
-                <button
-                  onClick={() => setIsReflectionDismissed(true)}
-                  className="absolute top-2 right-2 p-1 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  <X size={14} className="text-gray-400" />
-                </button>
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-full bg-gray-100 flex-shrink-0 flex items-center justify-center">
-                    <Lightbulb size={18} className="text-gray-500" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">💭 {t('阶段性反思时间')}</h4>
-                    <p className="text-xs text-gray-600 mb-3">
-                      {t('你已经学习了一段时间，让我们暂停一下，回顾总结学到的内容。')}
-                    </p>
-                    <div className="space-y-2">
-                      <div className="flex items-start gap-2">
-                        <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-xs font-bold text-gray-600">1</span>
-                        </div>
-                        <p className="text-xs text-gray-600">{t('今天学习的最重要的三个知识点是什么？')}</p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-xs font-bold text-gray-600">2</span>
-                        </div>
-                        <p className="text-xs text-gray-600">{t('你遇到了哪些困难？是如何解决的？')}</p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-xs font-bold text-gray-600">3</span>
-                        </div>
-                        <p className="text-xs text-gray-600">{t('这些知识可以在生活中的哪些地方应用？')}</p>
-                      </div>
-                    </div>
-                    <button className="mt-3 w-full px-3 py-2 bg-gray-700 hover:bg-gray-800 text-white text-xs font-medium rounded-lg transition-colors flex items-center justify-center gap-1.5">
-                      <MessageCircle size={14} />
-                      {t('开始反思')}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* 输入框 */}

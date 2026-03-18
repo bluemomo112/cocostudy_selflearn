@@ -294,7 +294,7 @@ export function LeftPanel(props: LeftPanelProps) {
                 <div className="flex-1 overflow-hidden">
                   <TaskInlineViewer
                     task={expandedTask}
-                    mode={explainQuestion ? 'explaining' : 'doing'}
+                    mode='explaining'
                     currentQuestionIndex={
                       messages.find(m => m.embeddedTask?.id === expandedTask.id)?.taskState?.currentQuestionIndex || 0
                     }
@@ -316,7 +316,6 @@ export function LeftPanel(props: LeftPanelProps) {
                     onBack={() => {
                       onSetExplainQuestion?.(null);
                       onSetExpandedTask?.(null);
-                      onSetTaskDisplayMode?.('fullscreen');
                     }}
                     onPrevQuestion={() => {
                       const questions = expandedTask.questions || [];

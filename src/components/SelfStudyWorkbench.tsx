@@ -407,6 +407,7 @@ export default function SelfStudyWorkbench({
   }, [externalInitialMessages]);
 
   // 任务交互状态
+  const autoOpenedTaskIdsRef = useRef<Set<string>>(new Set());
   const [expandedTask, setExpandedTask] = useState<Task | null>(null);
   const [taskDisplayMode, setTaskDisplayMode] = useState<'fullscreen' | 'embedded' | 'result_review'>('fullscreen');
   const [taskStatus, setTaskStatus] = useState<'idle' | 'submitting' | 'grading' | 'completed'>('idle');
@@ -549,18 +550,19 @@ export default function SelfStudyWorkbench({
   const [isGeneratingTask, setIsGeneratingTask] = useState(false);
   const [isReflectionDismissed, setIsReflectionDismissed] = useState(false);
 
-  // 学生模式：自动打开第一个未完成的 quiz
+  // 学生模式：自动打开第一个未完成的 quiz（每个任务只自动打开一次，避免关闭后重复弹出）
   useEffect(() => {
-    if (mode === 'student' && generatedTasks.length > 0 && !expandedTask) {
+    if (mode === 'student' && generatedTasks.length > 0) {
       const firstIncompleteQuiz = generatedTasks.find(
-        task => task.type === 'quiz' && !completedTasks.has(task.id)
+        task => task.type === 'quiz' && !completedTasks.has(task.id) && !autoOpenedTaskIdsRef.current.has(task.id)
       );
       if (firstIncompleteQuiz) {
+        autoOpenedTaskIdsRef.current.add(firstIncompleteQuiz.id);
         setExpandedTask(firstIncompleteQuiz as any);
         setTaskDisplayMode('fullscreen');
       }
     }
-  }, [mode, generatedTasks, completedTasks, expandedTask]);
+  }, [mode, generatedTasks, completedTasks]);
 
   // 初始化 Web Speech API
   useEffect(() => {
@@ -1803,11 +1805,15 @@ export default function SelfStudyWorkbench({
     setGeneratedTasks(prev => [practiceTask as any, ...prev]);
     setTaskDisplayMode('embedded');
     setExpandedTask(practiceTask as any);
+    setExplainQuestion((practiceTask.questions[0] as any) as TaskQuestion);
   };
 
   const handleBackToChat = () => {
     console.log('[ErrorLoop] 回到对话区');
     setTaskDisplayMode('embedded');
+    if (!explainQuestion && expandedTask?.questions?.length) {
+      setExplainQuestion((expandedTask.questions as TaskQuestion[])[0]);
+    }
     // 同步错题上下文到对话（仅当AI分析消息尚未存在时）
     if (expandedTask && quickResult) {
       const hasAnalysis = messages.some(m => m.id === `msg_${expandedTask.id}_analysis`);
@@ -2682,7 +2688,12 @@ export default function SelfStudyWorkbench({
               onGeneratePractice={handleGeneratePractice}
               onBackToChat={handleBackToChat}
               onExplainQuestion={handleExplainQuestion}
-              onShrinkToInline={() => { setTaskDisplayMode('embedded'); }}
+              onShrinkToInline={() => {
+                setTaskDisplayMode('embedded');
+                if (!explainQuestion && expandedTask?.questions?.length) {
+                  setExplainQuestion((expandedTask.questions as TaskQuestion[])[0]);
+                }
+              }}
             />
           </div>
         );
