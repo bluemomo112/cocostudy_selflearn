@@ -109,7 +109,7 @@ export function ChatPanel(props: ChatPanelProps) {
   );
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isLoading]);
 
   return (
     <>
@@ -220,7 +220,7 @@ export function ChatPanel(props: ChatPanelProps) {
                           message.role === 'user' ? 'text-white' : 'text-gray-700'
                         }`}
                       >
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{t(message.content)}</ReactMarkdown>
                       </div>
                     </div>
 
@@ -264,13 +264,13 @@ export function ChatPanel(props: ChatPanelProps) {
                                     <span className={`text-sm font-medium block ${
                                       isGenerating ? 'text-gray-400' : isFlashing ? 'text-primary-700' : 'text-gray-700 group-hover:text-primary-700'
                                     }`}>
-                                      {button.label}
+                                      {t(button.label)}
                                     </span>
                                     {button.description && (
                                       <span className={`text-xs mt-0.5 block truncate ${
                                         isGenerating ? 'text-gray-300' : 'text-gray-400 group-hover:text-gray-500'
-                                      }`} title={button.description}>
-                                        {button.description}
+                                      }`} title={t(button.description)}>
+                                        {t(button.description)}
                                       </span>
                                     )}
                                     {isGenerating && (
@@ -300,8 +300,8 @@ export function ChatPanel(props: ChatPanelProps) {
                             >
                               <span className="text-xl flex-shrink-0">{card.icon}</span>
                               <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium text-gray-700">{card.title}</div>
-                                <div className="text-xs text-gray-400 truncate">{card.subtitle}</div>
+                                <div className="text-sm font-medium text-gray-700">{t(card.title)}</div>
+                                <div className="text-xs text-gray-400 truncate">{t(card.subtitle)}</div>
                               </div>
                               <ChevronRight size={14} className="text-gray-400 flex-shrink-0" />
                             </div>
@@ -375,7 +375,7 @@ export function ChatPanel(props: ChatPanelProps) {
                           <TaskIcon size={18} className={isCompleted ? 'text-green-600' : isInProgress ? 'text-amber-600' : 'text-primary-600'} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-gray-800 truncate">{task.title}</div>
+                          <div className="text-sm font-medium text-gray-800 truncate">{t(task.title)}</div>
                           <div className="text-xs text-gray-400 mt-0.5">
                             {isCompleted && hasResult
                               ? `${t('得分')} ${taskQuickResult!.correctCount}/${taskQuickResult!.totalCount}`
@@ -403,7 +403,7 @@ export function ChatPanel(props: ChatPanelProps) {
                           className="px-4 py-3 text-sm text-left rounded-lg border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 text-gray-700 transition-all hover:shadow-sm flex items-start gap-2"
                         >
                           <Send size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
-                          <span>{reply.label}</span>
+                          <span>{t(reply.label)}</span>
                         </button>
                       ))}
                     </div>
@@ -428,6 +428,7 @@ export function ChatPanel(props: ChatPanelProps) {
               </div>
             )}
 
+            <div ref={messagesEndRef} />
           </div>
 
           {/* 输入框 */}
@@ -437,7 +438,7 @@ export function ChatPanel(props: ChatPanelProps) {
               <div className="mb-2 flex items-center gap-1.5 px-2 py-1 bg-primary-50 border border-primary-100 rounded-md">
                 <Target size={12} className="text-primary-500 flex-shrink-0" />
                 <span className="text-xs text-primary-600">
-                  {t('AI正在引导学习')}「{currentLearningNode.title}」
+                  {t('AI正在引导学习')}「{t(currentLearningNode.title)}」
                 </span>
               </div>
             )}

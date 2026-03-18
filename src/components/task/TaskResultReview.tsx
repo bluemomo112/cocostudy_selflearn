@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Award, Lightbulb, RotateCcw, MessageCircle, BookmarkCheck, Trash2, Eye, Minimize2, Sparkles, AlertTriangle, Target } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Award, Lightbulb, RotateCcw, MessageCircle, BookmarkCheck, Trash2, Eye, Minimize2, Sparkles, AlertTriangle, Target, Loader2 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Task, TaskQuestion } from '../../types/shared-context';
 import QuestionRenderer, { getQuestionTypeLabel } from './QuestionRenderer';
@@ -39,6 +39,13 @@ export default function TaskResultReview({
     if (idx === questions.length) return 'bg-gray-600 text-white';
     const r = getResult(questions[idx].id);
     if (!r) return 'bg-gray-300 text-gray-600';
+    const isSubjective = questions[idx].type === 'short_answer';
+    if (isSubjective) {
+      if (r.gradingStatus === 'grading') return 'bg-blue-400 text-white';
+      if (r.gradingStatus === 'graded') {
+        return r.aiScore !== undefined && r.aiScore >= 60 ? 'bg-green-500 text-white' : 'bg-red-500 text-white';
+      }
+    }
     return r.correct ? 'bg-green-500 text-white' : 'bg-red-500 text-white';
   };
 
@@ -76,11 +83,17 @@ export default function TaskResultReview({
 
       <div className="px-8 py-3 border-b border-gray-100 bg-gray-50">
         <div className="flex items-center gap-2 flex-wrap">
-          {questions.map((_, i) => (
-            <button key={i} onClick={() => setCurrentPage(i)}
-              className={`w-9 h-9 rounded-full text-xs font-bold transition-all ${getNavColor(i)} ${currentPage === i ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : 'hover:opacity-80'}`}
-            >{i + 1}</button>
-          ))}
+          {questions.map((q, i) => {
+            const r = getResult(q.id);
+            const isGradingNav = q.type === 'short_answer' && r?.gradingStatus === 'grading';
+            return (
+              <button key={i} onClick={() => setCurrentPage(i)}
+                className={`w-9 h-9 rounded-full text-xs font-bold transition-all flex items-center justify-center ${getNavColor(i)} ${currentPage === i ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : 'hover:opacity-80'}`}
+              >
+                {isGradingNav ? <Loader2 size={12} className="animate-spin" /> : i + 1}
+              </button>
+            );
+          })}
           <button onClick={() => setCurrentPage(questions.length)}
             className={`px-3 h-9 rounded-full text-xs font-bold transition-all ${getNavColor(questions.length)} ${isSummaryPage ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : 'hover:opacity-80'}`}
           >{t('总评')}</button>
@@ -144,19 +157,46 @@ function ReviewQuestion({ q, idx, detail, answer, onExplainQuestion }: {
   const isCorrect = detail?.correct ?? false;
   const typeLabel = getQuestionTypeLabel(q.type, t);
   const [removedFromErrorBook, setRemovedFromErrorBook] = useState(false);
+  const isShortAnswer = q.type === 'short_answer';
+  const gradingStatus = detail?.gradingStatus;
+  const isGrading = isShortAnswer && gradingStatus === 'grading';
+  const isGraded = isShortAnswer && gradingStatus === 'graded';
+  const scoreOk = isGraded && detail?.aiScore !== undefined && detail.aiScore >= 60;
+
+  // 头部圆形指示器样式
+  const badgeBg = isGrading
+    ? 'bg-blue-400'
+    : isGraded
+      ? (scoreOk ? 'bg-green-500' : 'bg-red-500')
+      : (isCorrect ? 'bg-green-500' : 'bg-red-500');
+
+  // 是否显示错题本（批改中时不显示）
+  const showErrorBook = !isGrading && !isCorrect && !(isShortAnswer && !detail);
 
   return (
     <div className="max-w-3xl mx-auto py-10 px-8">
       <div className="flex items-center gap-3 mb-6">
-        <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white ${isCorrect ? 'bg-green-500' : 'bg-red-500'}`}>
-          {isCorrect ? '✓' : '✗'}
+        <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white ${badgeBg}`}>
+          {isGrading
+            ? <Loader2 size={14} className="animate-spin" />
+            : (isCorrect ? '✓' : '✗')}
         </span>
         <span className="text-lg font-semibold text-gray-900">第{idx + 1}题</span>
         <span className="px-3 py-1 bg-blue-50 text-blue-600 text-sm font-medium rounded-full">{typeLabel}</span>
+        {isGrading && (
+          <span className="px-3 py-1 bg-blue-50 text-blue-600 text-sm font-medium rounded-full flex items-center gap-1">
+            <Loader2 size={12} className="animate-spin" />{t('批改中…')}
+          </span>
+        )}
+        {isGraded && detail?.aiScore !== undefined && (
+          <span className={`px-3 py-1 text-sm font-medium rounded-full ${scoreOk ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+            {t('AI 评分')}：{detail.aiScore} {t('分')}
+          </span>
+        )}
       </div>
 
       {/* 错题本提示和操作按钮 */}
-      {!isCorrect && (
+      {showErrorBook && (
         <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -196,6 +236,9 @@ function ReviewQuestion({ q, idx, detail, answer, onExplainQuestion }: {
         showResult
         isCorrect={isCorrect}
         correctAnswer={detail?.correctAnswer ?? q.answer}
+        gradingStatus={gradingStatus}
+        aiScore={detail?.aiScore}
+        aiFeedback={detail?.aiFeedback}
       />
       {(detail?.explanation || q.explanation) && (
         <div className="mt-8 p-5 bg-blue-50 border border-blue-200 rounded-xl">

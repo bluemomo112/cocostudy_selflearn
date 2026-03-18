@@ -536,7 +536,13 @@ export function LeftPanel(props: LeftPanelProps) {
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs text-gray-400 line-clamp-1 ml-8">{resource.description}</p>
+                            <p className="text-xs text-gray-400 line-clamp-1 ml-8">
+                              {resource.description || (
+                                resource.type === 'video' ? '视频文件' :
+                                resource.type === 'presentation' ? '演示文稿' :
+                                resource.type === 'interactive' ? '互动资源' : '暂无简介'
+                              )}
+                            </p>
                           </div>
                           {/* 资源可见性指示 + 设置按钮 */}
                           <div className="flex items-center gap-1 flex-shrink-0">
@@ -722,8 +728,10 @@ export function LeftPanel(props: LeftPanelProps) {
                               </div>
                             )}
                             <div className="flex items-center gap-2 text-xs text-gray-400">
-                              {task.type === 'quiz' && task.questionCount && (
+                              {task.type === 'quiz' && task.questionCount ? (
                                 <span>{task.questionCount} {t('道题')}</span>
+                              ) : (
+                                <span>{task.type === 'quiz' ? t('测验') : t('练习')}</span>
                               )}
                               {completedTasks.has(task.id) && getAttemptCount(task.id) > 0 && (
                                 <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">
