@@ -71,7 +71,8 @@ export default function SelfStudyWorkbench({
   onCreateNewSpace,
   onViewResults,
   pendingExamFiles,
-  onExamFilesHandled
+  onExamFilesHandled,
+  initialMessages: externalInitialMessages
 }: SelfStudyWorkbenchProps) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -394,6 +395,15 @@ export default function SelfStudyWorkbench({
   const [flashingToolId, setFlashingToolId] = useState<string | null>(null);
   const [flashingButtonId, setFlashingButtonId] = useState<string | null>(null);
   const [generatingButtonId, setGeneratingButtonId] = useState<string | null>(null);
+
+  // 外部初始消息注入（测验后学习场景）
+  const initialMessagesApplied = useRef(false);
+  useEffect(() => {
+    if (externalInitialMessages && externalInitialMessages.length > 0 && !initialMessagesApplied.current) {
+      setMessages(externalInitialMessages);
+      initialMessagesApplied.current = true;
+    }
+  }, [externalInitialMessages]);
 
   // 任务交互状态
   const [expandedTask, setExpandedTask] = useState<Task | null>(null);

@@ -27,11 +27,13 @@ export { default as TaskSettingsPopover } from './components/TaskSettingsPopover
 // Types
 export * from './types/self-study';
 export * from './types/shared-context';
+export type { ChatMessage, SelfStudyWorkbenchProps } from './components/workbench/shared/types';
 
 // Data
 export * from './data/mockLearningData';
 export * from './data/mockKnowledgeBase';
 export * from './data/demoScenarios';
+export * from './data/seseyuanDemoScenario';
 
 // Contexts
 export { LanguageProvider, useLanguage } from './contexts/LanguageContext';

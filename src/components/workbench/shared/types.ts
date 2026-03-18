@@ -12,6 +12,7 @@ export interface SelfStudyWorkbenchProps {
   onViewResults?: () => void;
   pendingExamFiles?: File[] | null;
   onExamFilesHandled?: () => void;
+  initialMessages?: ChatMessage[]; // 预加载的对话消息（测验后学习场景）
 }
 
 export interface ChatMessage {
