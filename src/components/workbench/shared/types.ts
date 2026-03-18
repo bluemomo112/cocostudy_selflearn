@@ -62,6 +62,14 @@ export interface ChatMessage {
     fromMode: LearningMode;
     toMode: LearningMode;
   };
+  // Demo scenario action cards（演示劇本操作卡片）
+  actionCards?: Array<{
+    icon: string;
+    title: string;
+    subtitle: string;
+    action: string;
+    actionPayload?: string;
+  }>;
   // 可选：嵌入的任务卡片
   embeddedTask?: Task;
   // 任务状态（用于保持答题进度）

@@ -7,6 +7,7 @@ import { SpaceConfig, LearningMode, LearningPathNode, LEARNING_MODE_CONFIG } fro
 import { Resource, Task, TaskQuestion } from '../types/shared-context';
 import { mockResources, mockTasks } from '../data/mockLearningData';
 import { blankExamScenario, multiStudentScenario, arbitraryFileScenario, historicalTestScenario, errorQuestionsScenario } from '../data/demoScenarios';
+import { demoConversationScript } from '../data/seseyuanDemoScenario';
 import {
   ArrowLeft, Send, Settings, BookOpen, Brain, Sparkles, FileText, Video,
   FileSpreadsheet, Plus, Upload, Link, GripVertical, X, Check, Zap, FileEdit,
@@ -489,6 +490,11 @@ export default function SelfStudyWorkbench({
   // 演示模式状态
   const [demoMode, setDemoMode] = useState(false);
   const [currentScenario, setCurrentScenario] = useState<string | null>(null);
+
+  // 演示劇本狀態（知識測驗完成後啟動）
+  const demoQuizTaskIdRef = useRef<string | null>(null);
+  const [isDemoScenarioMode, setIsDemoScenarioMode] = useState(false);
+  const [demoScenarioStep, setDemoScenarioStep] = useState(0);
   const [savedNormalState, setSavedNormalState] = useState<{
     messages: ChatMessage[];
     learningMode: LearningMode;
@@ -1004,8 +1010,12 @@ export default function SelfStudyWorkbench({
             id: `q_${Date.now()}_${i}`,
           }));
 
+          const newTaskId = `gen_task_${Date.now()}`;
+          if (tool.id === 'quiz') {
+            demoQuizTaskIdRef.current = newTaskId;
+          }
           const newTask = {
-            id: `gen_task_${Date.now()}`,
+            id: newTaskId,
             type: 'quiz' as const,
             title: `🤖 ${t('AI生成')}：${tool.label}`,
             description: `${t('AI 根据学习资料自动生成的练习题')}`,
@@ -1202,9 +1212,62 @@ export default function SelfStudyWorkbench({
     }, 1200);
   };
 
+  // 演示劇本發送（點擊推進模式）
+  const handleDemoSend = () => {
+    const currentStep = demoConversationScript[demoScenarioStep];
+    if (!currentStep) return;
+
+    const userMsg: ChatMessage = {
+      id: `demo_user_${Date.now()}`,
+      role: 'user',
+      content: inputMessage,
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, userMsg]);
+    setInputMessage('');
+    setIsLoading(true);
+
+    setTimeout(() => {
+      const aiMsg: ChatMessage = {
+        id: `demo_ai_${demoScenarioStep}_${Date.now()}`,
+        role: 'assistant',
+        content: currentStep.aiResponse,
+        timestamp: new Date(),
+        actionCards: currentStep.actionCards,
+      };
+      setMessages(prev => [...prev, aiMsg]);
+      setIsLoading(false);
+
+      const nextStepIndex = demoScenarioStep + 1;
+      const nextStep = demoConversationScript[nextStepIndex];
+      if (nextStep?.prefilledInput) {
+        setTimeout(() => setInputMessage(nextStep.prefilledInput!), 300);
+      }
+      setDemoScenarioStep(nextStepIndex);
+      if (nextStepIndex >= demoConversationScript.length) {
+        setIsDemoScenarioMode(false);
+      }
+    }, 1200);
+  };
+
+  // 演示劇本操作卡片點擊處理
+  const handleDemoCardAction = (action: string, payload?: string) => {
+    if (action === 'open_note') {
+      setRightTab('workspace');
+    } else if (action === 'generate_mindmap') {
+      const mindMapTool = STUDIO_TOOLS.find(t => t.id === 'mind_map');
+      if (mindMapTool) handleStudioToolClick(mindMapTool);
+    }
+  };
+
   // 发送消息
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
+
+    if (isDemoScenarioMode) {
+      handleDemoSend();
+      return;
+    }
 
     const userMessage: ChatMessage = {
       id: `msg_${Date.now()}`,
@@ -2294,6 +2357,25 @@ export default function SelfStudyWorkbench({
           return [...prev, { taskId, attempts: [newAttempt] }];
         });
 
+        // 演示劇本測驗：跳過 AI 分析，直接啟動對話劇本
+        if (demoQuizTaskIdRef.current === taskId) {
+          setTimeout(() => {
+            const step0 = demoConversationScript[0];
+            const welcomeMsg: ChatMessage = {
+              id: `demo_ai_0_${Date.now()}`,
+              role: 'assistant',
+              content: step0.aiResponse,
+              timestamp: new Date(),
+            };
+            setMessages(prev => [...prev, welcomeMsg]);
+            setIsDemoScenarioMode(true);
+            setDemoScenarioStep(1);
+            const step1 = demoConversationScript[1];
+            if (step1?.prefilledInput) {
+              setInputMessage(step1.prefilledInput);
+            }
+          }, 2000);
+        } else {
         // 添加loading消息到对话区
         const loadingMessage: ChatMessage = {
           id: `msg_${Date.now()}_loading`,
@@ -2373,6 +2455,7 @@ export default function SelfStudyWorkbench({
             });
           }
         }, 500); // 短暂延迟，让用户看到快速判题结果
+        } // end else (non-demo)
       }
       // 处理主观题（assignment/reflection）
       else if (data.taskType === 'assignment' || data.taskType === 'reflection') {
@@ -2713,6 +2796,7 @@ export default function SelfStudyWorkbench({
           onInputChange={setInputMessage}
           onQuickReply={handleQuickReply}
           onChatAction={handleChatAction}
+          onDemoCardAction={handleDemoCardAction}
           onModeChange={handleModeChange}
           onToggleVoiceInput={toggleVoiceInput}
           onTaskClick={handleTaskClick}
