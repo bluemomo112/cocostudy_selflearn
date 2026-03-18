@@ -39,6 +39,9 @@ export default function PublishModal({
     grade: undefined,
     subjects: [],
     bindClasses: [],
+    chapter: undefined,
+    sourceTestId: undefined,
+    sourceTestName: undefined,
   });
   const [scope, setScope] = useState<PublishScope>({
     includeResources: true,

@@ -410,10 +410,8 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
 
         <div className="p-7 max-h-[calc(90vh-200px)] overflow-y-auto">
           <div className="space-y-7">
-            {/* 课程基本信息 - 左右布局 */}
-            <div className="flex gap-6">
-              {/* 左侧：标题和学科 */}
-              <div className="flex-1 space-y-5">
+            {/* 课程基本信息 */}
+            <div className="space-y-5">
                 {/* 标题 */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-800 mb-2.5 flex items-center gap-2">
@@ -450,45 +448,6 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
                     ))}
                   </div>
                 </div>
-              </div>
-
-              {/* 右侧：封面 */}
-              <div className="w-64 shrink-0">
-                <label className="block text-sm font-semibold text-gray-800 mb-2.5 flex items-center gap-2">
-                  <div className="w-1 h-4 bg-primary-600 rounded-full"></div>
-                  {isGeneratingAI ? (
-                    <Loader2 size={16} className="text-primary-600 animate-spin" />
-                  ) : (
-                    <Sparkles size={16} className="text-primary-600" />
-                  )}
-                  课程封面
-                  <span className="text-xs font-normal text-gray-500 ml-1">{t('AI 推荐')}</span>
-                </label>
-                <div className="space-y-3">
-                  <div className="w-full h-40 bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm relative">
-                    {localConfig.cover ? (
-                      <img src={localConfig.cover} alt={t('封面')} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                        {isGeneratingAI ? 'AI 推荐中...' : t('暂无封面')}
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={regenerateCover}
-                    disabled={isGeneratingAI}
-                    className="w-full px-4 py-2.5 text-sm text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-xl font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all border border-gray-200"
-                  >
-                    {isGeneratingAI ? (
-                      <Loader2 size={16} className="animate-spin" />
-                    ) : (
-                      <Sparkles size={16} />
-                    )}
-                    重新生成
-                  </button>
-                </div>
-              </div>
             </div>
 
             {/* 发布配置 */}

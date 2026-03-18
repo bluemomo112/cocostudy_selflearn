@@ -216,7 +216,7 @@ export function ChatPanel(props: ChatPanelProps) {
                     {/* 消息内容 */}
                     <div className="p-4">
                       <div
-                        className={`text-sm leading-relaxed whitespace-pre-line ${
+                        className={`text-sm leading-relaxed ${
                           message.role === 'user' ? 'text-white' : 'text-gray-700'
                         }`}
                       >
