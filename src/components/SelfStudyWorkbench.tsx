@@ -6,8 +6,8 @@ import remarkGfm from 'remark-gfm';
 import { SpaceConfig, LearningMode, LearningPathNode, LEARNING_MODE_CONFIG } from '../types/self-study';
 import { Resource, Task, TaskQuestion } from '../types/shared-context';
 import { mockResources, mockTasks } from '../data/mockLearningData';
-import { blankExamScenario, multiStudentScenario, arbitraryFileScenario, historicalTestScenario, errorQuestionsScenario } from '../data/demoScenarios';
-import { demoConversationScript } from '../data/seseyuanDemoScenario';
+import { findScenarioById, findScenarioByTrigger, getScenariosByCategory } from '../data/demoScenarios';
+import type { DemoScenario, DemoStep } from '../data/demoScenarios';
 import {
   ArrowLeft, Send, Settings, BookOpen, Brain, Sparkles, FileText, Video,
   FileSpreadsheet, Plus, Upload, Link, GripVertical, X, Check, Zap, FileEdit,
@@ -407,7 +407,6 @@ export default function SelfStudyWorkbench({
   }, [externalInitialMessages]);
 
   // 任务交互状态
-  const autoOpenedTaskIdsRef = useRef<Set<string>>(new Set());
   const [expandedTask, setExpandedTask] = useState<Task | null>(null);
   const [taskDisplayMode, setTaskDisplayMode] = useState<'fullscreen' | 'embedded' | 'result_review'>('fullscreen');
   const [taskStatus, setTaskStatus] = useState<'idle' | 'submitting' | 'grading' | 'completed'>('idle');
@@ -488,14 +487,10 @@ export default function SelfStudyWorkbench({
   // 笔记信息配置弹窗
   const [showNoteInfoModal, setShowNoteInfoModal] = useState(false);
 
-  // 演示模式状态
-  const [demoMode, setDemoMode] = useState(false);
-  const [currentScenario, setCurrentScenario] = useState<string | null>(null);
-
-  // 演示劇本狀態（知識測驗完成後啟動）
-  const demoQuizTaskIdRef = useRef<string | null>(null);
-  const [isDemoScenarioMode, setIsDemoScenarioMode] = useState(false);
+  // 演示模式状态（统一引擎）
+  const [activeScenario, setActiveScenario] = useState<DemoScenario | null>(null);
   const [demoScenarioStep, setDemoScenarioStep] = useState(0);
+  const demoQuizTaskIdRef = useRef<string | null>(null);
   const [savedNormalState, setSavedNormalState] = useState<{
     messages: ChatMessage[];
     learningMode: LearningMode;
@@ -549,20 +544,6 @@ export default function SelfStudyWorkbench({
   const [generatedTasks, setGeneratedTasks] = usePersistedState<typeof MOCK_GENERATED_TASKS>(`self-study:wb:${config.id}:generatedTasks`, []);
   const [isGeneratingTask, setIsGeneratingTask] = useState(false);
   const [isReflectionDismissed, setIsReflectionDismissed] = useState(false);
-
-  // 学生模式：自动打开第一个未完成的 quiz（每个任务只自动打开一次，避免关闭后重复弹出）
-  useEffect(() => {
-    if (mode === 'student' && generatedTasks.length > 0) {
-      const firstIncompleteQuiz = generatedTasks.find(
-        task => task.type === 'quiz' && !completedTasks.has(task.id) && !autoOpenedTaskIdsRef.current.has(task.id)
-      );
-      if (firstIncompleteQuiz) {
-        autoOpenedTaskIdsRef.current.add(firstIncompleteQuiz.id);
-        setExpandedTask(firstIncompleteQuiz as any);
-        setTaskDisplayMode('fullscreen');
-      }
-    }
-  }, [mode, generatedTasks, completedTasks]);
 
   // 初始化 Web Speech API
   useEffect(() => {
@@ -627,52 +608,68 @@ export default function SelfStudyWorkbench({
   // 子 section 标注各自归属的面板
   // ─────────────────────────────────────────────────────────────
 
-  // [演示模式] 加载场景
-  const loadScenario = (scenarioId: string) => {
-    // 导入场景数据
-    import('../data/demoScenarios/chatScenarios').then(({ demoScenarios }) => {
-      const scenario = demoScenarios.scenarios.find(s => s.id === scenarioId);
-      if (!scenario) return;
+  // [演示模式] 统一入口：启动场景
+  const startScenario = (scenarioId: string) => {
+    const scenario = findScenarioById(scenarioId);
+    if (!scenario) return;
 
-      // 首次进入演示模式时，保存当前状态
-      if (!demoMode) {
-        setSavedNormalState({
-          messages,
-          learningMode: config.learningMode,
-          learningPath,
-          resources: config.resources,
-          tasks: config.tasks,
-          completedTasks: completedTasksArray,
-        });
+    // 首次进入演示模式时，保存当前状态
+    if (!activeScenario) {
+      setSavedNormalState({
+        messages,
+        learningMode: config.learningMode,
+        learningPath,
+        resources: config.resources,
+        tasks: config.tasks,
+        completedTasks: completedTasksArray,
+      });
+    }
+
+    // 重置步进状态
+    setActiveScenario(scenario);
+    setDemoScenarioStep(0);
+
+    // 播放 step 0（AI 主动发言）
+    const step0 = scenario.steps[0];
+    if (step0 && step0.prefilledInput === null) {
+      const welcomeMsg: ChatMessage = {
+        id: `demo_ai_0_${Date.now()}`,
+        role: 'assistant',
+        content: step0.aiResponse,
+        timestamp: new Date(),
+        actionCards: step0.actionCards,
+      };
+      setMessages(prev => [...prev, welcomeMsg]);
+      executeDemoInjects(step0);
+
+      // 准备下一步
+      const nextStep = scenario.steps[1];
+      if (nextStep?.prefilledInput) {
+        setTimeout(() => setInputMessage(nextStep.prefilledInput!), 300);
       }
+      setDemoScenarioStep(1);
+    }
+  };
 
-      // 加载场景状态
-      setMessages(scenario.initialState.messages);
-      setLearningPath(scenario.initialState.learningPath || []);
-      setCompletedTasksArray(scenario.initialState.completedTasks || []);
-
-      // 更新 config
+  // [演示模式] 执行步骤的注入副作用
+  const executeDemoInjects = (step: DemoStep) => {
+    if (step.injectTask) {
+      setGeneratedTasks(prev => [step.injectTask as any, ...prev]);
+    }
+    if (step.injectResources) {
       handleUpdateConfig({
         ...config,
-        learningMode: scenario.initialState.learningMode,
-        resources: scenario.initialState.resources || [],
-        tasks: scenario.initialState.generatedTasks || [],
+        resources: [...config.resources, ...step.injectResources],
       });
-
-      // 设置演示模式状态
-      setDemoMode(true);
-      setCurrentScenario(scenarioId);
-    });
+    }
   };
 
   // [演示模式] 退出演示模式
   const exitDemoMode = () => {
     if (savedNormalState) {
-      // 恢复保存的状态
       setMessages(savedNormalState.messages);
       setLearningPath(savedNormalState.learningPath);
       setCompletedTasksArray(savedNormalState.completedTasks);
-
       handleUpdateConfig({
         ...config,
         learningMode: savedNormalState.learningMode,
@@ -680,10 +677,8 @@ export default function SelfStudyWorkbench({
         tasks: savedNormalState.tasks,
       });
     }
-
-    // 清除演示模式状态
-    setDemoMode(false);
-    setCurrentScenario(null);
+    setActiveScenario(null);
+    setDemoScenarioStep(0);
     setSavedNormalState(null);
   };
 
@@ -1215,9 +1210,10 @@ export default function SelfStudyWorkbench({
     }, 1200);
   };
 
-  // 演示劇本發送（點擊推進模式）
+  // 演示劇本發送（統一步進引擎）
   const handleDemoSend = () => {
-    const currentStep = demoConversationScript[demoScenarioStep];
+    if (!activeScenario) return;
+    const currentStep = activeScenario.steps[demoScenarioStep];
     if (!currentStep) return;
 
     const userMsg: ChatMessage = {
@@ -1240,15 +1236,41 @@ export default function SelfStudyWorkbench({
       };
       setMessages(prev => [...prev, aiMsg]);
       setIsLoading(false);
+      executeDemoInjects(currentStep);
 
       const nextStepIndex = demoScenarioStep + 1;
-      const nextStep = demoConversationScript[nextStepIndex];
-      if (nextStep?.prefilledInput) {
-        setTimeout(() => setInputMessage(nextStep.prefilledInput!), 300);
+      if (nextStepIndex >= activeScenario.steps.length) {
+        // 场景结束，但保持演示模式（用户可手动退出）
+        setDemoScenarioStep(nextStepIndex);
+        return;
       }
-      setDemoScenarioStep(nextStepIndex);
-      if (nextStepIndex >= demoConversationScript.length) {
-        setIsDemoScenarioMode(false);
+
+      const nextStep = activeScenario.steps[nextStepIndex];
+      if (nextStep.prefilledInput === null) {
+        // 下一步是 AI 主动发言，自动播放
+        setTimeout(() => {
+          const autoMsg: ChatMessage = {
+            id: `demo_ai_${nextStepIndex}_${Date.now()}`,
+            role: 'assistant',
+            content: nextStep.aiResponse,
+            timestamp: new Date(),
+            actionCards: nextStep.actionCards,
+          };
+          setMessages(prev => [...prev, autoMsg]);
+          executeDemoInjects(nextStep);
+
+          const afterAutoIndex = nextStepIndex + 1;
+          setDemoScenarioStep(afterAutoIndex);
+          const afterAutoStep = activeScenario.steps[afterAutoIndex];
+          if (afterAutoStep?.prefilledInput) {
+            setTimeout(() => setInputMessage(afterAutoStep.prefilledInput!), 300);
+          }
+        }, 1200);
+        setDemoScenarioStep(nextStepIndex);
+      } else {
+        // 下一步需要用户输入，预填
+        setTimeout(() => setInputMessage(nextStep.prefilledInput!), 300);
+        setDemoScenarioStep(nextStepIndex);
       }
     }, 1200);
   };
@@ -1267,7 +1289,7 @@ export default function SelfStudyWorkbench({
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
 
-    if (isDemoScenarioMode) {
+    if (activeScenario && demoScenarioStep < activeScenario.steps.length) {
       handleDemoSend();
       return;
     }
@@ -1526,15 +1548,15 @@ export default function SelfStudyWorkbench({
       // 非试卷文件正常处理
       const normalFiles = files.filter(f => !EXAM_PATTERN.test(f.name));
       if (normalFiles.length > 0) {
-        // 场景 A：任意文件上传（脚本化对话）
-        loadArbitraryFileScenario(normalFiles);
+        // 场景 A：任意文件上传 → 统一上传分析场景
+        startScenario('upload_and_analyze');
       }
       setIsFileUploadOpen(false);
       return;
     }
 
-    // 场景 A：任意文件上传（脚本化对话）
-    loadArbitraryFileScenario(files);
+    // 场景 A：任意文件上传 → 统一上传分析场景
+    startScenario('upload_and_analyze');
     setIsFileUploadOpen(false);
   };
 
@@ -1553,14 +1575,8 @@ export default function SelfStudyWorkbench({
     setTimeout(() => {
       setExamProcessingStep('done');
 
-      // 场景路由：根据 includeHandwriting 判断
-      if (processingConfig.includeHandwriting) {
-        // 场景 C：批量学生答卷（成绩识别与分析）
-        loadMultiStudentScenario(taskId, processingConfig.files[0]?.name);
-      } else {
-        // 场景 B：空白试卷（交互式答题）
-        loadBlankExamScenario(taskId, processingConfig.files[0]?.name);
-      }
+      // 场景路由：统一使用上传分析场景
+      startScenario('upload_and_analyze');
 
       // 清除进度
       setTimeout(() => {
@@ -1571,167 +1587,6 @@ export default function SelfStudyWorkbench({
   };
 
   // 场景 B：加载空白试卷场景
-  const loadBlankExamScenario = (taskId: string, fileName?: string) => {
-    console.log('[Demo] 加载场景 B：空白试卷');
-
-    // 添加试卷资源
-    const examResource: Resource = {
-      id: `resource_exam_${Date.now()}`,
-      title: fileName || '數學試卷',
-      type: 'document',
-      description: '试卷原文件',
-      sourceType: 'exam_paper',
-    };
-    handleUpdateConfig({
-      ...config,
-      resources: [...config.resources, examResource],
-    });
-
-    // 生成交互式答题任务
-    const blankExamTask = {
-      id: taskId,
-      type: 'quiz' as const,
-      title: fileName?.replace(/\.[^.]+$/, '') || '數學試卷測試',
-      status: 'available' as const,
-      questionCount: blankExamScenario.questions.length,
-      generatedAt: new Date().toISOString(),
-      settings: {
-        showAnswersAfterSubmit: true,
-        showExplanationsAfterSubmit: true,
-        allowRetry: true,
-        fullscreenMode: true,
-        allowViewResources: false,
-        source: 'exam_converted',
-      },
-      questions: blankExamScenario.questions,
-    };
-    setGeneratedTasks(prev => [blankExamTask as any, ...prev]);
-
-    // AI 发送欢迎消息
-    setTimeout(() => {
-      setMessages(prev => [...prev, {
-        id: `msg_${Date.now()}`,
-        role: 'assistant' as const,
-        content: blankExamScenario.welcomeMessage,
-        timestamp: new Date(),
-      }]);
-    }, 500);
-  };
-
-  // 场景 C：加载批量学生答卷场景
-  const loadMultiStudentScenario = (taskId: string, fileName?: string) => {
-    console.log('[Demo] 加载场景 C：批量学生答卷');
-
-    // 添加多份学生试卷资源
-    const studentResources = multiStudentScenario.resources.map(r => ({
-      ...r,
-      id: `${r.id}_${Date.now()}`,
-    }));
-    handleUpdateConfig({
-      ...config,
-      resources: [...config.resources, ...studentResources],
-    });
-
-    // 生成干净的原题任务
-    const cleanExamTask = {
-      id: taskId,
-      type: 'quiz' as const,
-      title: fileName?.replace(/\.[^.]+$/, '') || '數學試卷（原題）',
-      status: 'available' as const,
-      questionCount: multiStudentScenario.originalQuestions.length,
-      generatedAt: new Date().toISOString(),
-      settings: {
-        showAnswersAfterSubmit: true,
-        showExplanationsAfterSubmit: true,
-        allowRetry: true,
-        fullscreenMode: true,
-        allowViewResources: false,
-        source: 'exam_converted',
-      },
-      questions: multiStudentScenario.originalQuestions,
-    };
-    setGeneratedTasks(prev => [cleanExamTask as any, ...prev]);
-
-    // 自动发送分析对话序列
-    setTimeout(() => {
-      multiStudentScenario.analysisMessages.forEach((msg, index) => {
-        setTimeout(() => {
-          setMessages(prev => [...prev, {
-            ...msg,
-            id: `${msg.id}_${Date.now()}`,
-            timestamp: new Date(),
-          }]);
-        }, index * 1500);
-      });
-
-      // 最后生成变式练习题
-      setTimeout(() => {
-        const practiceTask = {
-          ...multiStudentScenario.practiceTask,
-          id: `${multiStudentScenario.practiceTask.id}_${Date.now()}`,
-          generatedAt: new Date().toISOString(),
-          settings: {
-            showAnswersAfterSubmit: true,
-            showExplanationsAfterSubmit: true,
-            allowRetry: true,
-            fullscreenMode: true,
-            allowViewResources: true,
-          },
-        };
-        setGeneratedTasks(prev => [...prev, practiceTask as any]);
-      }, multiStudentScenario.analysisMessages.length * 1500 + 500);
-    }, 1000);
-  };
-
-  // 场景 A：加载任意文件场景（脚本化对话）
-  const loadArbitraryFileScenario = (files: File[]) => {
-    console.log('[Demo] 加载场景 A：任意文件上传');
-
-    // 添加文件资源
-    const newResources: Resource[] = files.map((file) => ({
-      id: `resource_${Date.now()}_${Math.random()}`,
-      title: file.name,
-      type: file.type.includes('video') ? 'video' :
-            file.type.includes('presentation') ? 'presentation' : 'document',
-      description: `上传于 ${new Date().toLocaleString('zh-CN')}`,
-      source: isStudentMode ? 'student' : 'teacher',
-    }));
-    handleUpdateConfig({
-      ...config,
-      resources: [...config.resources, ...newResources],
-    });
-
-    // 自动播放脚本化对话序列
-    setTimeout(() => {
-      arbitraryFileScenario.dialogueScript.forEach((msg, index) => {
-        setTimeout(() => {
-          setMessages(prev => [...prev, {
-            ...msg,
-            id: `${msg.id}_${Date.now()}`,
-            timestamp: new Date(),
-          }]);
-        }, index * 1500);
-      });
-
-      // 最后生成练习任务
-      setTimeout(() => {
-        const practiceTask = {
-          ...arbitraryFileScenario.practiceTask,
-          id: `${arbitraryFileScenario.practiceTask.id}_${Date.now()}`,
-          generatedAt: new Date().toISOString(),
-          settings: {
-            showAnswersAfterSubmit: true,
-            showExplanationsAfterSubmit: true,
-            allowRetry: true,
-            fullscreenMode: true,
-            allowViewResources: true,
-          },
-        };
-        setGeneratedTasks(prev => [...prev, practiceTask as any]);
-      }, arbitraryFileScenario.dialogueScript.length * 1500 + 500);
-    }, 1000);
-  };
-
   // 保存任务设置
   const handleSaveTaskSettings = (taskId: string, settings: TaskSettings) => {
     console.log('[TaskSettings] 保存:', taskId, settings);
@@ -1916,15 +1771,15 @@ export default function SelfStudyWorkbench({
 
   // 处理知识库导入 - 错题本
   const handleKnowledgeBaseImport = (errorQuestions: ErrorQuestion[]) => {
-    console.log('[Demo] 加载场景 D2：错题本导入');
-    loadErrorQuestionsScenario(errorQuestions);
+    console.log('[Demo] 知识库导入：错题本');
+    startScenario('knowledge_import');
     setShowKnowledgeBaseModal(false);
   };
 
   // 处理知识库导入 - 历史测验
   const handleHistoricalTestImport = (testRecord: HistoricalTest) => {
-    console.log('[Demo] 加载场景 D1：历史测验导入');
-    loadHistoricalTestScenario(testRecord);
+    console.log('[Demo] 知识库导入：历史测验');
+    startScenario('knowledge_import');
     setShowKnowledgeBaseModal(false);
   };
 
@@ -1979,98 +1834,6 @@ export default function SelfStudyWorkbench({
     setShowKnowledgeBaseModal(false);
   };
 
-  // 场景 D1：加载历史测验场景
-  const loadHistoricalTestScenario = (testRecord: any) => {
-    // 添加测验记录资源
-    const testResource: Resource = {
-      id: `resource_test_${Date.now()}`,
-      title: testRecord.title,
-      type: 'document',
-      description: `得分：${testRecord.score}/${testRecord.totalScore}，正确率：${Math.round(testRecord.correctCount / testRecord.questionCount * 100)}%`,
-      source: 'student',
-    };
-    handleUpdateConfig({
-      ...config,
-      resources: [...config.resources, testResource],
-    });
-
-    // 自动播放分析对话序列
-    setTimeout(() => {
-      historicalTestScenario.analysisDialogue.forEach((msg, index) => {
-        setTimeout(() => {
-          setMessages(prev => [...prev, {
-            ...msg,
-            id: `${msg.id}_${Date.now()}`,
-            timestamp: new Date(),
-          }]);
-        }, index * 1500);
-      });
-
-      // 最后生成针对性练习题
-      setTimeout(() => {
-        const practiceTask = {
-          ...historicalTestScenario.practiceTask,
-          id: `${historicalTestScenario.practiceTask.id}_${Date.now()}`,
-          generatedAt: new Date().toISOString(),
-          settings: {
-            showAnswersAfterSubmit: true,
-            showExplanationsAfterSubmit: true,
-            allowRetry: true,
-            fullscreenMode: true,
-            allowViewResources: true,
-          },
-        };
-        setGeneratedTasks(prev => [...prev, practiceTask as any]);
-      }, historicalTestScenario.analysisDialogue.length * 1500 + 500);
-    }, 1000);
-  };
-
-  // 场景 D2：加载错题本场景
-  const loadErrorQuestionsScenario = (errorQuestions: any[]) => {
-    // 添加错题本资源
-    const errorResource: Resource = {
-      id: `resource_errors_${Date.now()}`,
-      title: '错题本',
-      type: 'document',
-      description: `包含 ${errorQuestions.length} 道错题`,
-      source: 'student',
-    };
-    handleUpdateConfig({
-      ...config,
-      resources: [...config.resources, errorResource],
-    });
-
-    // 自动播放引导消息
-    setTimeout(() => {
-      errorQuestionsScenario.guidanceMessages.forEach((msg, index) => {
-        setTimeout(() => {
-          setMessages(prev => [...prev, {
-            ...msg,
-            id: `${msg.id}_${Date.now()}`,
-            timestamp: new Date(),
-          }]);
-        }, index * 1500);
-      });
-
-      // 最后生成变式练习题
-      setTimeout(() => {
-        const practiceTask = {
-          ...errorQuestionsScenario.practiceTask,
-          id: `${errorQuestionsScenario.practiceTask.id}_${Date.now()}`,
-          generatedAt: new Date().toISOString(),
-          questions: errorQuestionsScenario.practiceTask.questions,
-          settings: {
-            showAnswersAfterSubmit: true,
-            showExplanationsAfterSubmit: true,
-            allowRetry: true,
-            fullscreenMode: true,
-            allowViewResources: true,
-          },
-        };
-        setGeneratedTasks(prev => [...prev, practiceTask as any]);
-      }, errorQuestionsScenario.guidanceMessages.length * 1500 + 500);
-    }, 1000);
-  };
 
   // ── [Header] 标题编辑 handlers ───────────────────────────────
   // 处理空间名称保存
@@ -2361,9 +2124,9 @@ export default function SelfStudyWorkbench({
 
         if (subjectiveQuestionIds.length > 0) {
           subjectiveQuestionIds.forEach((qId: string, idx: number) => {
-            const delay = 2500 + idx * 800 + Math.random() * 500;
+            const delay = 4500 + idx * 1200 + Math.random() * 800;
             setTimeout(() => {
-              const fb = subjectiveFeedbacks[qId] || { score: 70, feedback: '回答基本正确，思路清晰，建议进一步深化分析。' };
+              const fb = subjectiveFeedbacks[qId] || { score: 70, feedback: '回答基本正确，思路较为清晰，能够抓住核心要点。\n\n💡 建议：可以进一步深化分析，结合具体数据或案例来支撑你的观点，使论述更加完整有力。' };
               setQuickResultMap(prev => {
                 const current = prev[taskId];
                 if (!current) return prev;
@@ -2418,19 +2181,9 @@ export default function SelfStudyWorkbench({
         // 演示劇本測驗：跳過 AI 分析，直接啟動對話劇本
         if (demoQuizTaskIdRef.current === taskId) {
           setTimeout(() => {
-            const step0 = demoConversationScript[0];
-            const welcomeMsg: ChatMessage = {
-              id: `demo_ai_0_${Date.now()}`,
-              role: 'assistant',
-              content: step0.aiResponse,
-              timestamp: new Date(),
-            };
-            setMessages(prev => [...prev, welcomeMsg]);
-            setIsDemoScenarioMode(true);
-            setDemoScenarioStep(1);
-            const step1 = demoConversationScript[1];
-            if (step1?.prefilledInput) {
-              setInputMessage(step1.prefilledInput);
+            const quizScenario = findScenarioByTrigger('onQuizComplete');
+            if (quizScenario) {
+              startScenario(quizScenario.id);
             }
           }, 2000);
         } else {
@@ -2757,8 +2510,8 @@ export default function SelfStudyWorkbench({
             isStudentMode={isStudentMode}
             isEditingTitle={isEditingTitle}
             editedTitle={editedTitle}
-            demoMode={demoMode}
-            currentScenario={currentScenario}
+            demoMode={!!activeScenario}
+            currentScenario={activeScenario?.id || null}
             onBack={onBack}
             onTitleEdit={() => setIsEditingTitle(true)}
             onTitleSave={handleTitleSave}
@@ -2768,7 +2521,7 @@ export default function SelfStudyWorkbench({
             onPublishOpen={() => setShowNoteInfoModal(true)}
             onViewAnalytics={handleViewAnalytics}
             onNoteInfoOpen={() => setShowNoteInfoModal(true)}
-            onLoadScenario={loadScenario}
+            onLoadScenario={startScenario}
             onExitDemoMode={exitDemoMode}
           />
 

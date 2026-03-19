@@ -4,6 +4,7 @@ import { SpaceConfig } from '../../../types/self-study';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { ArrowLeft, Brain, Pencil, Check, X, Settings, Share2, BarChart3 } from 'lucide-react';
 import LanguageSwitch from '../../LanguageSwitch';
+import { getScenariosByCategory } from '../../../data/demoScenarios';
 
 interface WorkbenchHeaderProps {
   config: SpaceConfig;
@@ -131,20 +132,17 @@ export function WorkbenchHeader({
               className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white hover:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors"
             >
               <option value="">选择演示场景</option>
-              <optgroup label="新手指导">
-                <option value="onboarding_guide">新手指导</option>
-              </optgroup>
-              <optgroup label="任务流程">
-                <option value="resource_generation">资源生成流程</option>
-                <option value="task_completion">任务完成流程</option>
-              </optgroup>
-              <optgroup label="AI引导">
-                <option value="socratic_explanation">苏格拉底式讲解</option>
-                <option value="ai_guided_learning">AI引导模式</option>
-              </optgroup>
-              <optgroup label="自由探索">
-                <option value="self_directed_exploration">自由探索模式</option>
-              </optgroup>
+              {getScenariosByCategory().map(({ category, scenarios }) =>
+                scenarios.length > 0 ? (
+                  <optgroup key={category.id} label={category.label}>
+                    {scenarios.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                ) : null
+              )}
             </select>
           </div>
         )}

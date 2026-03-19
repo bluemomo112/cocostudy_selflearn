@@ -33,7 +33,6 @@ export type { ChatMessage, SelfStudyWorkbenchProps } from './components/workbenc
 export * from './data/mockLearningData';
 export * from './data/mockKnowledgeBase';
 export * from './data/demoScenarios';
-export * from './data/seseyuanDemoScenario';
 
 // Contexts
 export { LanguageProvider, useLanguage } from './contexts/LanguageContext';
