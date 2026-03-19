@@ -1277,11 +1277,109 @@ export default function SelfStudyWorkbench({
 
   // 演示劇本操作卡片點擊處理
   const handleDemoCardAction = (action: string, payload?: string) => {
+    // 特殊 action：直接执行
     if (action === 'open_note') {
       setRightTab('workspace');
     } else if (action === 'generate_mindmap') {
       const mindMapTool = STUDIO_TOOLS.find(t => t.id === 'mind_map');
       if (mindMapTool) handleStudioToolClick(mindMapTool);
+    } else if (action === 'navigate' && payload) {
+      // 尝试打开资源
+      const resource = config.resources.find(r => r.id === payload);
+      if (resource) {
+        setViewingResource({
+          id: resource.id,
+          title: resource.title,
+          type: resource.type,
+          description: resource.description,
+        });
+      }
+    }
+
+    // 通用行为：推进演示到下一步
+    if (!activeScenario || demoScenarioStep >= activeScenario.steps.length) return;
+
+    const nextStep = activeScenario.steps[demoScenarioStep];
+    if (!nextStep) return;
+
+    if (nextStep.prefilledInput !== null) {
+      // 下一步需要用户输入 → 预填并自动发送
+      setInputMessage(nextStep.prefilledInput);
+      setTimeout(() => {
+        // 模拟发送
+        const userMsg: ChatMessage = {
+          id: `demo_user_${Date.now()}`,
+          role: 'user',
+          content: nextStep.prefilledInput!,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, userMsg]);
+        setInputMessage('');
+        setIsLoading(true);
+
+        setTimeout(() => {
+          const aiMsg: ChatMessage = {
+            id: `demo_ai_${demoScenarioStep}_${Date.now()}`,
+            role: 'assistant',
+            content: nextStep.aiResponse,
+            timestamp: new Date(),
+            actionCards: nextStep.actionCards,
+          };
+          setMessages(prev => [...prev, aiMsg]);
+          setIsLoading(false);
+          executeDemoInjects(nextStep);
+
+          const afterIndex = demoScenarioStep + 1;
+          setDemoScenarioStep(afterIndex);
+
+          // 如果下下步也是 AI 主动发言，继续自动播放
+          const afterStep = activeScenario.steps[afterIndex];
+          if (afterStep?.prefilledInput === null) {
+            setTimeout(() => {
+              const autoMsg: ChatMessage = {
+                id: `demo_ai_${afterIndex}_${Date.now()}`,
+                role: 'assistant',
+                content: afterStep.aiResponse,
+                timestamp: new Date(),
+                actionCards: afterStep.actionCards,
+              };
+              setMessages(prev => [...prev, autoMsg]);
+              executeDemoInjects(afterStep);
+              setDemoScenarioStep(afterIndex + 1);
+
+              const nextNext = activeScenario.steps[afterIndex + 1];
+              if (nextNext?.prefilledInput) {
+                setTimeout(() => setInputMessage(nextNext.prefilledInput!), 300);
+              }
+            }, 1200);
+          } else if (afterStep?.prefilledInput) {
+            setTimeout(() => setInputMessage(afterStep.prefilledInput!), 300);
+          }
+        }, 1200);
+      }, 400);
+    } else {
+      // 下一步是 AI 主动发言 → 直接播放
+      setIsLoading(true);
+      setTimeout(() => {
+        const aiMsg: ChatMessage = {
+          id: `demo_ai_${demoScenarioStep}_${Date.now()}`,
+          role: 'assistant',
+          content: nextStep.aiResponse,
+          timestamp: new Date(),
+          actionCards: nextStep.actionCards,
+        };
+        setMessages(prev => [...prev, aiMsg]);
+        setIsLoading(false);
+        executeDemoInjects(nextStep);
+
+        const afterIndex = demoScenarioStep + 1;
+        setDemoScenarioStep(afterIndex);
+
+        const afterStep = activeScenario.steps[afterIndex];
+        if (afterStep?.prefilledInput) {
+          setTimeout(() => setInputMessage(afterStep.prefilledInput!), 300);
+        }
+      }, 800);
     }
   };
 
