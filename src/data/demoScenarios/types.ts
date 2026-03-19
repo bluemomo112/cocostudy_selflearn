@@ -1,19 +1,49 @@
 /**
- * 演示脚本系统类型定义
- * 用于自学模式的场景化演示
+ * 演示脚本系统类型定义（统一步进式交互格式）
  */
 
-import { ChatMessage } from '../../components/workbench/shared/types';
-import { Resource, Task, LearningMode, LearningPathNode } from '../../types';
+import { Resource, Task } from '../../types';
 
 /**
  * 场景分类
  */
-export type ScenarioCategory =
-  | 'onboarding'      // 新手指导
-  | 'task_flow'       // 任务流程
-  | 'ai_guided'       // AI引导
-  | 'exploration';    // 自由探索
+export type ScenarioCategory = 'onboarding' | 'post_quiz' | 'upload' | 'import';
+
+/**
+ * Action Card（与 ChatMessage.actionCards 格式对齐）
+ */
+export interface ActionCard {
+  icon: string;
+  title: string;
+  subtitle: string;
+  action: string;
+  actionPayload?: string;
+}
+
+/**
+ * 副作用
+ */
+export interface SideEffect {
+  type: 'log' | 'highlight' | 'update_ui' | 'open_panel';
+  target?: string;
+  value?: any;
+}
+
+/**
+ * 演示步骤
+ */
+export interface DemoStep {
+  id: number;
+  /** null = AI 主动发言，string = 用户预填输入 */
+  prefilledInput: string | null;
+  aiResponse: string;
+  actionCards?: ActionCard[];
+  sideEffects?: SideEffect[];
+  /** 注入任务到任务列表 */
+  injectTask?: Task;
+  /** 注入资源到资源列表 */
+  injectResources?: Resource[];
+}
 
 /**
  * 演示场景定义
@@ -23,37 +53,30 @@ export interface DemoScenario {
   name: string;
   description: string;
   category: ScenarioCategory;
-
-  /**
-   * 场景的初始状态（完整的状态快照）
-   */
-  initialState: {
-    messages: ChatMessage[];
-    learningMode: LearningMode;
-    learningPath?: LearningPathNode[];
-    generatedTasks?: Task[];
-    resources?: Resource[];
-    completedTasks?: string[];
+  steps: DemoStep[];
+  /** 场景附带数据（学生档案、测验结果、错题等） */
+  scenarioData?: Record<string, any>;
+  triggers: {
+    dropdown: boolean;
+    onQuizComplete?: boolean;
+    onFileUpload?: boolean;
+    onKnowledgeImport?: boolean;
   };
-
-  /**
-   * 关键步骤说明（可选，用于演示引导）
-   */
-  keySteps?: Array<{
-    step: number;
-    description: string;
-    messageId?: string;
-  }>;
 }
 
 /**
- * 场景集合
+ * 场景分类元数据
  */
-export interface ScenarioCollection {
+export interface CategoryMeta {
+  id: ScenarioCategory;
+  label: string;
+  description: string;
+}
+
+/**
+ * 场景注册表
+ */
+export interface ScenarioRegistry {
   scenarios: DemoScenario[];
-  categories: {
-    id: ScenarioCategory;
-    label: string;
-    description: string;
-  }[];
+  categories: CategoryMeta[];
 }

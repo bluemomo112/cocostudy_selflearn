@@ -1,6 +1,6 @@
 /**
- * 测验后复习引导场景
- * 场景：学生完成流体压强测验后，通过苏格拉底式对话进行错题复习
+ * S2: 测验复习引导场景
+ * 学生完成流体压强测验后，通过苏格拉底式对话进行错题复习
  */
 
 import { DemoScenario, DemoStep } from '../types';
@@ -8,12 +8,11 @@ import {
   demoStudentProfile,
   demoTestResult,
   fluidPressureMistakes,
-  fluidPressureResources,
   fluidPressureKnowledgePoints,
 } from '../fluidPressureData';
 
-const conversationSteps: DemoStep[] = [
-  // Step 0：欢迎 + 成绩概览
+const steps: DemoStep[] = [
+  // Step 0: AI 主动发言 - 欢迎 + 成绩概览
   {
     id: 0,
     prefilledInput: null,
@@ -34,7 +33,7 @@ const conversationSteps: DemoStep[] = [
       { type: 'highlight', target: 'test-result-panel' },
     ],
   },
-  // Step 1：引导回顾龙卷风题
+  // Step 1: 用户说"龙卷风那题我不太确定" - AI 引导回顾龙卷风题
   {
     id: 1,
     prefilledInput: '龙卷风那题我不太确定',
@@ -49,7 +48,7 @@ const conversationSteps: DemoStep[] = [
       { type: 'highlight', target: 'bernoulli-video-01' },
     ],
   },
-  // Step 2：追问伯努利原理
+  // Step 2: 用户说"应该是有什么力量把东西推上去的？" - AI 追问伯努利原理
   {
     id: 2,
     prefilledInput: '应该是有什么力量把东西推上去的？',
@@ -62,7 +61,7 @@ const conversationSteps: DemoStep[] = [
       { type: 'highlight', target: 'bernoulli' },
     ],
   },
-  // Step 3：揭示答案 + 错误分析
+  // Step 3: 用户说"流速快...压强应该变小？" - AI 揭示答案 + 错误分析
   {
     id: 3,
     prefilledInput: '流速快...压强应该变小？',
@@ -81,14 +80,14 @@ const conversationSteps: DemoStep[] = [
 
 想更深入理解吗？可以看看这个演示影片，或者查看详细的错题分析。`,
     actionCards: [
-      { id: 'watch-video', label: '观看影片', icon: '🎬', action: 'navigate', target: 'bernoulli-video-01' },
-      { id: 'view-analysis', label: '查看错题分析', icon: '📋', action: 'navigate', target: 'wq0-1' },
+      { icon: '🎬', title: '观看影片', subtitle: '伯努利原理演示实验', action: 'navigate', actionPayload: 'bernoulli-video-01' },
+      { icon: '📋', title: '查看错题分析', subtitle: '龙卷风题详细解析', action: 'navigate', actionPayload: 'wq0-1' },
     ],
     sideEffects: [
       { type: 'highlight', target: 'bernoulli-video-01' },
     ],
   },
-  // Step 4：影片观后 + 生成类似题
+  // Step 4: 影片观后 + 生成类似题
   {
     id: 4,
     prefilledInput: '我看完影片了，地铁站台设安全线是因为列车经过时速度快，旁边压强变小',
@@ -98,7 +97,7 @@ const conversationSteps: DemoStep[] = [
 
 现在我想用一道类似题来检验一下你的理解，这道题和你之前做错的「湿布瓶题」有关：
 
-> 两支相同试管装等量水，一支用湿布包裹，用电风扇吹���一段时间后，两管液面高度关系是？
+> 两支相同试管装等量水，一支用湿布包裹，用电风扇吹风一段时间后，两管液面高度关系是？
 >
 > A. 两管液面一样高
 > B. 湿布试管液面较高
@@ -106,14 +105,11 @@ const conversationSteps: DemoStep[] = [
 > D. 湿布试管液面较低
 
 试试看？`,
-    actionCards: [
-      { id: 'answer-question', label: '开始作答', icon: '✏️', action: 'trigger', target: 'next_step' },
-    ],
     sideEffects: [
       { type: 'highlight', target: 'wq0-2' },
     ],
   },
-  // Step 5：正确反馈 + 学习小结
+  // Step 5: 正确反馈 + 学习小结
   {
     id: 5,
     prefilledInput: 'D，因为湿布蒸发让那边流速更快，压强更小，水面被压下去',
@@ -131,15 +127,15 @@ const conversationSteps: DemoStep[] = [
 
 **补救建议：** 你还有 4 道错题涉及声学知识（音调、乐器发声、声波特征），建议接下来继续学习。`,
     actionCards: [
-      { id: 'continue-learning', label: '继续学习', icon: '📚', action: 'trigger', target: 'next_topic' },
-      { id: 'take-notes', label: '记笔记', icon: '📝', action: 'navigate', target: 'notes' },
-      { id: 'generate-mindmap', label: '生成思维导图', icon: '🧠', action: 'trigger', target: 'mindmap' },
+      { icon: '📚', title: '继续学习', subtitle: '声学错题复习', action: 'trigger', actionPayload: 'next_topic' },
+      { icon: '📝', title: '记笔记', subtitle: '整理本次学习要点', action: 'navigate', actionPayload: 'notes' },
+      { icon: '🧠', title: '生成思维导图', subtitle: '伯努利原理知识图谱', action: 'trigger', actionPayload: 'mindmap' },
     ],
     sideEffects: [
       { type: 'update_ui', target: 'knowledge-progress', value: { bernoulli: 'mastered', 'fluid-pressure': 'mastered' } },
     ],
   },
-  // Step 6：元认知导师观察
+  // Step 6: AI 主动发言 - 元认知导师观察
   {
     id: 6,
     prefilledInput: null,
@@ -163,7 +159,7 @@ export const postQuizRemediation: DemoScenario = {
   name: '测验复习引导',
   description: '完成流体压强测验后的苏格拉底式复习',
   category: 'post_quiz',
-  steps: conversationSteps,
+  steps,
   scenarioData: {
     studentProfile: demoStudentProfile,
     quizResults: demoTestResult,

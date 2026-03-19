@@ -1,9 +1,10 @@
 import { DemoScenario } from '../types';
 import {
-  fluidPressureMistakes,
-  fluidPressureResources,
   demoTestResult,
+  fluidPressureMistakes,
   fluidPressureKnowledgePoints,
+  fluidPressureResources,
+  fluidPressureQuestions,
 } from '../fluidPressureData';
 
 export const knowledgeBaseImport: DemoScenario = {
@@ -21,13 +22,13 @@ export const knowledgeBaseImport: DemoScenario = {
     knowledgePoints: fluidPressureKnowledgePoints,
   },
   steps: [
-    // Step 0: AI 主动分析
+    // Step 0: AI 主动加载分析
     {
       id: 0,
       prefilledInput: null,
       aiResponse: '已加载测验记录/错题集，正在分析...',
     },
-    // Step 1: 展示测验结果和错题分类
+    // Step 1: 测验结果 + 按知识点分类错题
     {
       id: 1,
       prefilledInput: null,
@@ -35,19 +36,27 @@ export const knowledgeBaseImport: DemoScenario = {
 
 让我按知识点分类你的错题：
 
-**❌ 流体压强与流速关系** (3 题)
+**❌ 流体压强与流速关系**（3 题）
 - 龙卷风「吸」物体原理
 - 湿布试管液面变化
 - 台风掀翻屋顶
 
-**❌ 伯努利原理应用** (2 题)
+**❌ 伯努利原理应用**（2 题）
 - 多选题漏选
 - 概念混淆
 
-**❌ 压强差** (1 题)
+**❌ 压强差**（1 题）
 - 吸力与推力的本质区别`,
+      actionCards: [
+        {
+          icon: '📊',
+          title: '查看错题分布',
+          subtitle: '按知识点查看详细错题统计',
+          action: 'view_mistake_distribution',
+        },
+      ],
     },
-    // Step 2: AI 识别最大薄弱点
+    // Step 2: 识别最大薄弱点
     {
       id: 2,
       prefilledInput: null,
@@ -60,13 +69,14 @@ export const knowledgeBaseImport: DemoScenario = {
 我建议从「龙卷风」这道题开始，用苏格拉底式对话帮你理解核心概念。准备好了吗？`,
       actionCards: [
         {
-          id: 'start-learning',
-          label: '开始学习',
-          action: 'trigger',
+          icon: '🎯',
+          title: '开始针对性复习',
+          subtitle: '从最薄弱的知识点开始突破',
+          action: 'start_review',
         },
       ],
     },
-    // Step 3: 用户确认，AI 展示龙卷风题目并开始对话
+    // Step 3: 展示龙卷风题，开始苏格拉底对话
     {
       id: 3,
       prefilledInput: '好的，我们开始',
@@ -86,12 +96,21 @@ D. 龙卷风内部温度极高，热空气上升带动物体
 ---
 
 我先问你一个问题：**当你用吸管喝饮料时，是吸管在「吸」饮料吗？**`,
+      actionCards: [
+        {
+          icon: '📝',
+          title: '查看原题',
+          subtitle: '查看完整题目和你的作答记录',
+          action: 'view_original_question',
+          actionPayload: 'wq0-1',
+        },
+      ],
     },
-    // Step 4: 用户回答，AI 确认理解并过渡到下一个错题类型
+    // Step 4: 用户回答，确认理解并过渡
     {
       id: 4,
       prefilledInput: '应该是压强差产生的推力',
-      aiResponse: `**完全正确！** 🎯
+      aiResponse: `**完全正确！**
 
 不是吸管在「吸」，而是：
 1. 你吸气 → 吸管内气压降低
@@ -105,76 +124,47 @@ D. 龙卷风内部温度极高，热空气上升带动物体
 
 **物理学中不存在真正的「吸力」，只有压强差产生的推力。**
 
----
-
 现在你已经理解了核心概念，让我们继续巩固其他错题类型。`,
+      actionCards: [
+        {
+          icon: '➡️',
+          title: '下一道',
+          subtitle: '继续复习下一个错题类型',
+          action: 'next_mistake',
+        },
+        {
+          icon: '⏭️',
+          title: '跳过',
+          subtitle: '跳过剩余错题，直接进入练习',
+          action: 'skip_to_practice',
+        },
+      ],
     },
-    // Step 5: AI 生成变式题目（注入任务）
+    // Step 5: 生成变式题（注入任务）
     {
       id: 5,
       prefilledInput: null,
       aiResponse: '我为你生成了 3 道变式题目，帮你巩固「流速-压强-推力」的完整逻辑链。',
       injectTask: {
-        id: 'fluid-pressure-variants',
-        title: '流体压强变式练习',
-        subject: '物理',
+        id: 'knowledge-import-variants',
         type: 'quiz',
-        status: 'not_started',
+        title: '流体压强变式练习',
         description: '巩固流速与压强关系的核心概念',
-        questions: [
-          {
-            id: 'variant-1',
-            questionText: '地铁站台为什么要设置安全线？',
-            type: 'single',
-            options: [
-              { label: 'A', text: '列车经过时，站台与列车间气流速度大，压强低，压强差会把人推向列车' },
-              { label: 'B', text: '列车产生的吸力会把人吸向列车' },
-              { label: 'C', text: '列车产生的风力会把人吹向列车' },
-              { label: 'D', text: '防止乘客不小心掉落轨道' },
-            ],
-            correctAnswer: 'A',
-            knowledgePoints: ['流体压强与流速的关系', '伯努利原理'],
-          },
-          {
-            id: 'variant-2',
-            questionText: '飞机机翼上表面弯曲，下表面平直，这样设计的原因是：',
-            type: 'single',
-            options: [
-              { label: 'A', text: '上表面气流速度快，压强小，下表面压强大，压强差产生向上的升力' },
-              { label: 'B', text: '上表面产生吸力，把飞机吸向上方' },
-              { label: 'C', text: '弯曲表面产生离心力，把飞机推向上方' },
-              { label: 'D', text: '减小空气阻力，提高飞行速度' },
-            ],
-            correctAnswer: 'A',
-            knowledgePoints: ['伯努利原理应用', '流体压强'],
-          },
-          {
-            id: 'variant-3',
-            questionText: '以下哪些现象的本质是「压强差产生推力」而非「吸力」？',
-            type: 'multiple',
-            options: [
-              { label: 'A', text: '真空吸盘吸附在墙上' },
-              { label: 'B', text: '用注射器抽取药液' },
-              { label: 'C', text: '台风掀翻屋顶' },
-              { label: 'D', text: '磁铁吸引铁钉' },
-            ],
-            correctAnswer: 'ABC',
-            knowledgePoints: ['压强差', '伯努利原理'],
-          },
-        ],
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        status: 'available',
+        required: false,
+        questions: fluidPressureQuestions.slice(1, 4),
       },
       actionCards: [
         {
-          id: 'start-quiz',
-          label: '开始练习',
-          action: 'navigate',
-          target: '/task/fluid-pressure-variants',
+          icon: '✏️',
+          title: '开始练习',
+          subtitle: '完成 3 道变式题巩固理解',
+          action: 'start_quiz',
+          actionPayload: 'knowledge-import-variants',
         },
       ],
     },
-    // Step 6: 用户完成练习，AI 展示结果和进步轨迹
+    // Step 6: 完成练习，展示结果和进步轨迹
     {
       id: 6,
       prefilledInput: '我做完了',
@@ -187,13 +177,15 @@ D. 龙卷风内部温度极高，热空气上升带动物体
 - 苏格拉底对话：理解核心概念
 - 变式练习：3/3 正确（错误率 0%）
 
-**你已经完全掌握了「流速-压强-推力」的逻辑链！** 🎉
-
----
-
-接下来我建议：
-1. 继续攻克「伯努利原理应用」的多选题漏选问题
-2. 完成综合练习，巩固所有知识点`,
+**你已经完全掌握了「流速-压强-推力」的逻辑链！**`,
+      actionCards: [
+        {
+          icon: '📈',
+          title: '查看进步图表',
+          subtitle: '查看完整的学习进步可视化',
+          action: 'view_progress_chart',
+        },
+      ],
     },
     // Step 7: 综合学习计划 + 推荐资源
     {
@@ -213,21 +205,21 @@ D. 龙卷风内部温度极高，热空气上升带动物体
 - 混合题型练习
 - 实验设计与分析
 
----
-
 我还为你推荐了以下学习资源：`,
       injectResources: fluidPressureResources,
       actionCards: [
         {
-          id: 'view-resources',
-          label: '查看推荐资源',
-          action: 'navigate',
-          target: '/resources',
+          icon: '📋',
+          title: '查看计划',
+          subtitle: '查看完整的分阶段学习计划',
+          action: 'view_study_plan',
         },
         {
-          id: 'continue-learning',
-          label: '继续学习计划',
-          action: 'trigger',
+          icon: '📚',
+          title: '打开资源库',
+          subtitle: '浏览推荐的学习资源',
+          action: 'open_panel',
+          actionPayload: 'resources',
         },
       ],
     },
