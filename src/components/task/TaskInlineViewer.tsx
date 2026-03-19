@@ -21,12 +21,13 @@ interface TaskInlineViewerProps {
   onNextQuestion?: () => void;
   onExplainQuestion?: (question: TaskQuestion, userAnswer: string | string[], correctAnswer: string | string[]) => void;
   onGenerateVariant?: (question: TaskQuestion) => void;
+  isVariantGenerating?: boolean;
 }
 
 export default function TaskInlineViewer({
   task, mode, currentQuestionIndex, selectedAnswers,
   quickResult, explainQuestion, onFullscreen, onBack,
-  onPrevQuestion, onNextQuestion, onExplainQuestion, onGenerateVariant,
+  onPrevQuestion, onNextQuestion, onExplainQuestion, onGenerateVariant, isVariantGenerating,
 }: TaskInlineViewerProps) {
   const { t } = useLanguage();
   const questions = task.questions || [];
@@ -270,7 +271,7 @@ export default function TaskInlineViewer({
           <ChevronLeft size={14} />{t('上一题')}
         </button>
         <div className="flex-1 flex gap-2">
-          {onExplainQuestion && (
+          {!isShortAnswer && onExplainQuestion && (
             <button
               onClick={() => onExplainQuestion(activeQuestion, userAnswer, correctAnswer)}
               className="flex-1 px-3 py-2 rounded-lg bg-primary-50 border border-primary-200 text-primary-700 text-xs font-medium hover:bg-primary-100 flex items-center justify-center gap-1"
@@ -278,12 +279,22 @@ export default function TaskInlineViewer({
               <Lightbulb size={14} />{t('详细解释')}
             </button>
           )}
-          {!isCorrect && detail && onGenerateVariant && (
+          {isShortAnswer && onExplainQuestion && (
             <button
-              onClick={() => onGenerateVariant(activeQuestion)}
-              className="flex-1 px-3 py-2 rounded-lg bg-orange-50 border border-orange-200 text-orange-700 text-xs font-medium hover:bg-orange-100 flex items-center justify-center gap-1"
+              onClick={() => onExplainQuestion(activeQuestion, userAnswer, correctAnswer)}
+              className="flex-1 px-3 py-2 rounded-lg bg-primary-50 border border-primary-200 text-primary-700 text-xs font-medium hover:bg-primary-100 flex items-center justify-center gap-1"
             >
-              <Shuffle size={14} />{t('变种题')}
+              <Lightbulb size={14} />{t('继续讨论')}
+            </button>
+          )}
+          {detail && onGenerateVariant && (
+            <button
+              onClick={() => !isVariantGenerating && onGenerateVariant(activeQuestion)}
+              disabled={isVariantGenerating}
+              className="flex-1 px-3 py-2 rounded-lg bg-orange-50 border border-orange-200 text-orange-700 text-xs font-medium hover:bg-orange-100 flex items-center justify-center gap-1 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isVariantGenerating ? <Loader2 size={14} className="animate-spin" /> : <Shuffle size={14} />}
+              {isVariantGenerating ? t('生成中…') : t('变种题')}
             </button>
           )}
         </div>

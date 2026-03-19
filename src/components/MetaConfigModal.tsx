@@ -32,17 +32,19 @@ export default function MetaConfigModal({ config, onSave, onClose }: MetaConfigM
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-accent-500 to-primary-500 text-white p-5">
+        <div className="bg-white border-b border-gray-200 text-gray-900 p-5">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold flex items-center gap-2">
-                <Activity size={20} />
+                <div className="p-2 bg-accent-50 rounded-lg">
+                  <Activity size={20} className="text-accent-600" />
+                </div>
                 {t('学情监控配置')}
               </h2>
-              <p className="text-accent-100 text-sm mt-1">{t('选择监控策略并自定义监控指令')}</p>
+              <p className="text-gray-600 text-sm mt-1 ml-11">{t('选择监控策略并自定义监控指令')}</p>
             </div>
-            <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors">
-              <X size={20} />
+            <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+              <X size={20} className="text-gray-600" />
             </button>
           </div>
         </div>

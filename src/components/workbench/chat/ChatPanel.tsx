@@ -471,7 +471,7 @@ export function ChatPanel(props: ChatPanelProps) {
               </button>
               {/* Send button */}
               <button
-                onClick={handleSendMessage}
+                onClick={() => handleSendMessage()}
                 disabled={isLoading || !inputMessage.trim()}
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
               >

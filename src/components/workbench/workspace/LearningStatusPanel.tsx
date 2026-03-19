@@ -5,9 +5,22 @@ import { LearningMode, LearningPathNode } from '../../../types/self-study';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import {
   Activity, Map, CheckCircle2, Circle, Award, TrendingUp, Sparkles,
-  ChevronDown, ChevronUp, BookOpen, Clock
+  ChevronDown, ChevronUp, BookOpen, Clock, RefreshCw, HelpCircle,
+  Rocket, Star, Trophy, type LucideIcon
 } from 'lucide-react';
-import { mockLearningLog, LOG_ENTRY_CONFIG } from '../../../data/mockLearningLogData';
+import { mockLearningLog, LOG_ENTRY_CONFIG, type LogEntryType } from '../../../data/mockLearningLogData';
+
+// Lucide icon mapping per log type — replaces emoji for visual consistency
+const LOG_TYPE_ICON: Record<LogEntryType, LucideIcon> = {
+  resource_complete: BookOpen,
+  task_complete: CheckCircle2,
+  quiz_correction: RefreshCw,
+  follow_up_question: HelpCircle,
+  knowledge_extension: Rocket,
+  competency_upgrade: Star,
+  ai_observation: Sparkles,
+  milestone: Trophy,
+};
 
 // 5.1 根据节点标题/描述判断事件类别，映射到对应颜色
 function getNodeCategoryColor(node: LearningPathNode): {
@@ -112,37 +125,37 @@ export function LearningStatusPanel({
           ) : (
             <>
               {/* 学习概况 */}
-              <div className="bg-gradient-to-br from-primary-50 to-accent-50 rounded-lg p-4 border border-primary-100">
-                <div className="flex items-center gap-2 mb-3">
+              <div className="rounded-lg border border-gray-200 bg-white p-3">
+                <div className="flex items-center gap-2 mb-2.5">
                   <Activity size={14} className="text-primary-600" />
-                  <span className="text-xs font-bold text-primary-700">{t('学习概况')}</span>
+                  <span className="text-xs font-bold text-gray-700">{t('学习概况')}</span>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-primary-600">{formatMinutes(elapsedTime)}</div>
-                    <div className="text-xs text-gray-500">{t('学习时长')}</div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="text-center rounded-md bg-gray-50 py-2">
+                    <div className="text-sm font-semibold text-gray-800">{formatMinutes(elapsedTime)}</div>
+                    <div className="text-xs text-gray-400 mt-0.5">{t('学习时长')}</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-primary-600">{masteredCount}/{totalCount}</div>
-                    <div className="text-xs text-gray-500">{t('已掌握概念')}</div>
+                  <div className="text-center rounded-md bg-gray-50 py-2">
+                    <div className="text-sm font-semibold text-gray-800">{masteredCount}/{totalCount}</div>
+                    <div className="text-xs text-gray-400 mt-0.5">{t('已掌握概念')}</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-fresh-600">{progressPercent}%</div>
-                    <div className="text-xs text-gray-500">{t('完成进度')}</div>
+                  <div className="text-center rounded-md bg-gray-50 py-2">
+                    <div className="text-sm font-semibold text-primary-600">{progressPercent}%</div>
+                    <div className="text-xs text-gray-400 mt-0.5">{t('完成进度')}</div>
                   </div>
                 </div>
               </div>
 
-              {/* 学习路径 - 仅AI引导模式显示，5.1 统一颜色分类 */}
+              {/* 学习路径 - 仅AI引导模式显示 */}
               {learningMode === 'ai_guided' && (
-                <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg p-4 border border-primary-200">
-                  <div className="flex items-center justify-between mb-3">
+                <div className="rounded-lg border border-gray-200 bg-white p-3">
+                  <div className="flex items-center justify-between mb-2.5">
                     <div className="flex items-center gap-2">
                       <Map size={14} className="text-primary-600" />
-                      <span className="text-xs font-bold text-primary-700">{t('学习路径')}</span>
+                      <span className="text-xs font-bold text-gray-700">{t('学习路径')}</span>
                     </div>
-                    <span className="text-xs text-primary-600">
-                      <Activity size={10} className="inline animate-pulse mr-1" />
+                    <span className="text-xs text-gray-400 flex items-center gap-1">
+                      <Activity size={10} className="inline animate-pulse" />
                       {t('AI 动态规划')}
                     </span>
                   </div>
@@ -205,36 +218,49 @@ export function LearningStatusPanel({
                 </div>
               )}
 
-              {/* 学习日志（含 AI 观察） */}
-              <div className="rounded-lg border border-gray-200 overflow-hidden">
-                <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+              {/* 学习日志 — timeline layout */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
                   <Clock size={14} className="text-gray-500" />
                   <span className="text-xs font-bold text-gray-700">{t('学习日志')}</span>
                   <span className="text-xs text-gray-400 ml-auto">{mockLearningLog.length} {t('条记录')}</span>
                 </div>
-                <div className="divide-y divide-gray-100">
+
+                <div className="relative pl-6 space-y-3">
+                  {/* vertical timeline line */}
+                  <div className="absolute left-[9px] top-1 bottom-1 w-px bg-gray-200" />
+
                   {mockLearningLog.map((log) => {
                     const cfg = LOG_ENTRY_CONFIG[log.type];
-                    const isAI = log.type === 'ai_observation';
+                    const Icon = LOG_TYPE_ICON[log.type];
                     const isMilestone = log.type === 'milestone';
+                    const isAI = log.type === 'ai_observation';
                     return (
-                      <div
-                        key={log.id}
-                        className={`px-4 py-2.5 flex items-start gap-2.5 ${
-                          isAI ? 'bg-pink-50/60' : isMilestone ? 'bg-amber-50/60' : 'bg-white'
-                        }`}
-                      >
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${cfg.dotColor}`}>
-                          <span className="text-xs leading-none">{cfg.icon}</span>
+                      <div key={log.id} className="relative">
+                        {/* timeline dot */}
+                        <div className={`absolute -left-6 top-2.5 w-[18px] h-[18px] rounded-full flex items-center justify-center ring-2 ring-white ${
+                          isMilestone ? 'bg-amber-500' : isAI ? 'bg-purple-500' : 'bg-gray-300'
+                        }`}>
+                          <Icon size={10} className="text-white" />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-medium text-gray-800 truncate">{log.title}</span>
-                            <span className="text-xs text-gray-400 flex-shrink-0">
+
+                        {/* entry card */}
+                        <div className={`rounded-lg border px-3 py-2.5 transition-colors ${
+                          isMilestone
+                            ? 'bg-amber-50/60 border-amber-200'
+                            : isAI
+                            ? 'bg-purple-50/40 border-purple-200'
+                            : 'bg-white border-gray-200 hover:border-gray-300'
+                        }`}>
+                          <div className="flex items-center justify-between gap-2 mb-0.5">
+                            <span className={`text-xs font-medium truncate ${
+                              isMilestone ? 'text-amber-800' : isAI ? 'text-purple-800' : 'text-gray-800'
+                            }`}>{log.title}</span>
+                            <span className="text-xs text-gray-400 flex-shrink-0 tabular-nums">
                               {log.timestamp.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-500 leading-relaxed mt-0.5 line-clamp-2">{log.description}</p>
+                          <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">{log.description}</p>
                         </div>
                       </div>
                     );

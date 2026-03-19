@@ -78,6 +78,8 @@ interface LeftPanelProps {
   onSetExplainQuestion?: (q: TaskQuestion | null) => void;
   onExplainQuestion?: (question: TaskQuestion, userAnswer: string | string[], correctAnswer: string | string[]) => void;
   onSendMessage?: (message: string) => void;
+  generatingToolId?: string | null;
+  onTriggerVariantGeneration?: () => void;
 }
 
 export function LeftPanel(props: LeftPanelProps) {
@@ -101,7 +103,7 @@ export function LeftPanel(props: LeftPanelProps) {
     selectedTaskIds, toggleAllTasks, toggleAllResources, toggleTaskSelection, setEditingTask, onSaveTask,
     onSetViewingResource,
     explainQuestion, onSetExpandedTask, onSetTaskDisplayMode, onSetExplainQuestion,
-    onExplainQuestion, onSendMessage,
+    onExplainQuestion, onSendMessage, generatingToolId, onTriggerVariantGeneration,
   } = props;
 
   // 粘贴文本弹窗状态
@@ -332,11 +334,8 @@ export function LeftPanel(props: LeftPanelProps) {
                       }
                     }}
                     onExplainQuestion={onExplainQuestion}
-                    onGenerateVariant={(question) => {
-                      const typeLabel = question.type === 'single_choice' ? '单选题' : question.type === 'multiple_choice' ? '多选题' : question.type === 'fill_in_blank' ? '填空题' : '判断题';
-                      const optionsText = question.options ? `\n选项：\n${question.options.map((opt, i) => `${String.fromCharCode(65 + i)}. ${opt}`).join('\n')}` : '';
-                      onSendMessage?.(`请根据这道${typeLabel}生成一道类似的变种题，保持相同知识点和难度，但改变具体场景或数据：\n\n原题：${question.content}${optionsText}\n\n要求：提供完整的题目、选项（如有）、正确答案和解析。`);
-                    }}
+                    onGenerateVariant={() => onTriggerVariantGeneration?.()}
+                    isVariantGenerating={generatingToolId === 'generate_variant_question'}
                   />
                 </div>
               ) : (
@@ -437,7 +436,7 @@ export function LeftPanel(props: LeftPanelProps) {
                 )}
 
                 {/* 资源列表 */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                <div className="flex-1 overflow-y-auto">
                   {config.resources.length === 0 && aiGeneratedResources.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center py-12">
                       <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
@@ -449,11 +448,11 @@ export function LeftPanel(props: LeftPanelProps) {
                   ) : (
                     <>
                       {/* 全选控制 */}
-                      <div className="flex items-center justify-between px-1 mb-1">
+                      <div className="flex items-center justify-between px-4 py-2">
                         <span className="text-xs text-gray-500">{config.resources.length + aiGeneratedResources.length + mockAIResources.length} {t('个来源')}</span>
                         <button
                           onClick={() => toggleAllResources()}
-                          className="text-xs text-gray-600 hover:text-gray-800 font-medium p-2 rounded-lg"
+                          className="text-xs text-gray-600 hover:text-gray-800 font-medium px-2 py-1 rounded"
                         >
                           {selectedResourceIds.size === config.resources.length + aiGeneratedResources.length + mockAIResources.length ? t('取消全选') : t('全选')}
                         </button>
@@ -464,26 +463,19 @@ export function LeftPanel(props: LeftPanelProps) {
                         <div
                           key={resource.id}
                           onClick={(e) => { e.stopPropagation(); onResourceClick(resource); }}
-                          className={`flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:${getThemeClass('border')} hover:shadow-sm transition-all cursor-pointer group`}
+                          className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors cursor-pointer group"
                         >
-                          {/* 选中指示器 */}
                           <div
                             onClick={(e) => { e.stopPropagation(); toggleResourceSelection(resource.id); }}
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${selectedResourceIds.has(resource.id) ? 'border-gray-400 bg-gray-500' : 'border-gray-300 bg-white'}`}
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${selectedResourceIds.has(resource.id) ? 'border-gray-400 bg-gray-500' : 'border-gray-300 bg-white'}`}
                           >
                             {selectedResourceIds.has(resource.id) && <Check size={12} className="text-white" />}
                           </div>
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gray-100">
+                            <span className="text-sm">{resource.icon}</span>
+                          </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0 bg-gray-100">
-                                <span className="text-sm">{resource.icon}</span>
-                              </div>
-                              <p className="text-sm font-medium text-gray-700 truncate">{resource.title}</p>
-                            </div>
-                            <p className="text-xs text-gray-400 line-clamp-1 ml-8 flex items-center gap-1">
-                              <Sparkles size={10} />
-                              {new Date(resource.generatedAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
-                            </p>
+                            <p className="text-sm text-gray-800 truncate">{resource.title}</p>
                           </div>
                         </div>
                       ))}
@@ -496,53 +488,31 @@ export function LeftPanel(props: LeftPanelProps) {
                             e.stopPropagation();
                             onResourceClick(resource);
                           }}
-                          className={`flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:${getThemeClass('border')} hover:shadow-sm transition-all cursor-pointer group`}
+                          className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors cursor-pointer group"
                         >
-                          {/* 选中指示器 */}
                           <div
                             onClick={(e) => { e.stopPropagation(); toggleResourceSelection(resource.id); }}
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${selectedResourceIds.has(resource.id) ? 'border-gray-400 bg-gray-500' : 'border-gray-300 bg-white'}`}
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${selectedResourceIds.has(resource.id) ? 'border-gray-400 bg-gray-500' : 'border-gray-300 bg-white'}`}
                           >
                             {selectedResourceIds.has(resource.id) && <Check size={12} className="text-white" />}
                           </div>
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                            resource.type === 'video' ? 'bg-red-50' :
+                            resource.type === 'presentation' ? 'bg-orange-50' :
+                            resource.type === 'interactive' ? 'bg-green-50' : 'bg-blue-50'
+                          }`}>
+                            {resource.type === 'video' ? (
+                              <Video size={16} className="text-red-500" />
+                            ) : resource.type === 'presentation' ? (
+                              <FileSpreadsheet size={16} className="text-orange-500" />
+                            ) : resource.type === 'interactive' ? (
+                              <Globe size={16} className="text-green-500" />
+                            ) : (
+                              <FileText size={16} className="text-blue-500" />
+                            )}
+                          </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 ${
-                                resource.type === 'video' ? 'bg-red-100' :
-                                resource.type === 'presentation' ? 'bg-orange-100' :
-                                resource.type === 'interactive' ? 'bg-green-100' : 'bg-blue-100'
-                              }`}>
-                                {resource.type === 'video' ? (
-                                  <Video size={12} className="text-red-600" />
-                                ) : resource.type === 'presentation' ? (
-                                  <FileSpreadsheet size={12} className="text-orange-600" />
-                                ) : resource.type === 'interactive' ? (
-                                  <Globe size={12} className="text-green-600" />
-                                ) : (
-                                  <FileText size={12} className="text-blue-600" />
-                                )}
-                              </div>
-                              <p className="text-sm font-medium text-gray-700 truncate">{resource.title}</p>
-                              {resource.type === 'interactive' && resource.interactiveCategory && (
-                                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-                                  resource.interactiveCategory === 'animation' ? 'bg-purple-100 text-purple-700' :
-                                  resource.interactiveCategory === 'visualization' ? 'bg-blue-100 text-blue-700' :
-                                  resource.interactiveCategory === 'simulation' ? 'bg-green-100 text-green-700' :
-                                  'bg-amber-100 text-amber-700'
-                                }`}>
-                                  {resource.interactiveCategory === 'animation' ? '动画' :
-                                   resource.interactiveCategory === 'visualization' ? '可视化' :
-                                   resource.interactiveCategory === 'simulation' ? '模拟' : '测试'}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-400 line-clamp-1 ml-8">
-                              {resource.description || (
-                                resource.type === 'video' ? '视频文件' :
-                                resource.type === 'presentation' ? '演示文稿' :
-                                resource.type === 'interactive' ? '互动资源' : '暂无简介'
-                              )}
-                            </p>
+                            <p className="text-sm text-gray-800 truncate">{resource.title}</p>
                           </div>
                           {/* 资源可见性指示 + 设置按钮 */}
                           <div className="flex items-center gap-1 flex-shrink-0">

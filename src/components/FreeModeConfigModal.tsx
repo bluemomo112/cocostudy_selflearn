@@ -33,17 +33,19 @@ export default function FreeModeConfigModal({ config, onSave, onClose }: FreeMod
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header with gradient */}
-        <div className="bg-gradient-to-r from-primary-500 to-accent-500 text-white p-5">
+        <div className="bg-white border-b border-gray-200 text-gray-900 p-5">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold flex items-center gap-2">
-                <MessageCircle size={20} />
+                <div className="p-2 bg-primary-50 rounded-lg">
+                  <MessageCircle size={20} className="text-primary-600" />
+                </div>
                 {t('自由对话模式配置')}
               </h2>
-              <p className="text-primary-100 text-sm mt-1">{t('选择 AI 助手并追加教学指令')}</p>
+              <p className="text-gray-600 text-sm mt-1 ml-11">{t('选择 AI 助手并追加教学指令')}</p>
             </div>
-            <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors">
-              <X size={20} />
+            <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+              <X size={20} className="text-gray-600" />
             </button>
           </div>
         </div>

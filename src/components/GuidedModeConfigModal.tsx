@@ -42,17 +42,19 @@ export default function GuidedModeConfigModal({ config, onSave, onClose }: Guide
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white p-5">
+        <div className="bg-white border-b border-gray-200 text-gray-900 p-5">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold flex items-center gap-2">
-                <GitBranch size={20} />
+                <div className="p-2 bg-emerald-50 rounded-lg">
+                  <GitBranch size={20} className="text-emerald-600" />
+                </div>
                 {t('引导学习模式配置')}
               </h2>
-              <p className="text-emerald-100 text-sm mt-1">{t('选择教学法流程，可微调各阶段的AI提示词')}</p>
+              <p className="text-gray-600 text-sm mt-1 ml-11">{t('选择教学法流程，可微调各阶段的AI提示词')}</p>
             </div>
-            <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors">
-              <X size={20} />
+            <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+              <X size={20} className="text-gray-600" />
             </button>
           </div>
         </div>

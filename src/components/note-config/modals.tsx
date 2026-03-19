@@ -227,16 +227,23 @@ const generateTagRecommendations = (title: string, subjects: string[]): string[]
   return [...new Set(recommendedTags)]; // 去重
 };
 
-// 完整学科列表
-const ALL_SUBJECTS = [
+// 简体学科列表
+const ALL_SUBJECTS_CN = [
   '语文', '数学', '英语', '物理', '化学', '生物',
   '历史', '地理', '政治', '科学', '信息技术', '通用技术',
   '音乐', '美术', '体育', '心理健康', '劳动技术', '综合实践',
 ];
 
+// 繁体（香港）学科列表
+const ALL_SUBJECTS_TW = [
+  '中文', '英文', '數學', '科學', '資訊科技', '物理', '化學', '生物',
+  '歷史', '地理', '經濟與社會', '生活與社會', '公民', '常識', 'STEM',
+  '美術', '體育', '音樂', '宗教', '其他',
+];
+
 // NoteInfoModal - 配置模态框
 export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grades, classes }: any) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [localConfig, setLocalConfig] = useState({
     title: config.title || '',
     cover: config.cover || '',
@@ -263,7 +270,8 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
     includeLearningPath: true,
   });
 
-  const allSubjects = ALL_SUBJECTS;
+  // 根据语言选择学科列表
+  const allSubjects = language === 'zh-TW' ? ALL_SUBJECTS_TW : ALL_SUBJECTS_CN;
 
   // AI 自动推荐封面和标签
   useEffect(() => {
@@ -390,20 +398,20 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center backdrop-blur-sm" onClick={onClose}>
           <div className="bg-white w-[900px] max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden border border-gray-100" onClick={(e) => e.stopPropagation()}>
         {/* 头部 */}
-        <div className="bg-gradient-to-br from-primary-600 via-primary-700 to-accent-700 text-white px-6 py-5">
+        <div className="bg-white border-b border-gray-200 px-6 py-5">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold flex items-center gap-2.5">
-                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                  <Settings size={22} />
+              <h2 className="text-xl font-bold flex items-center gap-2.5 text-gray-900">
+                <div className="p-2 bg-primary-50 rounded-lg">
+                  <Settings size={22} className="text-primary-600" />
                 </div>{t('笔记基本信息配置')}</h2>
-              <p className="text-primary-100 text-sm mt-1.5 ml-11">{t('配置课程信息并发布到班级')}</p>
+              <p className="text-gray-600 text-sm mt-1.5 ml-11">{t('配置课程信息并发布到班级')}</p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              <X size={20} />
+              <X size={20} className="text-gray-600" />
             </button>
           </div>
         </div>

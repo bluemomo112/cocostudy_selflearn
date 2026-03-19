@@ -16,7 +16,11 @@ interface PublishModalProps {
 
 const GRADES = ['中一', '中二', '中三', '中四', '中五', '中六'];
 
-const SUBJECTS = ['中文', '數學', '英文', '科學', '物理', '化學', '生物', '歷史', '地理', '通識', '音樂', '美術', '體育', '資訊科技'];
+// 简体学科列表
+const SUBJECTS_CN = ['语文', '英语', '数学', '科学', '信息技术', '物理', '化学', '生物', '历史', '地理', '政治', '音乐', '美术', '体育', '其他'];
+
+// 繁体（香港）学科列表
+const SUBJECTS_TW = ['中文', '英文', '數學', '科學', '資訊科技', '物理', '化學', '生物', '歷史', '地理', '經濟與社會', '生活與社會', '公民', '常識', 'STEM', '美術', '體育', '音樂', '宗教', '其他'];
 
 const MOCK_CLASSES = [
   '中一(1)班', '中一(2)班',
@@ -54,7 +58,10 @@ export default function PublishModal({
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const qrRef = useRef<SVGSVGElement>(null);
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+
+  // 根据语言选择学科列表
+  const SUBJECTS = language === 'zh-TW' ? SUBJECTS_TW : SUBJECTS_CN;
 
   if (!isOpen) return null;
 
@@ -136,18 +143,23 @@ export default function PublishModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-xl">
           <div className="flex items-center gap-3">
-            <Share2 className="text-primary-600" size={24} />
-            <h2 className="text-xl font-semibold text-gray-900">
-              {isPublished ? '重新發布學習空間' : '發布學習空間'}
-            </h2>
+            <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center">
+              <Share2 size={20} className="text-primary-600" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">
+                {isPublished ? t('重新發布學習空間') : t('發布學習空間')}
+              </h2>
+              <p className="text-gray-600 text-sm">{t('配置課程信息並發佈到班級')}</p>
+            </div>
           </div>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <X size={20} className="text-gray-500" />
+            <X size={20} className="text-gray-600" />
           </button>
         </div>
 
@@ -158,13 +170,13 @@ export default function PublishModal({
               {/* 學習空間名稱 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  學習空間名稱
+                  {t('學習空間名稱')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={metadata.spaceName || ''}
                   onChange={(e) => setMetadata({ ...metadata, spaceName: e.target.value })}
-                  placeholder="請輸入學習空間名稱"
+                  placeholder={t('請輸入學習空間名稱')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
@@ -172,41 +184,11 @@ export default function PublishModal({
               {/* 發布信息 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                  發布信息
+                  {t('涉及學科')} <span className="text-gray-400 text-xs">{t('可多選')}</span>
                 </label>
                 <div className="space-y-4">
-                  {/* 年級選擇 */}
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-2">年級</label>
-                    <select
-                      value={metadata.grade || ''}
-                      onChange={(e) => setMetadata({ ...metadata, grade: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    >
-                      <option value="">請選擇年級（可選）</option>
-                      {GRADES.map((grade) => (
-                        <option key={grade} value={grade}>
-                          {grade}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* 章節輸入 */}
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-2">章節（可選）</label>
-                    <input
-                      type="text"
-                      value={metadata.chapter || ''}
-                      onChange={(e) => setMetadata({ ...metadata, chapter: e.target.value })}
-                      placeholder="例如：第三章 流體壓強"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    />
-                  </div>
-
                   {/* 學科多選 */}
                   <div>
-                    <label className="block text-xs text-gray-600 mb-2">學科</label>
                     <div className="flex flex-wrap gap-2">
                       {SUBJECTS.map((subject) => (
                         <button
@@ -224,13 +206,42 @@ export default function PublishModal({
                     </div>
                   </div>
 
+                  {/* 年級選擇 */}
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-2">{t('年級')}</label>
+                    <select
+                      value={metadata.grade || ''}
+                      onChange={(e) => setMetadata({ ...metadata, grade: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    >
+                      <option value="">{t('請選擇年級')}（{t('可選')}）</option>
+                      {GRADES.map((grade) => (
+                        <option key={grade} value={grade}>
+                          {grade}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 章節輸入 */}
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-2">{t('章節')}（{t('可選')}）</label>
+                    <input
+                      type="text"
+                      value={metadata.chapter || ''}
+                      onChange={(e) => setMetadata({ ...metadata, chapter: e.target.value })}
+                      placeholder={t('例如：第三章 流體壓強')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+
                   {/* 匿名模式開關 */}
                   <div className="border-t border-gray-200 pt-4">
                     <label className="flex items-center justify-between cursor-pointer">
                       <div>
-                        <div className="text-sm font-medium text-gray-700">匿名模式</div>
+                        <div className="text-sm font-medium text-gray-700">{t('匿名模式')}</div>
                         <div className="text-xs text-gray-500 mt-1">
-                          開啟後，學生無需綁定班級，使用訪問碼即可進入
+                          {t('開啟後，學生無需綁定班級，使用訪問碼即可進入')}
                         </div>
                       </div>
                       <div className="relative">
@@ -254,7 +265,7 @@ export default function PublishModal({
                   {/* 班級多選 */}
                   {!metadata.isAnonymous && (
                     <div>
-                    <label className="block text-xs text-gray-600 mb-2">綁定班級</label>
+                    <label className="block text-xs text-gray-600 mb-2">{t('綁定班級')}</label>
                     <div className="border border-gray-300 rounded-lg p-3 max-h-40 overflow-y-auto">
                       <div className="space-y-2">
                         {MOCK_CLASSES.map((className) => (
@@ -281,7 +292,7 @@ export default function PublishModal({
               {/* 發布範圍配置 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                  發布範圍
+                  {t('發布範圍')}
                 </label>
                 <div className="space-y-2">
                   <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
@@ -292,8 +303,8 @@ export default function PublishModal({
                       className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
                     />
                     <div>
-                      <div className="font-medium text-gray-900">學習資源</div>
-                      <div className="text-sm text-gray-600">包含所有上傳的文檔、視頻等資源</div>
+                      <div className="font-medium text-gray-900">{t('學習資源')}</div>
+                      <div className="text-sm text-gray-600">{t('包含所有上傳的文檔、視頻等資源')}</div>
                     </div>
                   </label>
                   <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
@@ -304,8 +315,8 @@ export default function PublishModal({
                       className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
                     />
                     <div>
-                      <div className="font-medium text-gray-900">學習任務</div>
-                      <div className="text-sm text-gray-600">包含所有配置的學習任務和練習</div>
+                      <div className="font-medium text-gray-900">{t('學習任務')}</div>
+                      <div className="text-sm text-gray-600">{t('包含所有配置的學習任務和練習')}</div>
                     </div>
                   </label>
                   <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
@@ -316,8 +327,8 @@ export default function PublishModal({
                       className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
                     />
                     <div>
-                      <div className="font-medium text-gray-900">AI 設置</div>
-                      <div className="text-sm text-gray-600">包含 AI 風格、知識邊界等配置</div>
+                      <div className="font-medium text-gray-900">{t('AI 設置')}</div>
+                      <div className="text-sm text-gray-600">{t('包含 AI 風格、知識邊界等配置')}</div>
                     </div>
                   </label>
                   <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
@@ -328,8 +339,8 @@ export default function PublishModal({
                       className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
                     />
                     <div>
-                      <div className="font-medium text-gray-900">學習路徑</div>
-                      <div className="text-sm text-gray-600">包含 AI 生成的學習路徑規劃</div>
+                      <div className="font-medium text-gray-900">{t('學習路徑')}</div>
+                      <div className="text-sm text-gray-600">{t('包含 AI 生成的學習路徑規劃')}</div>
                     </div>
                   </label>
                 </div>
