@@ -1277,26 +1277,67 @@ export default function SelfStudyWorkbench({
 
   // 演示劇本操作卡片點擊處理
   const handleDemoCardAction = (action: string, payload?: string) => {
-    // 特殊 action：直接执行
-    if (action === 'open_note') {
-      setRightTab('workspace');
-    } else if (action === 'generate_mindmap') {
-      const mindMapTool = STUDIO_TOOLS.find(t => t.id === 'mind_map');
-      if (mindMapTool) handleStudioToolClick(mindMapTool);
-    } else if (action === 'navigate' && payload) {
-      // 尝试打开资源
-      const resource = config.resources.find(r => r.id === payload);
-      if (resource) {
-        setViewingResource({
-          id: resource.id,
-          title: resource.title,
-          type: resource.type,
-          description: resource.description,
-        });
+    // ── 1. 执行 action 对应的 UI 操作 ──
+    switch (action) {
+      case 'open_panel':
+        if (payload === 'resources' || payload === 'sources') {
+          setCollapsedPanels(prev => ({ ...prev, sources: false, aiResources: false }));
+        } else if (payload === 'tasks') {
+          setRightTab('workspace');
+          setCollapsedPanels(prev => ({ ...prev, tasks: false }));
+        } else if (payload === 'notes') {
+          setRightTab('workspace');
+        } else if (payload === 'log') {
+          setRightTab('status');
+        }
+        break;
+      case 'navigate':
+        if (payload) {
+          const resource = config.resources.find(r => r.id === payload);
+          if (resource) {
+            setViewingResource({
+              id: resource.id,
+              title: resource.title,
+              type: resource.type,
+              description: resource.description,
+            });
+          }
+        }
+        break;
+      case 'open_resource':
+        if (payload) {
+          const res = config.resources.find(r => r.id === payload);
+          if (res) {
+            setViewingResource({
+              id: res.id,
+              title: res.title,
+              type: res.type,
+              description: res.description,
+            });
+          }
+        }
+        break;
+      case 'open_note':
+        setRightTab('workspace');
+        break;
+      case 'generate_mindmap': {
+        const mindMapTool = STUDIO_TOOLS.find(t => t.id === 'mind_map');
+        if (mindMapTool) handleStudioToolClick(mindMapTool);
+        break;
       }
+      case 'start_quiz':
+        setRightTab('workspace');
+        setCollapsedPanels(prev => ({ ...prev, tasks: false }));
+        break;
+      case 'upload_file':
+        setIsFileUploadOpen(true);
+        break;
+      case 'dismiss':
+        exitDemoMode();
+        return; // dismiss 不推进步骤
     }
 
-    // 通用行为：推进演示到下一步
+    // ── 2. 推进演示到下一步 ──
     if (!activeScenario || demoScenarioStep >= activeScenario.steps.length) return;
 
     const nextStep = activeScenario.steps[demoScenarioStep];
@@ -1306,7 +1347,6 @@ export default function SelfStudyWorkbench({
       // 下一步需要用户输入 → 预填并自动发送
       setInputMessage(nextStep.prefilledInput);
       setTimeout(() => {
-        // 模拟发送
         const userMsg: ChatMessage = {
           id: `demo_user_${Date.now()}`,
           role: 'user',
@@ -1384,10 +1424,11 @@ export default function SelfStudyWorkbench({
   };
 
   // 发送消息
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim() || isLoading) return;
+  const handleSendMessage = async (overrideMessage?: string) => {
+    const messageToSend = overrideMessage ?? inputMessage;
+    if (!messageToSend.trim() || isLoading) return;
 
-    if (activeScenario && demoScenarioStep < activeScenario.steps.length) {
+    if (!overrideMessage && activeScenario && demoScenarioStep < activeScenario.steps.length) {
       handleDemoSend();
       return;
     }
@@ -1395,13 +1436,13 @@ export default function SelfStudyWorkbench({
     const userMessage: ChatMessage = {
       id: `msg_${Date.now()}`,
       role: 'user',
-      content: inputMessage,
+      content: messageToSend,
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    const userInput = inputMessage.toLowerCase();
-    setInputMessage('');
+    const userInput = messageToSend.toLowerCase();
+    if (!overrideMessage) setInputMessage('');
     setIsLoading(true);
 
     // 模拟 AI 回复 - 根据模式和输入内容生成不同回复
@@ -2678,6 +2719,11 @@ export default function SelfStudyWorkbench({
           onSetTaskDisplayMode={setTaskDisplayMode}
           onSetExplainQuestion={setExplainQuestion}
           onExplainQuestion={handleExplainQuestion}
+          generatingToolId={generatingToolId}
+          onTriggerVariantGeneration={() => {
+            const variantTool = STUDIO_TOOLS.find(t => t.id === 'generate_variant_question');
+            if (variantTool) handleStudioToolClick(variantTool);
+          }}
         />
 
         {/* 左侧调整器 - 仅在未折叠时显示 */}
