@@ -1,5 +1,6 @@
 'use client';
 
+import { createPortal } from 'react-dom';
 import {
   ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
   Check, X, Zap, Brain, FileEdit, Activity, AlertCircle,
@@ -89,7 +90,8 @@ function FullscreenMode({ task, idx, selectedAnswers, submissionText, onAnswer, 
     ? quickResult.details.every((d: any) => !d.gradingStatus || d.gradingStatus === 'instant' || d.gradingStatus === 'graded')
     : false;
 
-  return (
+  // 使用 Portal 渲染到 body，避免父容器 backdrop-filter/transform 破坏 fixed 定位
+  return createPortal(
     <>
       {/* 背景遮罩 */}
       <div className="fixed inset-0 bg-black/60 z-50" onClick={onClose} />
@@ -275,7 +277,8 @@ function FullscreenMode({ task, idx, selectedAnswers, submissionText, onAnswer, 
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
 
