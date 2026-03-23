@@ -475,7 +475,7 @@ export function LeftPanel(props: LeftPanelProps) {
                             <span className="text-sm">{resource.icon}</span>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-gray-800 truncate">{resource.title}</p>
+                            <p className="text-sm text-gray-800 truncate">{t(resource.title)}</p>
                           </div>
                         </div>
                       ))}
@@ -512,7 +512,7 @@ export function LeftPanel(props: LeftPanelProps) {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-gray-800 truncate">{resource.title}</p>
+                            <p className="text-sm text-gray-800 truncate">{t(resource.title)}</p>
                           </div>
                           {/* 资源可见性指示 + 设置按钮 */}
                           <div className="flex items-center gap-1 flex-shrink-0">
@@ -677,7 +677,7 @@ export function LeftPanel(props: LeftPanelProps) {
                           )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <p className={`text-sm font-medium truncate ${completedTasks.has(task.id) ? 'text-green-700' : 'text-gray-700'}`}>{task.title}</p>
+                              <p className={`text-sm font-medium truncate ${completedTasks.has(task.id) ? 'text-green-700' : 'text-gray-700'}`}>{t(task.title)}</p>
                               {task.required && (
                                 <span className="flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600">
                                   {t('必修')}
@@ -688,13 +688,13 @@ export function LeftPanel(props: LeftPanelProps) {
                             {task.aiGradingStatus === 'grading' && (
                               <div className="flex items-center gap-1.5 mt-0.5">
                                 <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                                <span className="text-xs text-blue-600 font-medium">AI 批改中...</span>
+                                <span className="text-xs text-blue-600 font-medium">{t('AI 批改中...')}</span>
                               </div>
                             )}
                             {task.aiGradingStatus === 'completed' && (
                               <div className="flex items-center gap-1.5 mt-0.5">
                                 <CheckCircle2 size={12} className="text-green-500" />
-                                <span className="text-xs text-green-600 font-medium">批改完成</span>
+                                <span className="text-xs text-green-600 font-medium">{t('批改完成')}</span>
                               </div>
                             )}
                             <div className="flex items-center gap-2 text-xs text-gray-400">

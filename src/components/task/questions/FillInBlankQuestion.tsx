@@ -34,7 +34,7 @@ export default function FillInBlankQuestion({
               <div className="flex items-center gap-2">
                 {isCorrect ? <Check size={compact ? 14 : 18} className="text-green-600 flex-shrink-0" />
                 : <X size={compact ? 14 : 18} className="text-red-600 flex-shrink-0" />}
-                <span className={compact ? 'text-sm' : 'text-lg'}>{answers[idx] || '（未作答）'}</span>
+                <span className={compact ? 'text-sm' : 'text-lg'}>{answers[idx] || t('（未作答）')}</span>
               </div>
             </div>
           ))}
@@ -69,12 +69,12 @@ export default function FillInBlankQuestion({
       ) : (
         Array.from({ length: blankCount }).map((_, idx) => (
           <div key={idx} className="flex items-center gap-2">
-            <span className={`${compact ? 'text-xs w-12' : 'text-sm w-16'} font-medium text-gray-500 flex-shrink-0`}>空 {idx + 1}：</span>
+            <span className={`${compact ? 'text-xs w-12' : 'text-sm w-16'} font-medium text-gray-500 flex-shrink-0`}>{t('空')} {idx + 1}：</span>
             <input
               type="text"
               value={answers[idx] || ''}
               onChange={(e) => handleBlankChange(idx, e.target.value)}
-              placeholder={`第 ${idx + 1} 空`}
+              placeholder={`${t('第')} ${idx + 1} ${t('空')}`}
               disabled={disabled}
               className={`flex-1 ${compact ? 'p-2 text-sm rounded-lg border' : 'p-3 text-lg rounded-xl border-2'} border-gray-200 focus:border-primary-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400`}
             />

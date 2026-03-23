@@ -226,7 +226,7 @@ function ReviewQuestion({ q, idx, detail, answer, onExplainQuestion }: {
       )}
 
       <div className="text-2xl font-medium text-gray-900 leading-relaxed mb-8">
-        <RichContent content={q.content} />
+        <RichContent content={t(q.content)} />
       </div>
       <QuestionRenderer
         question={q}
@@ -244,10 +244,10 @@ function ReviewQuestion({ q, idx, detail, answer, onExplainQuestion }: {
         <div className="mt-8 p-5 bg-blue-50 border border-blue-200 rounded-xl">
           <div className="flex items-center gap-2 mb-2">
             <Lightbulb size={18} className="text-blue-600" />
-            <span className="text-sm font-semibold text-blue-800">解析</span>
+            <span className="text-sm font-semibold text-blue-800">{t('解析')}</span>
           </div>
           <div className="text-sm text-blue-900 leading-relaxed">
-            <RichContent content={detail?.explanation || q.explanation || ''} />
+            <RichContent content={t(detail?.explanation || q.explanation || '')} />
           </div>
         </div>
       )}

@@ -163,7 +163,7 @@ function FullscreenMode({ task, idx, selectedAnswers, submissionText, onAnswer, 
                     )}
                   </div>
                   <div className="text-2xl font-medium text-gray-900 leading-relaxed">
-                    <RichContent content={q.content} />
+                    <RichContent content={t(q.content)} />
                   </div>
                   <QuestionRenderer
                     question={q}
@@ -194,7 +194,7 @@ function FullscreenMode({ task, idx, selectedAnswers, submissionText, onAnswer, 
                       )}
                       {feedback.explanation && (
                         <div className="text-sm text-gray-600 pt-1 border-t border-red-100">
-                          <RichContent content={feedback.explanation} compact />
+                          <RichContent content={t(feedback.explanation)} compact />
                         </div>
                       )}
                     </div>
@@ -207,7 +207,7 @@ function FullscreenMode({ task, idx, selectedAnswers, submissionText, onAnswer, 
                         <span className="font-medium text-sm">{t('回答正确')}</span>
                       </div>
                       <div className="text-sm text-gray-600">
-                        <RichContent content={feedback.explanation} compact />
+                        <RichContent content={t(feedback.explanation)} compact />
                       </div>
                     </div>
                   )}
@@ -217,8 +217,8 @@ function FullscreenMode({ task, idx, selectedAnswers, submissionText, onAnswer, 
 
             {(task.type === 'assignment' || task.type === 'reflection') && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-medium text-gray-900">{task.title}</h2>
-                {task.description && <p className="text-base text-gray-600">{task.description}</p>}
+                <h2 className="text-2xl font-medium text-gray-900">{t(task.title)}</h2>
+                {task.description && <p className="text-base text-gray-600">{t(task.description)}</p>}
                 <SubmissionToolbar value={submissionText} onChange={(v: string) => onStateUpdate?.({ submissionText: v })} />
               </div>
             )}
@@ -322,10 +322,10 @@ function EmbeddedMode({ task, selectedAnswers, submissionText, onAnswer, submit,
               <div key={q.id} className="space-y-1.5">
                 <div className="text-xs text-gray-700 font-medium">
                   <span>{i + 1}. </span>
-                  <RichContent content={q.content} className="inline" compact />
-                  {q.type === 'multiple_choice' && <span className="ml-1 text-xs text-blue-600">(多选)</span>}
-                  {q.type === 'true_false' && <span className="ml-1 text-xs text-purple-600">(判断)</span>}
-                  {q.type === 'fill_in_blank' && <span className="ml-1 text-xs text-green-600">(填空)</span>}
+                  <RichContent content={t(q.content)} className="inline" compact />
+                  {q.type === 'multiple_choice' && <span className="ml-1 text-xs text-blue-600">{t('(多选)')}</span>}
+                  {q.type === 'true_false' && <span className="ml-1 text-xs text-purple-600">{t('(判断)')}</span>}
+                  {q.type === 'fill_in_blank' && <span className="ml-1 text-xs text-green-600">{t('(填空)')}</span>}
                 </div>
                 <QuestionRenderer question={q} selectedAnswer={selectedAnswers[q.id]} onAnswer={onAnswer} compact />
               </div>
@@ -337,7 +337,7 @@ function EmbeddedMode({ task, selectedAnswers, submissionText, onAnswer, submit,
           <div className="space-y-3">
             {task.prompt && (
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-3">
-                <p className="text-xs text-blue-900 whitespace-pre-line">{task.prompt}</p>
+                <p className="text-xs text-blue-900 whitespace-pre-line">{t(task.prompt)}</p>
               </div>
             )}
             <textarea value={submissionText} onChange={(e: any) => onStateUpdate?.({ submissionText: e.target.value })}

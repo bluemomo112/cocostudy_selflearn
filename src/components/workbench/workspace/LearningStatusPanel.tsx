@@ -255,12 +255,12 @@ export function LearningStatusPanel({
                           <div className="flex items-center justify-between gap-2 mb-0.5">
                             <span className={`text-xs font-medium truncate ${
                               isMilestone ? 'text-amber-800' : isAI ? 'text-purple-800' : 'text-gray-800'
-                            }`}>{log.title}</span>
+                            }`}>{t(log.title)}</span>
                             <span className="text-xs text-gray-400 flex-shrink-0 tabular-nums">
                               {log.timestamp.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">{log.description}</p>
+                          <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">{t(log.description)}</p>
                         </div>
                       </div>
                     );

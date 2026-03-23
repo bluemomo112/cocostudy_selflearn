@@ -3,10 +3,12 @@
 import { Check, X } from 'lucide-react';
 import RichContent from '../RichContent';
 import { QuestionProps } from '../taskTypes';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 export default function SingleChoiceQuestion({
   question, selectedAnswer, onAnswer, disabled, showResult, isCorrect, correctAnswer, compact,
 }: QuestionProps) {
+  const { t } = useLanguage();
   if (!question.options) return null;
 
   return (
@@ -51,7 +53,7 @@ export default function SingleChoiceQuestion({
                 {optionLabel}
               </div>
               <div className={`flex-1 ${compact ? 'text-sm' : 'text-lg'} text-gray-800`}>
-                <RichContent content={option} compact={compact} />
+                <RichContent content={t(option)} compact={compact} />
               </div>
               {showResult && resultIcon && <div className="flex-shrink-0">{resultIcon}</div>}
             </div>

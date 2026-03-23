@@ -22,15 +22,17 @@ function generateInitialExplanation(
   userAnswer: string | string[],
   correctAnswer: string | string[],
   explanation?: string,
+  t?: (text: string) => string,
 ): string {
+  const translate = t || ((text: string) => text);
   const ua = Array.isArray(userAnswer) ? userAnswer.join(', ') : userAnswer;
   const ca = Array.isArray(correctAnswer) ? correctAnswer.join(', ') : correctAnswer;
-  let msg = `让我来帮你分析这道题。\n\n`;
-  msg += `你的答案是「${ua}」，正确答案是「${ca}」。\n\n`;
+  let msg = `${translate('让我来帮你分析这道题。')}\n\n`;
+  msg += `${translate('你的答案是')}「${ua}」，${translate('正确答案是')}「${ca}」。\n\n`;
   if (explanation) {
-    msg += `解析：${explanation}\n\n`;
+    msg += `${translate('解析')}：${explanation}\n\n`;
   }
-  msg += `如果还有不明白的地方，可以继续问我哦~`;
+  msg += `${translate('如果还有不明白的地方，可以继续问我哦~')}`;
   return msg;
 }
 
@@ -55,7 +57,7 @@ export default function ErrorQuestionChat({
       : [
           {
             role: 'assistant' as const,
-            content: generateInitialExplanation(question, userAnswer, correctAnswer, explanation),
+            content: generateInitialExplanation(question, userAnswer, correctAnswer, explanation, t),
           },
         ];
 

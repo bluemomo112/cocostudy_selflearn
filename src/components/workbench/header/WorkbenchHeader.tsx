@@ -102,7 +102,7 @@ export function WorkbenchHeader({
                 </button>
                 {config.publishStatus === 'published' && (
                   <span className="px-2 py-0.5 text-xs text-primary-600 bg-primary-50 border border-primary-200 rounded">
-                    已发布
+                    {t('已发布')}
                   </span>
                 )}
               </div>
@@ -115,13 +115,13 @@ export function WorkbenchHeader({
           <div className="flex items-center gap-3">
             {demoMode && (
               <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg">
-                <span className="text-xs font-medium text-amber-700">演示模式</span>
+                <span className="text-xs font-medium text-amber-700">{t('演示模式')}</span>
                 {onExitDemoMode && (
                   <button
                     onClick={onExitDemoMode}
                     className="text-xs text-amber-600 hover:text-amber-800 underline"
                   >
-                    退出
+                    {t('退出')}
                   </button>
                 )}
               </div>
@@ -131,13 +131,13 @@ export function WorkbenchHeader({
               onChange={(e) => e.target.value && onLoadScenario(e.target.value)}
               className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white hover:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors"
             >
-              <option value="">选择演示场景</option>
+              <option value="">{t('选择演示场景')}</option>
               {getScenariosByCategory().map(({ category, scenarios }) =>
                 scenarios.length > 0 ? (
-                  <optgroup key={category.id} label={category.label}>
+                  <optgroup key={category.id} label={t(category.label)}>
                     {scenarios.map((s) => (
                       <option key={s.id} value={s.id}>
-                        {s.name}
+                        {t(s.name)}
                       </option>
                     ))}
                   </optgroup>
@@ -198,10 +198,10 @@ export function WorkbenchHeader({
         <div className="bg-blue-50 border-b border-blue-200 px-6 py-2">
           <div className="flex items-center gap-4 text-sm text-blue-700">
             {config.publishMetadata.grade && (
-              <span>年级: {config.publishMetadata.grade}</span>
+              <span>{t('年级')}: {config.publishMetadata.grade}</span>
             )}
             {config.publishMetadata.subjects && config.publishMetadata.subjects.length > 0 && (
-              <span>学科: {config.publishMetadata.subjects.join(', ')}</span>
+              <span>{t('学科')}: {config.publishMetadata.subjects.join(', ')}</span>
             )}
           </div>
         </div>

@@ -53,7 +53,7 @@ function FlashcardViewer({ cards }: { cards: Array<{ front: string; back: string
   return (
     <div className="flex flex-col items-center justify-center h-full p-6 space-y-4">
       <div className="text-sm text-gray-500">
-        卡片 {currentIndex + 1} / {cards.length}
+        {t('卡片')} {currentIndex + 1} / {cards.length}
       </div>
 
       <div
@@ -72,7 +72,7 @@ function FlashcardViewer({ cards }: { cards: Array<{ front: string; back: string
             style={{ backfaceVisibility: 'hidden' }}
           >
             <div className="text-xs text-blue-600 font-medium mb-4">{t('正面')}</div>
-            <div className="text-lg text-gray-800 text-center">{currentCard.front}</div>
+            <div className="text-lg text-gray-800 text-center">{t(currentCard.front)}</div>
             <div className="text-xs text-gray-400 mt-6">{t('點擊翻轉')}</div>
           </div>
 
@@ -82,7 +82,7 @@ function FlashcardViewer({ cards }: { cards: Array<{ front: string; back: string
             style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
           >
             <div className="text-xs text-indigo-600 font-medium mb-4">{t('背面')}</div>
-            <div className="text-lg text-gray-800 text-center">{currentCard.back}</div>
+            <div className="text-lg text-gray-800 text-center">{t(currentCard.back)}</div>
             <div className="text-xs text-gray-400 mt-6">{t('點擊翻轉')}</div>
           </div>
         </div>
@@ -167,8 +167,8 @@ function AudioOverviewViewer({ chapters }: { chapters: Array<{ time: string; tit
                 <span className="text-xs font-mono text-purple-700">{chapter.time}</span>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-gray-800 mb-1">{chapter.title}</div>
-                <div className="text-xs text-gray-600 leading-relaxed">{chapter.content}</div>
+                <div className="text-sm font-medium text-gray-800 mb-1">{t(chapter.title)}</div>
+                <div className="text-xs text-gray-600 leading-relaxed">{t(chapter.content)}</div>
               </div>
             </div>
           </div>
@@ -180,6 +180,7 @@ function AudioOverviewViewer({ chapters }: { chapters: Array<{ time: string; tit
 
 // Timeline 组件
 function TimelineViewer({ events }: { events: Array<{ year: string; title: string; description: string; icon: string }> }) {
+  const { t } = useLanguage();
   return (
     <div className="p-6 overflow-y-auto">
       <div className="max-w-3xl mx-auto">
@@ -204,8 +205,8 @@ function TimelineViewer({ events }: { events: Array<{ year: string; title: strin
                 {/* 事件内容 */}
                 <div className="flex-1 pb-8">
                   <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow">
-                    <h3 className="text-base font-semibold text-gray-800 mb-2">{event.title}</h3>
-                    <p className="text-sm text-gray-600 leading-relaxed">{event.description}</p>
+                    <h3 className="text-base font-semibold text-gray-800 mb-2">{t(event.title)}</h3>
+                    <p className="text-sm text-gray-600 leading-relaxed">{t(event.description)}</p>
                   </div>
                 </div>
               </div>
@@ -219,6 +220,7 @@ function TimelineViewer({ events }: { events: Array<{ year: string; title: strin
 
 // MindMap 组件
 function MindMapViewer({ nodes }: { nodes: { center: string; branches: Array<{ title: string; items: string[] }> } }) {
+  const { t } = useLanguage();
   return (
     <div className="p-6 overflow-y-auto">
       <div className="max-w-4xl mx-auto">
@@ -226,7 +228,7 @@ function MindMapViewer({ nodes }: { nodes: { center: string; branches: Array<{ t
         <div className="flex justify-center mb-12">
           <div className="relative">
             <div className="w-48 h-48 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 shadow-2xl flex items-center justify-center">
-              <span className="text-white text-xl font-bold text-center px-6">{nodes.center}</span>
+              <span className="text-white text-xl font-bold text-center px-6">{t(nodes.center)}</span>
             </div>
             {/* 装饰圆环 */}
             <div className="absolute inset-0 rounded-full border-4 border-green-200 animate-pulse" style={{ animation: 'pulse 3s ease-in-out infinite' }} />
@@ -247,13 +249,13 @@ function MindMapViewer({ nodes }: { nodes: { center: string; branches: Array<{ t
               <div className="bg-white rounded-xl border-2 border-green-200 p-5 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-3 h-3 rounded-full bg-green-500" />
-                  <h3 className="text-base font-semibold text-gray-800">{branch.title}</h3>
+                  <h3 className="text-base font-semibold text-gray-800">{t(branch.title)}</h3>
                 </div>
                 <ul className="space-y-2">
                   {branch.items.map((item, itemIndex) => (
                     <li key={itemIndex} className="text-sm text-gray-600 flex items-start gap-2">
                       <span className="text-green-500 mt-0.5">•</span>
-                      <span>{item}</span>
+                      <span>{t(item)}</span>
                     </li>
                   ))}
                 </ul>
@@ -290,10 +292,10 @@ export default function ResourceInlineViewer({ resource, onBack, onFullscreen }:
         </button>
         <div className="flex-1 min-w-0 flex items-center gap-2">
           {resource.icon && <span className="text-sm flex-shrink-0">{resource.icon}</span>}
-          <span className="text-sm font-medium text-gray-700 truncate">{resource.title}</span>
+          <span className="text-sm font-medium text-gray-700 truncate">{t(resource.title)}</span>
           {category && (
             <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${category.color}`}>
-              {category.label}
+              {t(category.label)}
             </span>
           )}
         </div>
@@ -347,13 +349,13 @@ export default function ResourceInlineViewer({ resource, onBack, onFullscreen }:
                   ) : (
                     <FileText size={20} />
                   )}
-                  <span className="text-sm font-medium">{resource.title}</span>
+                  <span className="text-sm font-medium">{t(resource.title)}</span>
                 </div>
                 {resource.description && (
-                  <p className="text-sm text-gray-600 leading-relaxed">{resource.description}</p>
+                  <p className="text-sm text-gray-600 leading-relaxed">{t(resource.description)}</p>
                 )}
                 <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed bg-white rounded-lg border border-gray-200 p-4">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{resource.textContent}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{t(resource.textContent)}</ReactMarkdown>
                 </div>
               </div>
             ) : (
@@ -364,10 +366,10 @@ export default function ResourceInlineViewer({ resource, onBack, onFullscreen }:
                   ) : (
                     <FileText size={20} />
                   )}
-                  <span className="text-sm font-medium">{resource.title}</span>
+                  <span className="text-sm font-medium">{t(resource.title)}</span>
                 </div>
                 {resource.description && (
-                  <p className="text-sm text-gray-600 leading-relaxed">{resource.description}</p>
+                  <p className="text-sm text-gray-600 leading-relaxed">{t(resource.description)}</p>
                 )}
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <Sparkles size={24} className="text-gray-300 mb-2" />

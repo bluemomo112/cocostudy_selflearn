@@ -108,7 +108,7 @@ export default function TaskInlineViewer({
                   <span className={`w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-white ${dotCls}`}>
                     {isGrading ? <Loader2 size={10} className="animate-spin" /> : i + 1}
                   </span>
-                  <span className="text-xs text-gray-700 flex-1 line-clamp-1">{q.content}</span>
+                  <span className="text-xs text-gray-700 flex-1 line-clamp-1">{t(q.content)}</span>
                   {isSubjective
                     ? (isGrading
                         ? <Loader2 size={12} className="text-blue-400 flex-shrink-0 animate-spin" />
@@ -189,7 +189,7 @@ export default function TaskInlineViewer({
           <span className="text-xs text-gray-400 ml-auto">{currentIdx + 1} / {totalQuestions}</span>
         </div>
         <div className="text-sm font-medium text-gray-900 leading-relaxed">
-          <RichContent content={activeQuestion.content} />
+          <RichContent content={t(activeQuestion.content)} />
         </div>
         {/* 简答题：显示用户回答 + 批改状态 */}
         {isShortAnswer && detail && (
@@ -223,7 +223,7 @@ export default function TaskInlineViewer({
                     }`}>{detail.aiScore} {t('分')}</span>
                   )}
                 </div>
-                <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{detail.aiFeedback}</p>
+                <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{t(detail.aiFeedback)}</p>
               </div>
             )}
           </div>
@@ -256,7 +256,7 @@ export default function TaskInlineViewer({
           <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="text-xs font-semibold text-blue-800 mb-1">{t('解析')}</div>
             <div className="text-xs text-blue-900 leading-relaxed">
-              <RichContent content={detail?.explanation || activeQuestion.explanation || ''} />
+              <RichContent content={t(detail?.explanation || activeQuestion.explanation || '')} />
             </div>
           </div>
         )}

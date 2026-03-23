@@ -63,7 +63,7 @@ export default function ShortAnswerQuestion({
               )}
             </div>
             {aiFeedback && (
-              <p className={`${compact ? 'text-xs' : 'text-sm'} ${c.text} leading-relaxed whitespace-pre-wrap`}>{aiFeedback}</p>
+              <p className={`${compact ? 'text-xs' : 'text-sm'} ${c.text} leading-relaxed whitespace-pre-wrap`}>{t(aiFeedback)}</p>
             )}
           </div>
         </div>
