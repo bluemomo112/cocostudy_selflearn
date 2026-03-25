@@ -22,6 +22,7 @@ import {
   FileEdit, FolderOpen, Type, GripVertical, Trash2,
 } from 'lucide-react';
 import TaskEditModal from './TaskEditModal';
+import { isEnabled } from '../../../config/version';
 
 interface LeftPanelProps {
   config: SpaceConfig;
@@ -401,6 +402,7 @@ export function LeftPanel(props: LeftPanelProps) {
                       <Database size={12} />
                       {t('从资源库导入')}
                     </button>
+                    {isEnabled('linkInputModal') && (
                     <button
                       onClick={() => onLinkInputOpen()}
                       className="flex-1 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-600 hover:bg-gray-100 transition-colors flex items-center justify-center gap-1"
@@ -408,6 +410,7 @@ export function LeftPanel(props: LeftPanelProps) {
                       <Link size={12} />
                       {t('粘贴链接')}
                     </button>
+                    )}
                     <button
                       onClick={() => setShowPasteTextModal(true)}
                       className="flex-1 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-600 hover:bg-gray-100 transition-colors flex items-center justify-center gap-1"
@@ -465,17 +468,17 @@ export function LeftPanel(props: LeftPanelProps) {
                           onClick={(e) => { e.stopPropagation(); onResourceClick(resource); }}
                           className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors cursor-pointer group"
                         >
-                          <div
-                            onClick={(e) => { e.stopPropagation(); toggleResourceSelection(resource.id); }}
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${selectedResourceIds.has(resource.id) ? 'border-gray-400 bg-gray-500' : 'border-gray-300 bg-white'}`}
-                          >
-                            {selectedResourceIds.has(resource.id) && <Check size={12} className="text-white" />}
-                          </div>
                           <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gray-100">
                             <span className="text-sm">{resource.icon}</span>
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-gray-800 truncate">{t(resource.title)}</p>
+                          </div>
+                          <div
+                            onClick={(e) => { e.stopPropagation(); toggleResourceSelection(resource.id); }}
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${selectedResourceIds.has(resource.id) ? 'border-gray-400 bg-gray-500' : 'border-gray-300 bg-white'}`}
+                          >
+                            {selectedResourceIds.has(resource.id) && <Check size={12} className="text-white" />}
                           </div>
                         </div>
                       ))}
@@ -490,12 +493,6 @@ export function LeftPanel(props: LeftPanelProps) {
                           }}
                           className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors cursor-pointer group"
                         >
-                          <div
-                            onClick={(e) => { e.stopPropagation(); toggleResourceSelection(resource.id); }}
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${selectedResourceIds.has(resource.id) ? 'border-gray-400 bg-gray-500' : 'border-gray-300 bg-white'}`}
-                          >
-                            {selectedResourceIds.has(resource.id) && <Check size={12} className="text-white" />}
-                          </div>
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
                             resource.type === 'video' ? 'bg-red-50' :
                             resource.type === 'presentation' ? 'bg-orange-50' :
@@ -532,6 +529,12 @@ export function LeftPanel(props: LeftPanelProps) {
                                 <Settings size={14} className="text-gray-400" />
                               </button>
                             )}
+                          </div>
+                          <div
+                            onClick={(e) => { e.stopPropagation(); toggleResourceSelection(resource.id); }}
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${selectedResourceIds.has(resource.id) ? 'border-gray-400 bg-gray-500' : 'border-gray-300 bg-white'}`}
+                          >
+                            {selectedResourceIds.has(resource.id) && <Check size={12} className="text-white" />}
                           </div>
                         </div>
                       ))}
@@ -590,7 +593,7 @@ export function LeftPanel(props: LeftPanelProps) {
                       </div>
                     )}
                     {/* 试卷转换进度 */}
-                    {examProcessingStep && examProcessingStep !== 'done' && (
+                    {isEnabled('examProcessingProgress') && examProcessingStep && examProcessingStep !== 'done' && (
                       <div className="px-3 py-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <div className="flex items-center gap-2 text-xs text-amber-700 mb-2">
                           <FileText size={14} className="animate-pulse" />
@@ -654,13 +657,6 @@ export function LeftPanel(props: LeftPanelProps) {
                           onClick={() => onTaskClick(task)}
                           className={`flex items-center gap-3 p-3 ${completedTasks.has(task.id) ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'} border rounded-lg hover:${getThemeClass('border')} hover:shadow-sm transition-all cursor-pointer group`}
                         >
-                          {/* 选中指示器 */}
-                          <div
-                            onClick={(e) => { e.stopPropagation(); toggleTaskSelection(task.id); }}
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${selectedTaskIds.has(task.id) ? 'border-gray-400 bg-gray-500' : 'border-gray-300 bg-white'}`}
-                          >
-                            {selectedTaskIds.has(task.id) && <Check size={12} className="text-white" />}
-                          </div>
                           {/* 完成状态图标 */}
                           {completedTasks.has(task.id) ? (
                             <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-green-100">
@@ -712,6 +708,13 @@ export function LeftPanel(props: LeftPanelProps) {
                                 <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">{t('试卷')}</span>
                               )}
                             </div>
+                          </div>
+                          {/* 选中指示器 */}
+                          <div
+                            onClick={(e) => { e.stopPropagation(); toggleTaskSelection(task.id); }}
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${selectedTaskIds.has(task.id) ? 'border-gray-400 bg-gray-500' : 'border-gray-300 bg-white'}`}
+                          >
+                            {selectedTaskIds.has(task.id) && <Check size={12} className="text-white" />}
                           </div>
                           <button
                             onClick={(e) => {

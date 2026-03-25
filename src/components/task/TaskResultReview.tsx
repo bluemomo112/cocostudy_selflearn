@@ -7,6 +7,7 @@ import { Task, TaskQuestion } from '../../types/shared-context';
 import QuestionRenderer, { getQuestionTypeLabel } from './QuestionRenderer';
 import RichContent from './RichContent';
 import { QuickResultData } from './taskTypes';
+import { isEnabled } from '../../config/version';
 
 interface TaskResultReviewProps {
   task: Task;
@@ -73,7 +74,7 @@ export default function TaskResultReview({
         <div className="flex items-center gap-2 text-sm">
           <span className="text-gray-500">{t('得分')}</span>
           <span className={`text-lg font-bold ${scoreColor}`}>{quickResult.correctCount}/{quickResult.totalCount}</span>
-          {onShrinkToInline && (
+          {isEnabled('minimizeToInline') && onShrinkToInline && (
             <button onClick={onShrinkToInline} className="ml-2 p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-1" title={t('缩小到左侧')}>
               <Minimize2 size={16} className="text-gray-500" />
             </button>
@@ -213,6 +214,7 @@ function ReviewQuestion({ q, idx, detail, answer, onExplainQuestion }: {
                 <Trash2 size={14} />
                 {removedFromErrorBook ? '重新加入' : '从错题本中移除'}
               </button>
+              {isEnabled('aiExplainButton') && (
               <button
                 onClick={onExplainQuestion}
                 className="px-3 py-1.5 text-xs font-medium text-primary-600 bg-white border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors flex items-center gap-1"
@@ -220,6 +222,7 @@ function ReviewQuestion({ q, idx, detail, answer, onExplainQuestion }: {
                 <Lightbulb size={14} />
                 深入详解该题
               </button>
+              )}
             </div>
           </div>
         </div>
@@ -419,13 +422,13 @@ function ReviewSummary({ result, pct, color, stats, onClose, onRetryWrongQuestio
 
       {/* Bottom action buttons — always 3 in a row */}
       <div className="flex gap-3">
-        {hasWrongQuestions && onRetryWrongQuestions && (
+        {isEnabled('redoWrongQuestions') && hasWrongQuestions && onRetryWrongQuestions && (
           <button onClick={onRetryWrongQuestions}
             className="flex-1 py-3.5 rounded-xl border-2 border-amber-300 bg-amber-50 text-amber-700 font-medium hover:bg-amber-100 transition-colors flex items-center justify-center gap-2">
             <Eye size={18} />{t('回顾错题')}
           </button>
         )}
-        {onRedoTask && (
+        {isEnabled('redoAllQuestions') && onRedoTask && (
           <button onClick={onRedoTask}
             className="flex-1 py-3.5 rounded-xl border-2 border-blue-300 bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors flex items-center justify-center gap-2">
             <RotateCcw size={18} />{t('重做')}

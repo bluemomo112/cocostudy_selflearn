@@ -19,6 +19,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { isEnabled } from '../config/version';
 
 interface SpaceManagerProps {
   spaces: SpaceSummary[];
@@ -98,6 +99,7 @@ export default function SpaceManager({
         </div>
 
         {/* 统计卡片 */}
+        {isEnabled('spaceCardDetails') && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 flex-shrink-0">
           <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
             <div className="flex items-center gap-3 mb-3">
@@ -127,6 +129,7 @@ export default function SpaceManager({
             <p className="text-3xl font-bold text-gray-900">{recentSpaces}</p>
           </div>
         </div>
+        )}
 
         {/* 空间列表 */}
         <div className="flex-1 overflow-y-auto">
@@ -177,6 +180,8 @@ export default function SpaceManager({
                     {getScenarioIcon(space.scenario)}
                   </div>
                   <div className="absolute top-4 right-4">
+                    {isEnabled('spaceCardDetails') && (
+                    <>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -214,15 +219,19 @@ export default function SpaceManager({
                         </button>
                       </div>
                     )}
+                    </>
+                    )}
                   </div>
 
                   {/* 进度条 */}
+                  {isEnabled('spaceCardDetails') && (
                   <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/50">
                     <div
                       className="h-full bg-primary-500 transition-all"
                       style={{ width: `${space.progress}%` }}
                     />
                   </div>
+                  )}
                 </div>
 
                 {/* 卡片内容 */}
@@ -236,6 +245,7 @@ export default function SpaceManager({
                     </p>
                   )}
 
+                  {isEnabled('spaceCardDetails') && (
                   <div className="flex items-center justify-between text-xs text-gray-400">
                     <div className="flex items-center gap-1">
                       <Clock size={14} />
@@ -245,6 +255,7 @@ export default function SpaceManager({
                       {space.progress}% {t('完成')}
                     </span>
                   </div>
+                  )}
 
                   {/* 学习模式标签 */}
                   <div className="mt-3 pt-3 border-t border-gray-100">
@@ -261,7 +272,7 @@ export default function SpaceManager({
       </div>
 
       {/* 删除确认弹窗 */}
-      {deleteConfirmId && (
+      {isEnabled('spaceCardDetails') && deleteConfirmId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"

@@ -8,6 +8,7 @@ import { COLLAPSED_WIDTH } from '../shared/constants';
 import {
   ChevronLeft, ChevronRight, Pencil, Activity, Sparkles, ChevronDown, ChevronUp
 } from 'lucide-react';
+import { isEnabled } from '../../../config/version';
 
 interface StudioTool {
   [key: string]: any;
@@ -108,6 +109,7 @@ export function RightPanel({
               <Pencil size={12} />
               {t('工作区')}
             </button>
+            {isEnabled('learningStatusPanel') && (
             <button
               onClick={() => onSetRightTab('status')}
               className={`flex-1 h-12 px-4 text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
@@ -119,6 +121,7 @@ export function RightPanel({
               <Activity size={12} />
               {t('学习状态')}
             </button>
+            )}
             <button
               onClick={() => onSetRightCollapsed(true)}
               className="px-2 py-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors rounded-lg"
@@ -128,17 +131,18 @@ export function RightPanel({
             </button>
           </div>
 
-          {rightTab === 'workspace' ? (
+          {(rightTab === 'workspace' || !isEnabled('learningStatusPanel')) ? (
             <div className="flex-1 flex flex-col overflow-hidden">
               <div
                 className="flex-1 min-h-0 overflow-hidden transition-all"
                 style={{
-                  flex: collapsedPanels.studio ? '1 1 auto' : '0 0 50%'
+                  flex: (!isEnabled('studioTools') || collapsedPanels.studio) ? '1 1 auto' : '0 0 50%'
                 }}
               >
                 <EnhancedNotesPanel learningMode={learningMode} isAIGenerating={isAIGenerating} getThemeClass={getThemeClass} configId={configId} />
               </div>
 
+              {isEnabled('studioTools') && (
               <div
                 className="border-t border-gray-200 bg-white transition-all flex flex-col min-h-0 overflow-hidden"
                 style={{
@@ -217,6 +221,7 @@ export function RightPanel({
                   </div>
                 )}
               </div>
+              )}
             </div>
           ) : (
             <LearningStatusPanel

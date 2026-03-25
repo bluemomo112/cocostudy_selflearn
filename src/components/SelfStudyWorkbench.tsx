@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { isEnabled } from '../config/version';
 import { SpaceConfig, LearningMode, LearningPathNode, LEARNING_MODE_CONFIG } from '../types/self-study';
 import { Resource, Task, TaskQuestion } from '../types/shared-context';
 import { mockResources, mockTasks } from '../data/mockLearningData';
@@ -2727,7 +2728,7 @@ export default function SelfStudyWorkbench({
         />
 
         {/* 左侧调整器 - 仅在未折叠时显示 */}
-        {!isLeftCollapsed && (
+        {isEnabled('panelResizer') && !isLeftCollapsed && (
           <Resizer
             onResize={(delta) => {
               const newLeftWidth = Math.max(18, Math.min(35, leftWidth + delta));
@@ -2771,7 +2772,7 @@ export default function SelfStudyWorkbench({
         />
 
         {/* 右侧调整器 - 仅在未折叠时显示 */}
-        {!isRightCollapsed && (
+        {isEnabled('panelResizer') && !isRightCollapsed && (
           <Resizer
             onResize={(delta) => {
               const newRightWidth = Math.max(18, Math.min(35, rightWidth - delta));
@@ -2803,7 +2804,7 @@ export default function SelfStudyWorkbench({
       </div>
 
       {/* 设置弹窗 */}
-      {isSettingsOpen && (
+      {isEnabled('settingsModal') && isSettingsOpen && (
         <SettingsModal
           config={config}
           onClose={() => setIsSettingsOpen(false)}
@@ -2964,11 +2965,13 @@ export default function SelfStudyWorkbench({
       />
 
       {/* 链接输入弹窗 */}
+      {isEnabled('linkInputModal') && (
       <LinkInputModal
         isOpen={isLinkInputOpen}
         onClose={() => setIsLinkInputOpen(false)}
         onAdd={handleLinkAdd}
       />
+      )}
 
       {/* 资源库导入弹窗 */}
       <UnifiedResourceLibraryModal
@@ -2982,7 +2985,7 @@ export default function SelfStudyWorkbench({
       />
 
       {/* 试卷检测弹窗 */}
-      {examDetectedFiles && (
+      {isEnabled('examDetectedModal') && examDetectedFiles && (
         <ExamDetectedModal
           files={examDetectedFiles}
           onConfirm={handleExamConfirm}
@@ -2991,7 +2994,7 @@ export default function SelfStudyWorkbench({
       )}
 
       {/* 任务设置弹窗 */}
-      {settingsTaskId && (() => {
+      {isEnabled('taskSettings') && settingsTaskId && (() => {
         const t = generatedTasks.find(task => task.id === settingsTaskId);
         return t ? (
           <TaskSettingsPopover
@@ -3003,7 +3006,7 @@ export default function SelfStudyWorkbench({
       })()}
 
       {/* 资源设置弹窗 */}
-      {settingsResourceId && (() => {
+      {isEnabled('resourceVisibilitySettings') && settingsResourceId && (() => {
         const r = config.resources.find(res => res.id === settingsResourceId);
         return r ? (
           <ResourceSettingsPopover
@@ -3016,6 +3019,7 @@ export default function SelfStudyWorkbench({
       })()}
 
       {/* 互动资源查看器 */}
+      {isEnabled('interactiveViewer') && (
       <InteractiveViewerModal
         resource={viewingResource}
         onClose={() => setViewingResource(null)}
@@ -3037,6 +3041,7 @@ export default function SelfStudyWorkbench({
           }
         }}
       />
+    )}
     </div>
     </>
   );

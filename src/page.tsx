@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Script from 'next/script';
 import { SpaceSummary, SpaceConfig, createDefaultSpaceConfig } from './types/self-study';
 import { Resource } from './types/shared-context';
 import { usePersistedState, clearSpaceStorage } from './utils/storage';
@@ -14,6 +15,7 @@ import FileUploadModal from './components/FileUploadModal';
 import UnifiedResourceLibraryModal from './components/UnifiedResourceLibraryModal';
 import AIGenerateFormModal from './components/AIGenerateFormModal';
 import type { ErrorQuestion, HistoricalTest, Note, InteractiveWebpage } from './data/mockKnowledgeBase';
+import { isEnabled } from './config/version';
 
 type ViewState = 'manager' | 'onboarding' | 'workbench' | 'results';
 
@@ -502,6 +504,8 @@ export default function SelfStudyPage() {
   };
 
   return (
+    <>
+    <Script src="https://mcp.figma.com/mcp/html-to-design/capture.js" strategy="afterInteractive" />
     <div className="fixed inset-0 z-50 bg-gray-50 overflow-hidden flex flex-col">
       {viewState === 'manager' && (
         <SpaceManager
@@ -512,7 +516,7 @@ export default function SelfStudyPage() {
         />
       )}
 
-      {viewState === 'onboarding' && (
+      {isEnabled('onboarding') && viewState === 'onboarding' && (
         <Onboarding
           onComplete={handleOnboardingComplete}
           onCancel={spaces.length > 0 ? handleCancelOnboarding : undefined}
@@ -532,7 +536,7 @@ export default function SelfStudyPage() {
         />
       )}
 
-      {viewState === 'results' && currentSpace && (
+      {isEnabled('spaceResults') && viewState === 'results' && currentSpace && (
         <SpaceResults
           spaceId={currentSpace.id}
           onBack={handleBackFromResults}
@@ -565,11 +569,14 @@ export default function SelfStudyPage() {
       />
 
       {/* AI生成表单模态框 */}
+      {isEnabled('aiGenerateModal') && (
       <AIGenerateFormModal
         isOpen={showAIGenerateModal}
         onClose={() => setShowAIGenerateModal(false)}
         onGenerate={handleAIGenerate}
       />
+      )}
     </div>
+    </>
   );
 }

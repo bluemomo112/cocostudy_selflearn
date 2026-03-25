@@ -5,6 +5,7 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 import { ArrowLeft, Brain, Pencil, Check, X, Settings, Share2, BarChart3 } from 'lucide-react';
 import LanguageSwitch from '../../LanguageSwitch';
 import { getScenariosByCategory } from '../../../data/demoScenarios';
+import { isEnabled } from '../../../config/version';
 
 interface WorkbenchHeaderProps {
   config: SpaceConfig;
@@ -62,7 +63,7 @@ export function WorkbenchHeader({
           <div className="w-px h-6 bg-gray-200" />
           <div className="flex items-center gap-2">
             <Brain size={20} className="text-primary-600" />
-            {isEditingTitle ? (
+            {isEnabled('titleInlineEdit') && isEditingTitle ? (
               <div className="flex items-center gap-2">
                 <input
                   type="text"
@@ -93,6 +94,7 @@ export function WorkbenchHeader({
             ) : (
               <div className="flex items-center gap-2 group">
                 <h1 className="text-base font-semibold text-gray-900">{config.title}</h1>
+                {isEnabled('titleInlineEdit') && (
                 <button
                   onClick={onNoteInfoOpen}
                   className="p-1 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all"
@@ -100,6 +102,7 @@ export function WorkbenchHeader({
                 >
                   <Pencil size={14} />
                 </button>
+                )}
                 {config.publishStatus === 'published' && (
                   <span className="px-2 py-0.5 text-xs text-primary-600 bg-primary-50 border border-primary-200 rounded">
                     {t('已发布')}
@@ -111,7 +114,7 @@ export function WorkbenchHeader({
         </div>
 
         {/* 中间：场景选择器（演示模式） */}
-        {!isStudentMode && onLoadScenario && (
+        {isEnabled('demoSelector') && !isStudentMode && onLoadScenario && (
           <div className="flex items-center gap-3">
             {demoMode && (
               <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg">
@@ -149,10 +152,10 @@ export function WorkbenchHeader({
 
         <div className="flex items-center gap-2">
           {/* 语言切换 */}
-          <LanguageSwitch />
+          {isEnabled('languageSwitch') && <LanguageSwitch />}
 
           {/* 设置 - 仅教师模式显示 */}
-          {!isStudentMode && (
+          {isEnabled('settingsButton') && !isStudentMode && (
             <button
               onClick={onSettingsOpen}
               className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
@@ -174,7 +177,7 @@ export function WorkbenchHeader({
           )}
 
           {/* 分析 - 仅教师模式显示 */}
-          {!isStudentMode && (
+          {isEnabled('dataAnalysisButton') && !isStudentMode && (
             <button
               onClick={() => {
                 const testId = config.publishMetadata?.sourceTestId;

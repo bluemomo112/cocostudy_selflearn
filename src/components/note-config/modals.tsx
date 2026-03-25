@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PublishSuccessModal } from './PublishSuccessModal';
+import { isEnabled } from '../../config/version';
 import {
   X,
   Bot,
@@ -349,7 +350,7 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
       setPublishError('请选择年级后再发布');
       return;
     }
-    if (localConfig.bindClasses.length === 0) {
+    if (localConfig.bindClasses.length === 0 && isEnabled('classBinding')) {
       console.log(t('❌ 验证失败: 未绑定班级'));
       setPublishError('请至少绑定一个班级后再发布');
       return;
@@ -493,6 +494,7 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
                   </div>
 
                   {/* 绑定班级 */}
+                  {isEnabled('classBinding') && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2.5 flex items-center gap-2">
                       <Users size={16} className="text-emerald-600" />{t('绑定班级')}<span className="text-xs font-normal text-gray-500">{t('可多选')}</span>
@@ -517,8 +519,10 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
                       ))}
                     </div>
                   </div>
+                  )}
 
                   {/* 发布范围选择 */}
+                  {isEnabled('publishScopeOptions') && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2.5 flex items-center gap-2">
                       <Layers size={16} className="text-purple-600" />{t('发布范围')}<span className="text-xs font-normal text-gray-500">{t('可多选')}</span>
@@ -558,6 +562,7 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
                       >{t('学习路径')}</button>
                     </div>
                   </div>
+                  )}
                 </div>
               )}
             </div>
