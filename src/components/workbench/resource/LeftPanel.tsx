@@ -520,7 +520,7 @@ export function LeftPanel(props: LeftPanelProps) {
                                 {resource.visibility.mode === 'hidden' ? '隐藏' : '任务后'}
                               </span>
                             )}
-                            {!isStudentMode && (
+                            {!isStudentMode && isEnabled('resourceVisibilitySettings') && (
                               <button
                                 onClick={(e) => { e.stopPropagation(); onSetSettingsResourceId(resource.id); }}
                                 className="p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-gray-100 transition-all"

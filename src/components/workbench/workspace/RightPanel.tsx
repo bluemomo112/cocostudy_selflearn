@@ -8,7 +8,9 @@ import { COLLAPSED_WIDTH } from '../shared/constants';
 import {
   ChevronLeft, ChevronRight, Pencil, Activity, Sparkles, ChevronDown, ChevronUp
 } from 'lucide-react';
-import { isEnabled } from '../../../config/version';
+import { isEnabled, CURRENT_VERSION } from '../../../config/version';
+
+const VERSION_ORDER: Record<string, number> = { v1: 1, v2: 2, v3: 3, v4: 4 };
 
 interface StudioTool {
   [key: string]: any;
@@ -60,6 +62,9 @@ export function RightPanel({
   onOpenToolConfig,
 }: RightPanelProps) {
   const { t } = useLanguage();
+  const visibleTools = studioTools.filter(tool =>
+    !tool.minVersion || VERSION_ORDER[tool.minVersion] <= VERSION_ORDER[CURRENT_VERSION]
+  );
 
   return (
     <div
@@ -81,7 +86,7 @@ export function RightPanel({
             </button>
           </div>
           <div className="flex-1 overflow-y-auto py-2 space-y-1">
-            {studioTools.map((tool) => (
+            {visibleTools.map((tool) => (
               <button
                 key={tool.id}
                 onClick={() => onSetRightCollapsed(false)}
@@ -173,7 +178,7 @@ export function RightPanel({
                 {!collapsedPanels.studio && (
                   <div className="flex-1 overflow-y-auto p-4">
                     <div className="grid grid-cols-2 gap-2">
-                      {studioTools.map((tool) => {
+                      {visibleTools.map((tool) => {
                         const isGenerating = generatingToolId === tool.id;
                         const isFlashing = flashingToolId === tool.id;
                         return (

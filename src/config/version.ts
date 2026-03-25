@@ -116,7 +116,7 @@ const VERSION_FLAGS: Record<Version, FeatureFlags> = {
     linkInputModal: false,
     resourceVisibilitySettings: false,
     resourceBatchSelect: false,
-    interactiveViewer: false,
+    interactiveViewer: true,
     studentAddResource: false,
 
     taskSettings: false,
@@ -139,8 +139,8 @@ const VERSION_FLAGS: Record<Version, FeatureFlags> = {
     guidedModeShortcuts: false,
     reflectionReminder: false,
 
-    embeddedTaskCard: false,
-    inlineTaskViewer: false,
+    embeddedTaskCard: true,
+    inlineTaskViewer: true,
     submissionToolbar: false,
     aiGrading: false,
     redoWrongQuestions: false,
@@ -157,8 +157,8 @@ const VERSION_FLAGS: Record<Version, FeatureFlags> = {
     notesDelete: false,
     notesAddToResource: false,
 
-    learningStatusPanel: false,
-    studioTools: false,
+    learningStatusPanel: true,
+    studioTools: true,
 
     settingsModal: false,
 
