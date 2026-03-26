@@ -229,7 +229,7 @@ export default function SelfStudyWorkbench({
     // 互动内容生成类工具
     { id: 'interactive_animation', label: t('说明动画'), icon: '🎬', description: t('生成互动说明动画'), status: 'ready' as const, type: 'interactive' as const, minVersion: 'v1' as const },
     { id: 'interactive_visualization', label: t('可视化'), icon: '📊', description: t('生成数据可视化'), status: 'ready' as const, type: 'interactive' as const, minVersion: 'v2' as const },
-    { id: 'interactive_simulation', label: t('互动模拟'), icon: '🔬', description: t('生成互动模拟实验'), status: 'ready' as const, type: 'interactive' as const, minVersion: 'v1' as const },
+    { id: 'interactive_simulation', label: t('互动模拟'), icon: '🔬', description: t('生成互动模拟实验'), status: 'ready' as const, type: 'interactive' as const, minVersion: 'v2' as const },
     { id: 'interactive_test', label: t('互动测试'), icon: '🧪', description: t('生成互动测试'), status: 'ready' as const, type: 'interactive' as const, minVersion: 'v2' as const },
   ];
 

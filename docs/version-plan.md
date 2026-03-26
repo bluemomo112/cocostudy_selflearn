@@ -6,6 +6,99 @@
 
 ---
 
+## 交付补充（给开发的实现说明）
+
+### A. V1 核心通路（按用户操作顺序）
+
+1. 教师端创建空间（创建方式弹窗）
+   - 入口：任务中心页面点击“创建课程”
+   - 状态：`空闲` → `弹窗打开` → `选择创建方式` → `进入工作台`
+   - 关键约束：V1 的资源库仅显示“资源”Tab；AI 创建入口在 V1 隐藏
+
+2. 教师端配置内容（工作台）
+   - 左栏：上传/导入资源、手动添加任务、编辑任务
+   - 中栏：基础 AI 对话（文本输入 + 快捷回复）
+   - 右栏：笔记 + 学习状态 + Studio 工具（仅 V1 可用工具）
+   - 状态：`编辑中` / `任务作答中` / `结果复查`
+
+3. 教师端发布
+   - 当前实际主路径：`NoteInfoModal -> PublishSuccessModal`
+   - 发布成功后可复制链接/访问码并打开学生端
+
+4. 学生端学习
+   - 入口：分享链接进入空间
+   - 路径：看资源（内联）→ 做题（全屏/嵌入/内联）→ 提交 → 结果复查 → 返回对话
+
+### B. 关键组件状态（V1 必须关注）
+
+1. LeftPanel（资源/任务）
+   - 面板状态：`展开` / `折叠`
+   - 区块状态：`资源区展开/折叠`、`任务区展开/折叠`
+   - 任务学习状态：`locked | available | in_progress | grading | completed`
+
+2. TaskEditModal（任务编辑）
+   - 编辑状态：`题目列表编辑`、`题型切换`、`拖拽排序`
+   - V1 限制：隐藏“AI 智能出题”折叠区
+
+3. RightPanel（右栏）
+   - Tab 状态：`workspace` / `status`
+   - Studio 工具区：`展开` / `折叠`
+   - V1 仅显示 `minVersion <= v1` 的工具卡（如思维导图、记忆卡片、知识测验、说明动画）
+
+4. 发布链路
+   - 当前生效路径：NoteInfo 弹窗内直接发布成功
+   - `PublishModal` 组件当前代码存在但未接入触发入口（见“V1 对照核查”）
+
+### C. 弹窗覆盖核查（当前代码）
+
+已在文档覆盖的弹窗：
+- CreationMethodModal
+- FileUploadModal
+- UnifiedResourceLibraryModal
+- AIGenerateFormModal
+- ExamDetectedModal
+- LinkInputModal
+- InteractiveViewerModal
+- TaskEditModal
+- SettingsModal / FreeModeConfigModal / GuidedModeConfigModal / MetaConfigModal
+- NoteInfoModal / PublishSuccessModal
+
+文档建议补充（代码中存在但表格未单列）：
+- LeftPanel 内置“直接粘贴文本”弹窗（内联实现，非独立组件）
+
+### D. V1 对照核查（2026-03-26）
+
+已对齐（文档与实现一致）的关键点：
+- V1 资源库只显示“资源”Tab
+- V1 隐藏设置按钮/标题编辑/语言切换
+- V1 隐藏 AI 生成表单与试卷检测弹窗
+- V1 保留互动查看器
+
+存在偏差（建议以代码实际为准）：
+1. PublishModal 在文档中标记为可用，但当前未接线（无触发 setIsPublishModalOpen(true)）
+2. 资源批量选择 / 任务批量选择在文档标 V3 才开启，但当前代码 V1 已可见
+3. 下载二维码依赖 PublishModal；由于 PublishModal 未接线，V1 实际不可达
+
+### E. 截图索引（可直接给开发看）
+
+1. 创建方式弹窗（4种入口）
+
+![创建方式弹窗](../image/seseyuan版本的修改/1773718891210.png)
+
+2. 任务编辑弹窗（题目编辑、题型切换）
+
+![任务编辑弹窗](../image/seseyuan版本的修改/1773720379443.png)
+
+3. 手动输入题目弹窗（题干/答案/解析）
+
+![手动输入题目弹窗](../image/seseyuan版本的修改/1773719136372.png)
+
+4. 发布配置弹窗（课程信息、班级绑定、发布范围）
+
+![发布配置弹窗](../image/seseyuan版本的修改/1773720096918.png)
+
+---
+
 ## 一、页面级功能
 
 | # | 功能描述 | 所在页面/模块 | 学生端 | 教师端 | V1 | V2 | V3 | V4 |
