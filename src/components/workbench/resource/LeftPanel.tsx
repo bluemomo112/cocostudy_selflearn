@@ -19,10 +19,21 @@ import {
   ChevronRight, ChevronLeft, ChevronDown, ChevronUp, ListChecks, CheckCircle2,
   Circle, Sparkles, Activity, Settings, Database, Pencil, Check, Zap,
   Bot, MessageSquare, BookOpen, Clock, Search,
-  FileEdit, FolderOpen, Type, GripVertical, Trash2,
+  FileEdit, FolderOpen, Type, GripVertical, Trash2, TestTube2, ClipboardCheck,
+  PanelLeftClose, PanelLeftOpen, Mic, Workflow, CreditCard, BarChart3,
+  Lightbulb, GitBranch, Film, Target, TrendingUp,
 } from 'lucide-react';
 import TaskEditModal from './TaskEditModal';
 import { isEnabled } from '../../../config/version';
+
+// Icon 映射
+const getIconComponent = (iconName: string) => {
+  const iconMap: Record<string, any> = {
+    Mic, Workflow, CreditCard, Clock, BarChart3, Search, ListChecks, Lightbulb,
+    TestTube2, Pencil, GitBranch, Film, Activity, Target, Sparkles,
+  };
+  return iconMap[iconName] || Sparkles;
+};
 
 interface LeftPanelProps {
   config: SpaceConfig;
@@ -190,7 +201,7 @@ export function LeftPanel(props: LeftPanelProps) {
                   className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
                   title={t('展开面板')}
                 >
-                  <ChevronRight size={20} className="text-gray-700" />
+                  <PanelLeftOpen size={20} className="text-gray-700" />
                 </button>
               </div>
 
@@ -201,7 +212,10 @@ export function LeftPanel(props: LeftPanelProps) {
                     {config.resources.map((resource) => (
                       <button
                         key={resource.id}
-                        onClick={() => onSetLeftCollapsed(false)}
+                        onClick={() => {
+                          onSetLeftCollapsed(false);
+                          setTimeout(() => onResourceClick(resource), 100);
+                        }}
                         className="w-full px-3 py-3 hover:bg-primary-100 transition-colors flex flex-col items-center gap-1 group rounded-lg"
                         title={resource.title}
                       >
@@ -219,30 +233,42 @@ export function LeftPanel(props: LeftPanelProps) {
                       </button>
                     ))}
                     {/* AI生成的资源 */}
-                    {aiGeneratedResources.map((resource) => (
+                    {aiGeneratedResources.map((resource) => {
+                      const IconComponent = getIconComponent(resource.iconName);
+                      return (
                       <button
                         key={resource.id}
-                        onClick={() => onSetLeftCollapsed(false)}
-                        className="w-full px-3 py-3 hover:bg-gray-100 transition-colors flex flex-col items-center gap-1 group rounded-lg"
+                        onClick={() => {
+                          onSetLeftCollapsed(false);
+                          setTimeout(() => onResourceClick(resource), 100);
+                        }}
+                        className="w-full px-3 py-3 hover:bg-purple-50 transition-colors flex flex-col items-center gap-1 group rounded-lg"
                         title={resource.title}
                       >
-                        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <Sparkles size={20} className="text-gray-500" />
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <IconComponent size={18} className="text-purple-600" />
                         </div>
                       </button>
-                    ))}
-                    {mockAIResources.map((resource) => (
+                      );
+                    })}
+                    {mockAIResources.map((resource) => {
+                      const IconComponent = getIconComponent(resource.iconName);
+                      return (
                       <button
                         key={resource.id}
-                        onClick={() => onSetLeftCollapsed(false)}
-                        className="w-full px-3 py-3 hover:bg-gray-100 transition-colors flex flex-col items-center gap-1 group rounded-lg"
+                        onClick={() => {
+                          onSetLeftCollapsed(false);
+                          setTimeout(() => onResourceClick(resource), 100);
+                        }}
+                        className="w-full px-3 py-3 hover:bg-purple-50 transition-colors flex flex-col items-center gap-1 group rounded-lg"
                         title={resource.title}
                       >
-                        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <Brain size={20} className="text-gray-500" />
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <IconComponent size={18} className="text-purple-600" />
                         </div>
                       </button>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {/* 任务图标 */}
@@ -252,14 +278,16 @@ export function LeftPanel(props: LeftPanelProps) {
                         <button
                           key={task.id}
                           onClick={() => onSetLeftCollapsed(false)}
-                          className="w-full px-3 py-3 hover:bg-gray-100 transition-colors flex flex-col items-center gap-1 group rounded-lg"
+                          className="w-full px-3 py-3 hover:bg-blue-50 transition-colors flex flex-col items-center gap-1 group rounded-lg"
                           title={task.title}
                         >
-                          <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center group-hover:scale-110 transition-transform">
                             {task.type === 'quiz' ? (
-                              <ListChecks size={20} className="text-primary-600" />
+                              <TestTube2 size={18} className="text-blue-600" />
+                            ) : task.type === 'practice' ? (
+                              <Pencil size={18} className="text-purple-600" />
                             ) : (
-                              <FileEdit size={20} className="text-primary-600" />
+                              <ClipboardCheck size={18} className="text-gray-600" />
                             )}
                           </div>
                         </button>
@@ -377,7 +405,7 @@ export function LeftPanel(props: LeftPanelProps) {
                       className="p-1 hover:bg-gray-200 rounded-md transition-colors ml-1"
                       title={t('折叠面板')}
                     >
-                      <ChevronLeft size={15} className="text-gray-400" />
+                      <PanelLeftClose size={15} className="text-gray-400" />
                     </button>
                   </div>
                 </div>
@@ -462,17 +490,26 @@ export function LeftPanel(props: LeftPanelProps) {
                       </div>
 
                       {/* AI生成的资源 */}
-                      {aiGeneratedResources.map((resource) => (
+                      {aiGeneratedResources.map((resource) => {
+                        const IconComponent = getIconComponent(resource.iconName);
+                        // 移除标题中的 🤖 和 "AI生成：" 前缀
+                        const cleanTitle = resource.title.replace(/^🤖\s*(AI生成：|AI生成|AI Generated:)?\s*/, '');
+                        return (
                         <div
                           key={resource.id}
                           onClick={(e) => { e.stopPropagation(); onResourceClick(resource); }}
                           className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors cursor-pointer group"
                         >
-                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gray-100">
-                            <span className="text-sm">{resource.icon}</span>
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200">
+                            <IconComponent size={16} className="text-purple-600" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-gray-800 truncate">{t(resource.title)}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-sm text-gray-800 truncate">{t(cleanTitle)}</p>
+                              <span className="flex-shrink-0 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 border border-purple-200">
+                                AI
+                              </span>
+                            </div>
                           </div>
                           <div
                             onClick={(e) => { e.stopPropagation(); toggleResourceSelection(resource.id); }}
@@ -481,7 +518,8 @@ export function LeftPanel(props: LeftPanelProps) {
                             {selectedResourceIds.has(resource.id) && <Check size={12} className="text-white" />}
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
 
                       {/* 用户上传的资源 */}
                       {config.resources.map((resource) => (
@@ -665,15 +703,22 @@ export function LeftPanel(props: LeftPanelProps) {
                           ) : (
                             <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0 bg-gray-100">
                               {task.type === 'quiz' ? (
-                                <Zap size={12} className="text-gray-600" />
+                                <TestTube2 size={14} className="text-blue-600" />
+                              ) : task.type === 'practice' ? (
+                                <Pencil size={14} className="text-purple-600" />
                               ) : (
-                                <Brain size={12} className="text-gray-600" />
+                                <ClipboardCheck size={14} className="text-gray-600" />
                               )}
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
                               <p className={`text-sm font-medium truncate ${completedTasks.has(task.id) ? 'text-green-700' : 'text-gray-700'}`}>{t(task.title)}</p>
+                              {(task as any).isAIGenerated && (
+                                <span className="flex-shrink-0 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 border border-purple-200">
+                                  AI
+                                </span>
+                              )}
                               {task.required && (
                                 <span className="flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600">
                                   {t('必修')}
@@ -709,6 +754,16 @@ export function LeftPanel(props: LeftPanelProps) {
                               )}
                             </div>
                           </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openUnifiedEditModal(task);
+                            }}
+                            className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all"
+                            title={t('编辑任务')}
+                          >
+                            <Pencil size={14} />
+                          </button>
                           {/* 选中指示器 */}
                           <div
                             onClick={(e) => { e.stopPropagation(); toggleTaskSelection(task.id); }}
@@ -716,17 +771,6 @@ export function LeftPanel(props: LeftPanelProps) {
                           >
                             {selectedTaskIds.has(task.id) && <Check size={12} className="text-white" />}
                           </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openUnifiedEditModal(task);
-                            }}
-                            className="opacity-0 group-hover:opacity-100 px-2 py-1 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all"
-                            title={t('编辑任务')}
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          <ChevronRight size={16} className="text-gray-400" />
                         </div>
                       ))}
                       </>

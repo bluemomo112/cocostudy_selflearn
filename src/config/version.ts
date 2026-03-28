@@ -110,7 +110,7 @@ const VERSION_FLAGS: Record<Version, FeatureFlags> = {
     titleInlineEdit: false,
     settingsButton: false,
     dataAnalysisButton: false,
-    languageSwitch: false,
+    languageSwitch: true,
     demoSelector: false,
 
     linkInputModal: false,
@@ -126,7 +126,7 @@ const VERSION_FLAGS: Record<Version, FeatureFlags> = {
 
     panelResizer: false,
 
-    voiceInput: false,
+    voiceInput: true,
     actionButtons: false,
     demoActionCards: false,
     resourceRefCards: false,

@@ -6,17 +6,24 @@ import { EnhancedNotesPanel } from './EnhancedNotesPanel';
 import { LearningStatusPanel } from './LearningStatusPanel';
 import { COLLAPSED_WIDTH } from '../shared/constants';
 import {
-  ChevronLeft, ChevronRight, Pencil, Activity, Sparkles, ChevronDown, ChevronUp
+  ChevronLeft, ChevronRight, Pencil, Activity, Sparkles, ChevronDown, ChevronUp,
+  Mic, Workflow, CreditCard, Clock, BarChart3, Search, ListChecks, Lightbulb,
+  TestTube2, GitBranch, Film, TrendingUp, Target, PanelRightClose
 } from 'lucide-react';
 import { isEnabled, CURRENT_VERSION } from '../../../config/version';
 
 const VERSION_ORDER: Record<string, number> = { v1: 1, v2: 2, v3: 3, v4: 4 };
 
+const ICON_MAP: Record<string, any> = {
+  Mic, Workflow, CreditCard, Clock, BarChart3, Search, ListChecks, Lightbulb,
+  TestTube2, Pencil, GitBranch, Film, TrendingUp, Activity, Target
+};
+
 interface StudioTool {
   [key: string]: any;
   id: string;
   label: string;
-  icon: string;
+  iconName: string;
   description: string;
 }
 
@@ -86,18 +93,23 @@ export function RightPanel({
             </button>
           </div>
           <div className="flex-1 overflow-y-auto py-2 space-y-1">
-            {visibleTools.map((tool) => (
+            {visibleTools.map((tool) => {
+              const IconComponent = ICON_MAP[tool.iconName] || Sparkles;
+              return (
               <button
                 key={tool.id}
-                onClick={() => onSetRightCollapsed(false)}
-                className="w-full px-3 py-3 hover:bg-gray-100 transition-colors flex flex-col items-center gap-1 group rounded-lg"
+                onClick={() => {
+                  onStudioToolClick(tool);
+                }}
+                className="w-full px-3 py-3 hover:bg-purple-50 transition-colors flex flex-col items-center gap-1 group rounded-lg"
                 title={tool.label}
               >
-                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Sparkles size={20} className={getThemeClass('icon')} />
+                <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <IconComponent size={18} className={getThemeClass('icon')} />
                 </div>
               </button>
-            ))}
+              );
+            })}
           </div>
         </div>
       ) : (
@@ -132,7 +144,7 @@ export function RightPanel({
               className="px-2 py-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors rounded-lg"
               title={t('折叠面板')}
             >
-              <ChevronRight size={16} />
+              <PanelRightClose size={16} />
             </button>
           </div>
 
@@ -194,7 +206,10 @@ export function RightPanel({
                             }`}
                           >
                             <div className="flex items-start gap-2">
-                              <span className="text-lg">{tool.icon}</span>
+                              {(() => {
+                                const IconComponent = ICON_MAP[tool.iconName] || Sparkles;
+                                return <IconComponent size={16} className={getThemeClass('icon')} />;
+                              })()}
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-medium text-gray-700 truncate">{tool.label}</p>
                                 {isGenerating ? (

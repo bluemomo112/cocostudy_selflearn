@@ -168,10 +168,10 @@ export default function SelfStudyWorkbench({
   ];
 
   const MOCK_AI_RESOURCES = [
-    { id: 'ai_res_1', title: t('概念图解：核心原理可视化'), type: 'ai_generated', status: 'ready', icon: '🎨' },
-    { id: 'ai_res_2', title: t('练习题：基础概念巩固'), type: 'ai_generated', status: 'ready', icon: '📝' },
-    { id: 'ai_res_3', title: t('知识卡片：公式速记'), type: 'ai_generated', status: 'generating', icon: '🃏' },
-    { id: 'ai_res_4', title: t('思维导图：知识结构'), type: 'ai_generated', status: 'pending', icon: '🗺️' },
+    { id: 'ai_res_1', title: t('概念图解：核心原理可视化'), type: 'ai_generated', status: 'ready', iconName: 'ImageIcon' },
+    { id: 'ai_res_2', title: t('练习题：基础概念巩固'), type: 'ai_generated', status: 'ready', iconName: 'Pencil' },
+    { id: 'ai_res_3', title: t('知识卡片：公式速记'), type: 'ai_generated', status: 'generating', iconName: 'CreditCard' },
+    { id: 'ai_res_4', title: t('思维导图：知识结构'), type: 'ai_generated', status: 'pending', iconName: 'Workflow' },
   ];
 
   const MOCK_AI_OBSERVATIONS = [
@@ -214,23 +214,23 @@ export default function SelfStudyWorkbench({
 
   const STUDIO_TOOLS = [
     // 资源生成类工具
-    { id: 'audio_overview', label: t('音频概述'), icon: '🎧', description: t('生成音频摘要'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v2' as const },
-    { id: 'mind_map', label: t('思维导图'), icon: '🗺️', description: t('可视化知识结构'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v1' as const },
-    { id: 'flashcards', label: t('记忆卡片'), icon: '🃏', description: t('生成复习卡片'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v1' as const },
-    { id: 'timeline', label: t('时间线'), icon: '📅', description: t('梳理知识脉络'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v2' as const },
-    { id: 'summary', label: t('学习报告'), icon: '📊', description: t('生成学习总结'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v2' as const },
-    { id: 'concept_search', label: t('搜索概念'), icon: '🔍', description: t('智能搜索知识点'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v2' as const },
-    { id: 'key_points', label: t('总结要点'), icon: '📋', description: t('提取核心内容'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v2' as const },
-    { id: 'examples', label: t('举例说明'), icon: '💡', description: t('生成实例解释'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v2' as const },
+    { id: 'audio_overview', label: t('音频概述'), iconName: 'Mic', description: t('生成音频摘要'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v2' as const },
+    { id: 'mind_map', label: t('思维导图'), iconName: 'Workflow', description: t('可视化知识结构'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v1' as const },
+    { id: 'flashcards', label: t('记忆卡片'), iconName: 'CreditCard', description: t('生成复习卡片'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v1' as const },
+    { id: 'timeline', label: t('时间线'), iconName: 'Clock', description: t('梳理知识脉络'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v2' as const },
+    { id: 'summary', label: t('学习报告'), iconName: 'BarChart3', description: t('生成学习总结'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v2' as const },
+    { id: 'concept_search', label: t('搜索概念'), iconName: 'Search', description: t('智能搜索知识点'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v2' as const },
+    { id: 'key_points', label: t('总结要点'), iconName: 'ListChecks', description: t('提取核心内容'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v2' as const },
+    { id: 'examples', label: t('举例说明'), iconName: 'Lightbulb', description: t('生成实例解释'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v2' as const },
     // 任务生成类工具
-    { id: 'quiz', label: t('知识测验'), icon: '📝', description: t('生成测试题目'), status: 'ready' as const, type: 'task' as const, minVersion: 'v1' as const },
-    { id: 'practice', label: t('练习题'), icon: '✍️', description: t('生成练习任务'), status: 'ready' as const, type: 'task' as const, minVersion: 'v2' as const },
-    { id: 'generate_variant_question', label: t('生成变种题'), icon: '🔄', description: t('基于错题生成变种练习'), status: 'ready' as const, type: 'task' as const, minVersion: 'v3' as const },
+    { id: 'quiz', label: t('知识测验'), iconName: 'TestTube2', description: t('生成测试题目'), status: 'ready' as const, type: 'task' as const, minVersion: 'v1' as const },
+    { id: 'practice', label: t('练习题'), iconName: 'Pencil', description: t('生成练习任务'), status: 'ready' as const, type: 'task' as const, minVersion: 'v2' as const },
+    { id: 'generate_variant_question', label: t('生成变种题'), iconName: 'GitBranch', description: t('基于错题生成变种练习'), status: 'ready' as const, type: 'task' as const, minVersion: 'v3' as const },
     // 互动内容生成类工具
-    { id: 'interactive_animation', label: t('说明动画'), icon: '🎬', description: t('生成互动说明动画'), status: 'ready' as const, type: 'interactive' as const, minVersion: 'v1' as const },
-    { id: 'interactive_visualization', label: t('可视化'), icon: '📊', description: t('生成数据可视化'), status: 'ready' as const, type: 'interactive' as const, minVersion: 'v2' as const },
-    { id: 'interactive_simulation', label: t('互动模拟'), icon: '🔬', description: t('生成互动模拟实验'), status: 'ready' as const, type: 'interactive' as const, minVersion: 'v2' as const },
-    { id: 'interactive_test', label: t('互动测试'), icon: '🧪', description: t('生成互动测试'), status: 'ready' as const, type: 'interactive' as const, minVersion: 'v2' as const },
+    { id: 'interactive_animation', label: t('说明动画'), iconName: 'Film', description: t('生成互动说明动画'), status: 'ready' as const, type: 'interactive' as const, minVersion: 'v1' as const },
+    { id: 'interactive_visualization', label: t('可视化'), iconName: 'TrendingUp', description: t('生成数据可视化'), status: 'ready' as const, type: 'interactive' as const, minVersion: 'v2' as const },
+    { id: 'interactive_simulation', label: t('互动模拟'), iconName: 'Activity', description: t('生成互动模拟实验'), status: 'ready' as const, type: 'interactive' as const, minVersion: 'v2' as const },
+    { id: 'interactive_test', label: t('互动测试'), iconName: 'Target', description: t('生成互动测试'), status: 'ready' as const, type: 'interactive' as const, minVersion: 'v2' as const },
   ];
 
   const MOCK_GENERATED_TASKS = mockTasks.map((task, idx) => ({
@@ -501,9 +501,13 @@ export default function SelfStudyWorkbench({
     completedTasks: string[];
   } | null>(null);
 
-  // 资源和任务选中状态
-  const [selectedResourceIds, setSelectedResourceIds] = useState<Set<string>>(new Set());
-  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+  // 资源和任务选中状态（默认全选）
+  const [selectedResourceIds, setSelectedResourceIds] = useState<Set<string>>(() =>
+    new Set([...mockResources, ...config.resources].map(r => r.id))
+  );
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(() =>
+    new Set([...mockTasks, ...config.tasks].map(t => t.id))
+  );
 
   const toggleResourceSelection = (id: string) => {
     setSelectedResourceIds(prev => {
@@ -578,7 +582,7 @@ export default function SelfStudyWorkbench({
     id: string;
     title: string;
     type: 'ai_generated';
-    icon: string;
+    iconName: string;
     status: 'ready' | 'generating';
     generatedAt: Date;
     toolId: string;
@@ -939,7 +943,7 @@ export default function SelfStudyWorkbench({
           id: `ai_res_${Date.now()}`,
           title: mockData ? `🤖 ${mockData.title}` : `🤖 ${t('AI生成')}：${tool.label}`,
           type: 'ai_generated' as const,
-          icon: tool.icon,
+          iconName: tool.iconName,
           status: 'ready' as const,
           generatedAt: new Date(),
           toolId: tool.id,
@@ -1016,7 +1020,7 @@ export default function SelfStudyWorkbench({
           const newTask = {
             id: newTaskId,
             type: 'quiz' as const,
-            title: `🤖 ${t('AI生成')}：${tool.label}`,
+            title: tool.label,
             description: `${t('AI 根据学习资料自动生成的练习题')}`,
             status: 'available' as const,
             required: false,
@@ -1024,6 +1028,7 @@ export default function SelfStudyWorkbench({
             questions: pickedQuestions,
             passScore: 60,
             generatedAt: new Date(),
+            isAIGenerated: true,
           };
 
           setGeneratedTasks(prev => [newTask, ...prev]);
@@ -1054,7 +1059,7 @@ export default function SelfStudyWorkbench({
           id: `ai_res_${Date.now()}`,
           title: `🤖 ${t('AI生成')}：${tool.label}`,
           type: 'ai_generated' as const,
-          icon: tool.icon,
+          iconName: tool.iconName,
           status: 'ready' as const,
           generatedAt: new Date(),
           toolId: tool.id,
