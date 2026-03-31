@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm';
 import { SpaceConfig, LearningMode, LearningPathNode } from '../../../types/self-study';
 import { Task } from '../../../types/shared-context';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { isEnabled } from '../../../config/version';
 import { ChatMessage } from '../shared/types';
 import { getIconComponent } from '../shared/utils';
 import { QuickResultData } from '../../task/taskTypes';
@@ -123,6 +124,7 @@ export function ChatPanel(props: ChatPanelProps) {
               </h2>
 
               {/* 模式切换 - 紧凑版 */}
+              {isEnabled('learningModeSwitch') && (
               <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
                 <button
                   onClick={() => handleModeChange('self_directed')}
@@ -147,6 +149,7 @@ export function ChatPanel(props: ChatPanelProps) {
                   {t('AI 自适应学习')}
                 </button>
               </div>
+              )}
             </div>
 
             {/* AI引导模式 - 学习路径进度点 */}
@@ -225,7 +228,7 @@ export function ChatPanel(props: ChatPanelProps) {
                     </div>
 
                     {/* 功能卡片 - 仅在没有推荐回复时显示 (3.2 互斥 + 3.3 富卡片) */}
-                    {message.role === 'assistant'
+                    {isEnabled('actionButtons') && message.role === 'assistant'
                       && message.suggestions?.actionButtons && message.suggestions.actionButtons.length > 0
                       && !(message.suggestions?.quickReplies && message.suggestions.quickReplies.length > 0) && (
                       <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
@@ -289,7 +292,7 @@ export function ChatPanel(props: ChatPanelProps) {
                     )}
 
                     {/* Demo scenario action cards */}
-                    {message.role === 'assistant' && message.actionCards && message.actionCards.length > 0 && (
+                    {isEnabled('demoActionCards') && message.role === 'assistant' && message.actionCards && message.actionCards.length > 0 && (
                       <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
                         <div className="flex flex-col gap-2">
                           {message.actionCards.map((card, idx) => (
@@ -312,7 +315,7 @@ export function ChatPanel(props: ChatPanelProps) {
                   </div>
 
                   {/* 3.4 AI 回复工具条 - 气泡右侧，hover/touch 时显示 */}
-                  {message.role === 'assistant' && (
+                  {isEnabled('messageCopy') && message.role === 'assistant' && (
                     <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex-shrink-0"
                       onTouchStart={(e) => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
                     >
@@ -343,12 +346,12 @@ export function ChatPanel(props: ChatPanelProps) {
                   </div>
 
                   {/* 资源引用标签 */}
-                  {message.role === 'assistant' && message.resourceRef && (
+                  {isEnabled('resourceRefCards') && message.role === 'assistant' && message.resourceRef && (
                     <ResourceReferenceTag resourceRef={message.resourceRef} />
                   )}
 
                   {/* 3.1 简化任务状态卡片 */}
-                  {message.role === 'assistant' && message.embeddedTask && (() => {
+                  {isEnabled('embeddedTask') && message.role === 'assistant' && message.embeddedTask && (() => {
                     const task = message.embeddedTask;
                     const isCompleted = completedTasks.has(task.id);
                     const questionCount = task.questions?.length ?? 0;
@@ -454,9 +457,10 @@ export function ChatPanel(props: ChatPanelProps) {
                     : t('回答问题或提出疑问...')
                 }
                 disabled={isLoading}
-                className="w-full bg-gray-50 border border-gray-200 rounded-lg pl-4 pr-24 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50"
+                className={`w-full bg-gray-50 border border-gray-200 rounded-lg pl-4 ${isEnabled('voiceInput') ? 'pr-24' : 'pr-12'} py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50`}
               />
               {/* Mic button */}
+              {isEnabled('voiceInput') && (
               <button
                 onClick={toggleVoiceInput}
                 disabled={isLoading}
@@ -469,11 +473,12 @@ export function ChatPanel(props: ChatPanelProps) {
               >
                 <Mic size={16} />
               </button>
+              )}
               {/* Send button */}
               <button
                 onClick={() => handleSendMessage()}
                 disabled={isLoading || !inputMessage.trim()}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
+                className={`absolute ${isEnabled('voiceInput') ? 'right-2' : 'right-2'} top-1/2 -translate-y-1/2 p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50`}
               >
                 <Send size={16} />
               </button>

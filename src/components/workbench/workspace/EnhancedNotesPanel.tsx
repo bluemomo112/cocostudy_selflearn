@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { LearningMode } from '../../../types/self-study';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { isEnabled } from '../../../config/version';
 import { usePersistedState } from '../../../utils/storage';
 import { Note, VoiceRecording } from '../shared/types';
 import {
@@ -184,7 +185,7 @@ export function EnhancedNotesPanel({ learningMode, isAIGenerating, getThemeClass
             <Plus size={18} />
             {t('添加笔记')}
           </button>
-          {learningMode === 'ai_guided' && (
+          {isEnabled('aiGenerateNotes') && learningMode === 'ai_guided' && (
             <button
               onClick={generateAINote}
               disabled={isGeneratingNote}
@@ -257,7 +258,7 @@ export function EnhancedNotesPanel({ learningMode, isAIGenerating, getThemeClass
                         {t('已添加')}
                       </span>
                     )}
-                    {onAddToResource && (
+                    {isEnabled('notesAddToResource') && onAddToResource && (
                       <button
                         onClick={(e) => handleAddToResource(note, e)}
                         disabled={addedNoteIds.has(note.id)}
@@ -285,71 +286,82 @@ export function EnhancedNotesPanel({ learningMode, isAIGenerating, getThemeClass
   // Note editor view
   return (
     <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="p-3 border-b border-gray-200 bg-white flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setShowNoteEditor(false)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            title={t('返回列表')}
-          >
-            <X size={16} className="text-gray-600" />
-          </button>
-          <div className="h-4 w-px bg-gray-300" />
-          <button
-            onClick={() => setIsPreviewMode(!isPreviewMode)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              isPreviewMode ? 'bg-gray-100 text-gray-700' : 'bg-primary-600 text-white'
-            }`}
-          >
-            {isPreviewMode ? <Eye size={14} className="inline mr-1" /> : <Edit size={14} className="inline mr-1" />}
-            {isPreviewMode ? t('预览') : t('编辑')}
-          </button>
-        </div>
-        <div className="flex items-center gap-1">
-          <label className="cursor-pointer">
-            <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
-            <div className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <ImageIcon size={16} className="text-gray-600" />
-            </div>
-          </label>
-          <button
-            onClick={toggleRecording}
-            className={`p-2 hover:bg-gray-100 rounded-lg transition-colors ${isRecording ? 'animate-pulse' : ''}`}
-            title={isRecording ? t('停止录音') : t('开始录音')}
-          >
-            <Mic size={16} className={isRecording ? 'text-red-600' : 'text-gray-600'} />
-          </button>
-          {isRecording && (
-            <span className="text-xs font-mono text-red-600">{formatRecTime(recordingTime)}</span>
-          )}
-          {onAddToResource && (
+        <div className="p-3 border-b border-gray-200 bg-white flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1">
             <button
-              onClick={(e) => handleAddToResource(activeNote, e)}
-              disabled={addedNoteIds.has(activeNoteId)}
-              className={`p-2 rounded-lg transition-colors flex items-center gap-1 ${
-                addedNoteIds.has(activeNoteId)
-                  ? 'text-emerald-600 bg-emerald-50 cursor-not-allowed'
-                  : 'hover:bg-primary-50 text-gray-600 hover:text-primary-600'
-              }`}
-              title={addedNoteIds.has(activeNoteId) ? t('已添加到资源') : t('添加到资源')}
+              onClick={() => setShowNoteEditor(false)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title={t('返回列表')}
             >
-              {addedNoteIds.has(activeNoteId) ? <Link size={16} /> : <FolderPlus size={16} />}
-              {addedNoteIds.has(activeNoteId) && (
-                <span className="text-xs">{t('已添加')}</span>
-              )}
+              <X size={16} className="text-gray-600" />
             </button>
-          )}
-          <div className="h-4 w-px bg-gray-300" />
-          <button
-            onClick={() => deleteNote(activeNoteId)}
-            className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-            title={t('删除笔记')}
-          >
-            <Trash2 size={16} className="text-gray-600 hover:text-red-600" />
-          </button>
+            {isEnabled('notesPreviewMode') && (
+            <>
+            <div className="h-4 w-px bg-gray-300" />
+            <button
+              onClick={() => setIsPreviewMode(!isPreviewMode)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                isPreviewMode ? 'bg-gray-100 text-gray-700' : 'bg-primary-600 text-white'
+              }`}
+            >
+              {isPreviewMode ? <Eye size={14} className="inline mr-1" /> : <Edit size={14} className="inline mr-1" />}
+              {isPreviewMode ? t('预览') : t('编辑')}
+            </button>
+            </>
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            {isEnabled('notesAddImage') && (
+            <label className="cursor-pointer">
+              <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
+              <div className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <ImageIcon size={16} className="text-gray-600" />
+              </div>
+            </label>
+            )}
+            {isEnabled('notesVoiceRecording') && (
+            <button
+              onClick={toggleRecording}
+              className={`p-2 hover:bg-gray-100 rounded-lg transition-colors ${isRecording ? 'animate-pulse' : ''}`}
+              title={isRecording ? t('停止录音') : t('开始录音')}
+            >
+              <Mic size={16} className={isRecording ? 'text-red-600' : 'text-gray-600'} />
+            </button>
+            )}
+            {isEnabled('notesVoiceRecording') && isRecording && (
+              <span className="text-xs font-mono text-red-600">{formatRecTime(recordingTime)}</span>
+            )}
+            {isEnabled('notesAddToResource') && onAddToResource && (
+              <button
+                onClick={(e) => handleAddToResource(activeNote, e)}
+                disabled={addedNoteIds.has(activeNoteId)}
+                className={`p-2 rounded-lg transition-colors flex items-center gap-1 ${
+                  addedNoteIds.has(activeNoteId)
+                    ? 'text-emerald-600 bg-emerald-50 cursor-not-allowed'
+                    : 'hover:bg-primary-50 text-gray-600 hover:text-primary-600'
+                }`}
+                title={addedNoteIds.has(activeNoteId) ? t('已添加到资源') : t('添加到资源')}
+              >
+                {addedNoteIds.has(activeNoteId) ? <Link size={16} /> : <FolderPlus size={16} />}
+                {addedNoteIds.has(activeNoteId) && (
+                  <span className="text-xs">{t('已添加')}</span>
+                )}
+              </button>
+            )}
+            {isEnabled('notesDelete') && (
+            <>
+            <div className="h-4 w-px bg-gray-300" />
+            <button
+              onClick={() => deleteNote(activeNoteId)}
+              className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+              title={t('删除笔记')}
+            >
+              <Trash2 size={16} className="text-gray-600 hover:text-red-600" />
+            </button>
+            </>
+            )}
+          </div>
         </div>
-      </div>
 
       {/* Editor / Preview area */}
       <div className="flex-1 overflow-y-auto p-4 bg-white">

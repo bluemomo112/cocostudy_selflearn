@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { X, Search, CheckSquare, Square, FileText, Presentation, Video, Check, Globe, BookOpen, ClipboardList, FileEdit, Monitor } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { isEnabled } from '../config/version';
 import { Resource } from '../types/shared-context';
 import { mockResources } from '../data/mockLearningData';
 import type { ErrorQuestion, HistoricalTest, Note, InteractiveWebpage } from '../data/mockKnowledgeBase';
@@ -266,6 +267,7 @@ export default function UnifiedResourceLibraryModal({
               }`}
             >
               <BookOpen size={16} />{t('学习资料')}</button>
+            {isEnabled('resourceLibraryExtraTabs') && (<>
             <button
               onClick={() => handleTabChange('error_questions')}
               className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
@@ -302,6 +304,7 @@ export default function UnifiedResourceLibraryModal({
               }`}
             >
               <Monitor size={16} />{t('互动网页')}</button>
+            </>)}
           </div>
         </div>
 

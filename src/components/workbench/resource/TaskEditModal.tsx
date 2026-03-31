@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { X, Plus, Sparkles, Activity, ChevronDown } from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { isEnabled } from '../../../config/version';
 import QuestionEditCard from './QuestionEditCard';
 
 interface TaskEditModalProps {
@@ -265,6 +266,7 @@ export default function TaskEditModal({
           </div>
 
           {/* AI Generate section (collapsible) */}
+          {isEnabled('aiGenerateModal') && (
           <div className="border border-gray-200 rounded-lg overflow-hidden">
             <button
               onClick={() => setShowAIGenConfig(!showAIGenConfig)}
@@ -322,6 +324,7 @@ export default function TaskEditModal({
               </div>
             )}
           </div>
+          )}
         </div>
 
         {/* Footer */}

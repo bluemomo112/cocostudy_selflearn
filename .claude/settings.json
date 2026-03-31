@@ -1,12 +1,45 @@
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/cute_hook/notify.sh SessionStart"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/cute_hook/notify.sh PreToolUse"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/cute_hook/notify.sh PostToolUse"
+          }
+        ]
+      }
+    ],
     "UserPromptSubmit": [
       {
         "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/peon-ping/notify.sh UserPromptSubmit"
+            "command": "bash ~/.claude/hooks/cute_hook/notify.sh UserPromptSubmit"
           }
         ]
       }
@@ -17,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/peon-ping/notify.sh Stop"
+            "command": "bash ~/.claude/hooks/cute_hook/notify.sh Stop"
           }
         ]
       }
@@ -28,7 +61,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/peon-ping/notify.sh PermissionRequest"
+            "command": "bash ~/.claude/hooks/cute_hook/notify.sh PermissionRequest"
           }
         ]
       }
@@ -39,7 +72,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/peon-ping/notify.sh PostToolUseFailure"
+            "command": "bash ~/.claude/hooks/cute_hook/notify.sh PostToolUseFailure"
           }
         ]
       }
@@ -50,7 +83,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/peon-ping/notify.sh PreCompact"
+            "command": "bash ~/.claude/hooks/cute_hook/notify.sh PreCompact"
           }
         ]
       }
