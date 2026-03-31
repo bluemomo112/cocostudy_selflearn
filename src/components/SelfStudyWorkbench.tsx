@@ -27,7 +27,22 @@ import UnifiedResourceLibraryModal from './UnifiedResourceLibraryModal';
 import InteractiveViewerModal from './InteractiveViewerModal';
 import ResourceInlineViewer, { InlineViewResource } from './ResourceInlineViewer';
 import { useLanguage } from '../contexts/LanguageContext';
-import { TaskEditModal, NoteInfoModal } from './note-config/modals';
+import {
+  TaskEditModal,
+  NoteInfoModal,
+  AudioOverviewModal,
+  MindMapModal,
+  FlashcardsModal,
+  QuizModal,
+  ExplainerVideoModal,
+  VariantsModal,
+  type AudioOverviewConfig,
+  type MindMapConfig,
+  type FlashcardsConfig,
+  type QuizConfig,
+  type ExplainerVideoConfig,
+  type VariantsConfig
+} from './note-config/modals';
 import { useRouter } from 'next/navigation';
 import { usePersistedState } from '../utils/storage';
 import { PublishScope } from '../types/self-study';
@@ -214,7 +229,7 @@ export default function SelfStudyWorkbench({
 
   const STUDIO_TOOLS = [
     // 资源生成类工具
-    { id: 'audio_overview', label: t('音频概述'), iconName: 'Mic', description: t('生成音频摘要'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v2' as const },
+    { id: 'audio_overview', label: t('音频概述'), iconName: 'Mic', description: t('生成音频摘要'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v1' as const },
     { id: 'mind_map', label: t('思维导图'), iconName: 'Workflow', description: t('可视化知识结构'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v1' as const },
     { id: 'flashcards', label: t('记忆卡片'), iconName: 'CreditCard', description: t('生成复习卡片'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v1' as const },
     { id: 'timeline', label: t('时间线'), iconName: 'Clock', description: t('梳理知识脉络'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v2' as const },
@@ -225,7 +240,7 @@ export default function SelfStudyWorkbench({
     // 任务生成类工具
     { id: 'quiz', label: t('知识测验'), iconName: 'TestTube2', description: t('生成测试题目'), status: 'ready' as const, type: 'task' as const, minVersion: 'v1' as const },
     { id: 'practice', label: t('练习题'), iconName: 'Pencil', description: t('生成练习任务'), status: 'ready' as const, type: 'task' as const, minVersion: 'v2' as const },
-    { id: 'generate_variant_question', label: t('生成变种题'), iconName: 'GitBranch', description: t('基于错题生成变种练习'), status: 'ready' as const, type: 'task' as const, minVersion: 'v3' as const },
+    { id: 'generate_variant_question', label: t('生成变种题'), iconName: 'GitBranch', description: t('基于错题生成变种练习'), status: 'ready' as const, type: 'task' as const, minVersion: 'v1' as const },
     // 互动内容生成类工具
     { id: 'interactive_animation', label: t('说明动画'), iconName: 'Film', description: t('生成互动说明动画'), status: 'ready' as const, type: 'interactive' as const, minVersion: 'v1' as const },
     { id: 'interactive_visualization', label: t('可视化'), iconName: 'TrendingUp', description: t('生成数据可视化'), status: 'ready' as const, type: 'interactive' as const, minVersion: 'v2' as const },
@@ -2821,110 +2836,91 @@ export default function SelfStudyWorkbench({
       )}
 
       {/* Studio工具配置弹窗 */}
-      {studioConfigModal.isOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden">
-            {/* 弹窗头部 */}
-            <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-accent-50 to-accent-100">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                  <Settings size={18} className="text-accent-600" />
-                  {t('工具配置')}
-                </h3>
-                <button
-                  onClick={() => setStudioConfigModal({ isOpen: false, toolId: null })}
-                  className="p-1 hover:bg-white/50 rounded-lg transition-colors"
-                >
-                  <X size={18} className="text-gray-600" />
-                </button>
-              </div>
-            </div>
+      {studioConfigModal.isOpen && (() => {
+        const handleClose = () => setStudioConfigModal({ isOpen: false, toolId: null });
+        const handleSave = (config: any) => {
+          console.log('Tool config saved:', studioConfigModal.toolId, config);
+          // TODO: 实际保存配置并触发生成
+          handleClose();
+        };
 
-            {/* 弹窗内容 */}
-            <div className="p-6 space-y-4 overflow-y-auto max-h-[calc(80vh-140px)]">
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-accent-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Sparkles size={32} className="text-accent-600" />
-                </div>
-                <h4 className="text-base font-semibold text-gray-800 mb-2">
-                  {STUDIO_TOOLS.find(t => t.id === studioConfigModal.toolId)?.label}
-                </h4>
-                <p className="text-sm text-gray-500 mb-6">
-                  {t('自定义工具的生成参数和输出格式')}
-                </p>
-
-                {/* 配置选项示例 */}
-                <div className="space-y-3 text-left">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      {t('输出详细程度')}
-                    </label>
-                    <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-                      <option>{t('简洁')}</option>
-                      <option selected>{t('标准')}</option>
-                      <option>{t('详细')}</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      {t('生成语言')}
-                    </label>
-                    <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-                      <option selected>{t('中文')}</option>
-                      <option>{t('英文')}</option>
-                      <option>{t('双语')}</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      {t('难度级别')}
-                    </label>
-                    <div className="flex gap-2">
-                      {[t('基础'), t('中级'), t('高级')].map((level, idx) => (
-                        <button
-                          key={level}
-                          className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                            idx === 1
-                              ? 'bg-accent-500 text-white'
-                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                          }`}
-                        >
-                          {level}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span className="text-xs font-medium text-gray-700">{t('包含示例')}</span>
-                    <div className="w-10 h-6 bg-accent-500 rounded-full relative cursor-pointer">
-                      <div className="absolute right-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow-sm"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 弹窗底部 */}
-            <div className="p-4 border-t border-gray-200 bg-gray-50 flex gap-2">
-              <button
-                onClick={() => setStudioConfigModal({ isOpen: false, toolId: null })}
-                className="flex-1 px-4 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                {t('取消')}
-              </button>
-              <button
-                onClick={() => setStudioConfigModal({ isOpen: false, toolId: null })}
-                className="flex-1 px-4 py-2 bg-accent-600 text-white text-sm font-medium rounded-lg hover:bg-accent-600 transition-colors"
-              >
-                {t('保存配置')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        switch (studioConfigModal.toolId) {
+          case 'audio_overview':
+            return (
+              <AudioOverviewModal
+                config={{
+                  length: 'default',
+                  language: 'follow',
+                  focusInstruction: ''
+                }}
+                onSave={handleSave}
+                onClose={handleClose}
+              />
+            );
+          case 'mind_map':
+            return (
+              <MindMapModal
+                config={{
+                  language: 'follow',
+                  focusInstruction: ''
+                }}
+                onSave={handleSave}
+                onClose={handleClose}
+              />
+            );
+          case 'flashcards':
+            return (
+              <FlashcardsModal
+                config={{
+                  cardCount: 'standard',
+                  language: 'follow',
+                  focusInstruction: ''
+                }}
+                onSave={handleSave}
+                onClose={handleClose}
+              />
+            );
+          case 'quiz':
+            return (
+              <QuizModal
+                config={{
+                  questionCount: 'standard',
+                  language: 'follow',
+                  focusInstruction: ''
+                }}
+                onSave={handleSave}
+                onClose={handleClose}
+              />
+            );
+          case 'interactive_animation':
+            return (
+              <ExplainerVideoModal
+                config={{
+                  demonstrationGoal: '',
+                  includeControls: true,
+                  language: 'follow'
+                }}
+                onSave={handleSave}
+                onClose={handleClose}
+              />
+            );
+          case 'generate_variant_question':
+            return (
+              <VariantsModal
+                config={{
+                  variantsPerQuestion: 'standard',
+                  changeType: 'both',
+                  keepDifficulty: true,
+                  language: 'follow'
+                }}
+                onSave={handleSave}
+                onClose={handleClose}
+              />
+            );
+          default:
+            return null;
+        }
+      })()}
 
       {/* 任务编辑弹窗 */}
       {editingTask && (

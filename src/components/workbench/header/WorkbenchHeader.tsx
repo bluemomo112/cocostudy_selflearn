@@ -25,6 +25,7 @@ interface WorkbenchHeaderProps {
   onNoteInfoOpen: () => void;
   onLoadScenario?: (scenarioId: string) => void;
   onExitDemoMode?: () => void;
+  onStudentComplete?: () => void;
 }
 
 export function WorkbenchHeader({
@@ -45,6 +46,7 @@ export function WorkbenchHeader({
   onNoteInfoOpen,
   onLoadScenario,
   onExitDemoMode,
+  onStudentComplete,
 }: WorkbenchHeaderProps) {
   const { t } = useLanguage();
 

@@ -53,6 +53,9 @@ import {
   HelpCircle,
   Lightbulb,
   AlertCircle,
+  Volume2,
+  Copy,
+  CreditCard,
 } from 'lucide-react';
 
 // 导入重构后的可视化组件
@@ -510,7 +513,7 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
                           }}
                           className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
                             localConfig.bindClasses.includes(className)
-                              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200'
+                              ? 'bg-primary-600 text-white shadow-md shadow-emerald-200'
                               : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
                           }`}
                         >
@@ -532,7 +535,7 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
                         onClick={() => setPublishScope({ ...publishScope, includeResources: !publishScope.includeResources })}
                         className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
                           publishScope.includeResources
-                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200'
+                            ? 'bg-primary-600 text-white shadow-md shadow-emerald-200'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
                         }`}
                       >{t('学习资源')}</button>
@@ -540,7 +543,7 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
                         onClick={() => setPublishScope({ ...publishScope, includeTasks: !publishScope.includeTasks })}
                         className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
                           publishScope.includeTasks
-                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200'
+                            ? 'bg-primary-600 text-white shadow-md shadow-emerald-200'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
                         }`}
                       >{t('学习任务')}</button>
@@ -548,7 +551,7 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
                         onClick={() => setPublishScope({ ...publishScope, includeAISettings: !publishScope.includeAISettings })}
                         className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
                           publishScope.includeAISettings
-                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200'
+                            ? 'bg-primary-600 text-white shadow-md shadow-emerald-200'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
                         }`}
                       >{t('AI 设置')}</button>
@@ -556,7 +559,7 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
                         onClick={() => setPublishScope({ ...publishScope, includeLearningPath: !publishScope.includeLearningPath })}
                         className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
                           publishScope.includeLearningPath
-                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200'
+                            ? 'bg-primary-600 text-white shadow-md shadow-emerald-200'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
                         }`}
                       >{t('学习路径')}</button>
@@ -748,7 +751,7 @@ export function GuidedModeModal({ config, inheritedWorkflows, onSave, onClose }:
         className="bg-white w-[750px] max-h-[85vh] rounded-2xl shadow-2xl overflow-hidden animate-zoomIn"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white p-5">
+        <div className="bg-gradient-to-r from-primary-500 to-accent-500 text-white p-5">
           <h2 className="text-lg font-bold flex items-center gap-2">
             <GitBranch size={20} />{t('引导学习模式配置')}</h2>
           <p className="text-emerald-100 text-sm mt-1">{t('选择教学法流程，可微调各阶段的AI提示词')}</p>
@@ -857,7 +860,7 @@ export function GuidedModeModal({ config, inheritedWorkflows, onSave, onClose }:
                               value={customPrompt}
                               onChange={(e) => updateStagePrompt(stage.id, e.target.value)}
                               placeholder={`例如：针对"水资源"主题，${stage.name.split(' ')[0]}阶段可以...`}
-                              className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none resize-none"
+                              className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none resize-none"
                               rows={3}
                             />
                           </div>
@@ -883,7 +886,7 @@ export function GuidedModeModal({ config, inheritedWorkflows, onSave, onClose }:
           <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:text-gray-800">{t('取消')}</button>
           <button
             onClick={() => onSave(localConfig)}
-            className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium shadow-sm"
+            className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium shadow-sm"
           >{t('保存')}</button>
         </div>
       </div>
@@ -1103,7 +1106,7 @@ export function MetaModal({ config, inheritedStrategies, onSave, onClose }: any)
           <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:text-gray-800">{t('取消')}</button>
           <button
             onClick={() => onSave({ metacognitionStrategy: selectedStrategy, metacognitionPrompt: prompt })}
-            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium shadow-sm"
+            className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium shadow-sm"
           >{t('保存')}</button>
         </div>
       </div>
@@ -1169,7 +1172,7 @@ export function ResourcePreviewModal({ resource, onClose }: any) {
                   <span className="text-sm text-gray-700">共 {resource.pages} 页</span>
                 </div>
                 <div className="mt-6 flex justify-center gap-3">
-                  <button className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2">
+                  <button className="px-4 py-2 bg-primary-600 text-white rounded-xl text-sm font-medium hover:bg-primary-700 transition-colors flex items-center gap-2">
                     <Eye size={14} />{t('查看文档')}</button>
                   <button className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors flex items-center gap-2">
                     <Download size={14} />{t('下载')}</button>
@@ -1434,7 +1437,7 @@ export function TaskEditModal({ task, onSave, onClose }: any) {
                     <button
                       onClick={generateQuestions}
                       disabled={isGenerating}
-                      className="px-3 py-1.5 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-lg text-xs font-medium hover:from-purple-600 hover:to-indigo-600 transition-all flex items-center gap-1 disabled:opacity-50"
+                      className="px-3 py-1.5 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-lg text-xs font-medium hover:from-purple-600 hover:to-indigo-600 transition-all flex items-center gap-1 disabled:opacity-50"
                     >
                       {isGenerating ? (
                         <>
@@ -1478,7 +1481,7 @@ export function TaskEditModal({ task, onSave, onClose }: any) {
                             }}
                             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                               aiGenConfig.questionTypes.includes(type.value)
-                                ? 'bg-purple-600 text-white'
+                                ? 'bg-primary-600 text-white'
                                 : 'bg-white text-gray-600 border border-gray-200'
                             }`}
                           >
@@ -1804,7 +1807,7 @@ export function TaskEditModal({ task, onSave, onClose }: any) {
                               })
                             }
                             className={`w-12 h-6 rounded-full transition-colors relative ${
-                              localTask.aiGrading?.enabled ? 'bg-purple-600' : 'bg-gray-300'
+                              localTask.aiGrading?.enabled ? 'bg-primary-600' : 'bg-gray-300'
                             }`}
                           >
                             <div
@@ -1841,7 +1844,7 @@ export function TaskEditModal({ task, onSave, onClose }: any) {
                                           )}
                                         </div>
                                         {isSelected && (
-                                          <div className="w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                          <div className="w-5 h-5 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
                                             <svg
                                               className="w-3 h-3 text-white"
                                               fill="none"
@@ -2107,7 +2110,7 @@ export function StudentPreview({ config, leftWidth, rightWidth }: any) {
             <span className="inline-block bg-indigo-100 text-indigo-700 px-4 py-1.5 rounded-full text-xs">{t('✨ 已进入「自学模式」')}</span>
           </div>
           <div className="flex gap-3">
-            <div className="w-9 h-9 rounded-full bg-indigo-600 flex-shrink-0 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-full bg-primary-600 flex-shrink-0 flex items-center justify-center">
               <Bot size={14} className="text-white" />
             </div>
             <div className="bg-white p-4 rounded-2xl rounded-tl-none border border-gray-200 shadow-sm max-w-[80%]">
@@ -2125,7 +2128,7 @@ export function StudentPreview({ config, leftWidth, rightWidth }: any) {
               disabled
               className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-4 pr-12 py-3 text-sm text-gray-400"
             />
-            <button className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-indigo-600 text-white rounded-lg">
+            <button className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary-600 text-white rounded-lg">
               <Send size={14} />
             </button>
           </div>
@@ -2223,7 +2226,7 @@ export function UseViewHeader({ config, onBack, onPublish }: any) {
         <div className="w-px h-5 bg-gray-200"></div>
         <button
           onClick={onPublish}
-          className="flex items-center gap-1.5 px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1 bg-primary-600 text-white text-xs font-medium rounded-lg hover:bg-primary-700 transition-colors"
         >
           <Send size={14} />{t('发布到班级')}</button>
       </div>
@@ -2264,7 +2267,7 @@ export function ResultsViewHeader({ config, onBack, onSwitchToUse, onPublish }: 
         <div className="w-px h-5 bg-gray-200"></div>
         <button
           onClick={onPublish}
-          className="flex items-center gap-1.5 px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1 bg-primary-600 text-white text-xs font-medium rounded-lg hover:bg-primary-700 transition-colors"
         >
           <Send size={14} />{t('发布到班级')}</button>
       </div>
@@ -2796,6 +2799,476 @@ export function ResultsViewDashboard({ config }: any) {
           onClose={() => setSelectedStudent(null)}
         />
       )}
+    </div>
+  );
+}
+
+// ==================== 学习工具配置弹窗 ====================
+
+// 配置类型定义
+export interface AudioOverviewConfig {
+  length: 'default' | 'long';
+  language: 'follow' | 'zh-CN' | 'zh-TW' | 'en';
+  focusInstruction: string;
+}
+
+export interface MindMapConfig {
+  language: 'follow' | 'zh-CN' | 'zh-TW' | 'en';
+  focusInstruction: string;
+}
+
+export interface FlashcardsConfig {
+  cardCount: 'fewer' | 'standard' | 'more';
+  language: 'follow' | 'zh-CN' | 'zh-TW' | 'en';
+  focusInstruction: string;
+}
+
+export interface QuizConfig {
+  questionCount: 'fewer' | 'standard' | 'more';
+  language: 'follow' | 'zh-CN' | 'zh-TW' | 'en';
+  focusInstruction: string;
+}
+
+export interface ExplainerVideoConfig {
+  demonstrationGoal: string;
+  includeControls: boolean;
+  language: 'follow' | 'zh-CN' | 'zh-TW' | 'en';
+}
+
+export interface VariantsConfig {
+  variantsPerQuestion: 'fewer' | 'standard' | 'more';
+  changeType: 'numbers' | 'context' | 'both';
+  language: 'follow' | 'zh-CN' | 'zh-TW' | 'en';
+  keepDifficulty: boolean;
+}
+
+// 语言选择组件
+function LanguageSelector({ value, onChange }: { value: string; onChange: (val: string) => void }) {
+  const { t } = useLanguage();
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">{t('语言')}</label>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+      >
+        <option value="follow">{t('跟随系统设置')}</option>
+        <option value="zh-CN">{t('简体中文')}</option>
+        <option value="zh-TW">{t('繁體中文')}</option>
+        <option value="en">English</option>
+      </select>
+    </div>
+  );
+}
+
+// 音频概述配置弹窗
+export function AudioOverviewModal({
+  config,
+  onSave,
+  onClose
+}: {
+  config: AudioOverviewConfig;
+  onSave: (config: AudioOverviewConfig) => void;
+  onClose: () => void;
+}) {
+  const { t } = useLanguage();
+  const [localConfig, setLocalConfig] = useState<AudioOverviewConfig>(config);
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white w-[600px] max-h-[85vh] rounded-2xl shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="bg-gradient-to-r from-primary-500 to-accent-500 text-white p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <Volume2 size={20} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold">{t('音频概述配置')}</h2>
+                <p className="text-sm opacity-80">{t('生成双人对话形式的学习音频')}</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-lg transition-colors">
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('时长')}</label>
+            <div className="flex gap-3">
+              <button onClick={() => setLocalConfig({ ...localConfig, length: 'default' })} className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${localConfig.length === 'default' ? 'bg-primary-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                {t('标准')}
+                <div className="text-xs opacity-80 mt-1">3-5{t('分钟')}</div>
+              </button>
+              <button onClick={() => setLocalConfig({ ...localConfig, length: 'long' })} className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${localConfig.length === 'long' ? 'bg-primary-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                {t('较长')}
+                <div className="text-xs opacity-80 mt-1">5-6{t('分钟')}</div>
+              </button>
+            </div>
+          </div>
+
+          <LanguageSelector value={localConfig.language} onChange={(val) => setLocalConfig({ ...localConfig, language: val as any })} />
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('聚焦指令（可选）')}</label>
+            <textarea value={localConfig.focusInstruction} onChange={(e) => setLocalConfig({ ...localConfig, focusInstruction: e.target.value })} placeholder={t('例如：只讲第3章 / 重点解释公式推导')} className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-primary-500 outline-none resize-none" rows={3} />
+          </div>
+        </div>
+
+        <div className="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50">
+          <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:text-gray-800">{t('取消')}</button>
+          <button onClick={() => onSave(localConfig)} className="px-6 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium shadow-sm">{t('生成')}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 思维导图配置弹窗
+export function MindMapModal({
+  config,
+  onSave,
+  onClose
+}: {
+  config: MindMapConfig;
+  onSave: (config: MindMapConfig) => void;
+  onClose: () => void;
+}) {
+  const { t } = useLanguage();
+  const [localConfig, setLocalConfig] = useState<MindMapConfig>(config);
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white w-[600px] max-h-[85vh] rounded-2xl shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="bg-gradient-to-r from-primary-500 to-accent-500 text-white p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <Network size={20} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold">{t('思维导图配置')}</h2>
+                <p className="text-sm opacity-80">{t('生成知识结构思维导图')}</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-lg transition-colors">
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-5">
+          <LanguageSelector value={localConfig.language} onChange={(val) => setLocalConfig({ ...localConfig, language: val as any })} />
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('聚焦指令（可选）')}</label>
+            <textarea value={localConfig.focusInstruction} onChange={(e) => setLocalConfig({ ...localConfig, focusInstruction: e.target.value })} placeholder={t('例如：只展示第2章内容 / 重点突出因果关系')} className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-primary-500 outline-none resize-none" rows={3} />
+          </div>
+        </div>
+
+        <div className="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50">
+          <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:text-gray-800">{t('取消')}</button>
+          <button onClick={() => onSave(localConfig)} className="px-6 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium shadow-sm">{t('生成')}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 记忆卡片配置弹窗
+export function FlashcardsModal({
+  config,
+  onSave,
+  onClose
+}: {
+  config: FlashcardsConfig;
+  onSave: (config: FlashcardsConfig) => void;
+  onClose: () => void;
+}) {
+  const { t } = useLanguage();
+  const [localConfig, setLocalConfig] = useState<FlashcardsConfig>(config);
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white w-[600px] max-h-[85vh] rounded-2xl shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="bg-gradient-to-r from-primary-500 to-accent-500 text-white p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <CreditCard size={20} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold">{t('记忆卡片配置')}</h2>
+                <p className="text-sm opacity-80">{t('生成知识点记忆卡片')}</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-lg transition-colors">
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('卡片数量')}</label>
+            <div className="flex gap-3">
+              <button onClick={() => setLocalConfig({ ...localConfig, cardCount: 'fewer' })} className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${localConfig.cardCount === 'fewer' ? 'bg-primary-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                {t('较少')}
+                <div className="text-xs opacity-80 mt-1">5-6{t('张')}</div>
+              </button>
+              <button onClick={() => setLocalConfig({ ...localConfig, cardCount: 'standard' })} className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${localConfig.cardCount === 'standard' ? 'bg-primary-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                {t('标准')}
+                <div className="text-xs opacity-80 mt-1">8-10{t('张')}</div>
+              </button>
+              <button onClick={() => setLocalConfig({ ...localConfig, cardCount: 'more' })} className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${localConfig.cardCount === 'more' ? 'bg-primary-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                {t('较多')}
+                <div className="text-xs opacity-80 mt-1">12-15{t('张')}</div>
+              </button>
+            </div>
+          </div>
+
+          <LanguageSelector value={localConfig.language} onChange={(val) => setLocalConfig({ ...localConfig, language: val as any })} />
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('聚焦指令（可选）')}</label>
+            <textarea value={localConfig.focusInstruction} onChange={(e) => setLocalConfig({ ...localConfig, focusInstruction: e.target.value })} placeholder={t('例如：重点记忆公式和定义 / 只包含核心概念')} className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-primary-500 outline-none resize-none" rows={3} />
+          </div>
+        </div>
+
+        <div className="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50">
+          <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:text-gray-800">{t('取消')}</button>
+          <button onClick={() => onSave(localConfig)} className="px-6 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium shadow-sm">{t('生成')}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 知识测验配置弹窗
+export function QuizModal({
+  config,
+  onSave,
+  onClose
+}: {
+  config: QuizConfig;
+  onSave: (config: QuizConfig) => void;
+  onClose: () => void;
+}) {
+  const { t } = useLanguage();
+  const [localConfig, setLocalConfig] = useState<QuizConfig>(config);
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white w-[600px] max-h-[85vh] rounded-2xl shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="bg-gradient-to-r from-primary-500 to-accent-500 text-white p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <HelpCircle size={20} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold">{t('知识测验配置')}</h2>
+                <p className="text-sm opacity-80">{t('生成知识点测验题目')}</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-lg transition-colors">
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('题目数量')}</label>
+            <div className="flex gap-3">
+              <button onClick={() => setLocalConfig({ ...localConfig, questionCount: 'fewer' })} className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${localConfig.questionCount === 'fewer' ? 'bg-primary-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                {t('较少')}
+                <div className="text-xs opacity-80 mt-1">3-4{t('题')}</div>
+              </button>
+              <button onClick={() => setLocalConfig({ ...localConfig, questionCount: 'standard' })} className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${localConfig.questionCount === 'standard' ? 'bg-primary-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                {t('标准')}
+                <div className="text-xs opacity-80 mt-1">5-6{t('题')}</div>
+              </button>
+              <button onClick={() => setLocalConfig({ ...localConfig, questionCount: 'more' })} className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${localConfig.questionCount === 'more' ? 'bg-primary-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                {t('较多')}
+                <div className="text-xs opacity-80 mt-1">8-10{t('题')}</div>
+              </button>
+            </div>
+          </div>
+
+          <LanguageSelector value={localConfig.language} onChange={(val) => setLocalConfig({ ...localConfig, language: val as any })} />
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('聚焦指令（可选）')}</label>
+            <textarea value={localConfig.focusInstruction} onChange={(e) => setLocalConfig({ ...localConfig, focusInstruction: e.target.value })} placeholder={t('例如：重点考察计算能力 / 只出选择题')} className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-primary-500 outline-none resize-none" rows={3} />
+          </div>
+        </div>
+
+        <div className="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50">
+          <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:text-gray-800">{t('取消')}</button>
+          <button onClick={() => onSave(localConfig)} className="px-6 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium shadow-sm">{t('生成')}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 说明动画配置弹窗
+export function ExplainerVideoModal({
+  config,
+  onSave,
+  onClose
+}: {
+  config: ExplainerVideoConfig;
+  onSave: (config: ExplainerVideoConfig) => void;
+  onClose: () => void;
+}) {
+  const { t } = useLanguage();
+  const [localConfig, setLocalConfig] = useState<ExplainerVideoConfig>(config);
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white w-[600px] max-h-[85vh] rounded-2xl shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="bg-gradient-to-r from-primary-500 to-accent-500 text-white p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <Play size={20} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold">{t('说明动画配置')}</h2>
+                <p className="text-sm opacity-80">{t('生成互动式演示动画')}</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-lg transition-colors">
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('演示目标')}<span className="text-red-500 ml-1">*</span></label>
+            <textarea value={localConfig.demonstrationGoal} onChange={(e) => setLocalConfig({ ...localConfig, demonstrationGoal: e.target.value })} placeholder={t('例如：演示水循环的完整过程，包括蒸发、凝结、降水、径流四个阶段')} className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-primary-500 outline-none resize-none" rows={4} />
+          </div>
+
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div>
+              <span className="text-sm font-medium text-gray-700">{t('包含控制台')}</span>
+              <p className="text-xs text-gray-500 mt-1">{t('添加参数控制面板，可调整变量观察动画变化')}</p>
+            </div>
+            <button onClick={() => setLocalConfig({ ...localConfig, includeControls: !localConfig.includeControls })} className={`w-12 h-6 rounded-full transition-colors relative ${localConfig.includeControls ? 'bg-primary-500' : 'bg-gray-300'}`}>
+              <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform absolute top-0.5 ${localConfig.includeControls ? 'translate-x-6' : 'translate-x-0.5'}`}></div>
+            </button>
+          </div>
+
+          <LanguageSelector value={localConfig.language} onChange={(val) => setLocalConfig({ ...localConfig, language: val as any })} />
+        </div>
+
+        <div className="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50">
+          <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:text-gray-800">{t('取消')}</button>
+          <button onClick={() => onSave(localConfig)} disabled={!localConfig.demonstrationGoal.trim()} className="px-6 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">{t('生成')}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 生成变种题配置弹窗
+export function VariantsModal({
+  config,
+  onSave,
+  onClose
+}: {
+  config: VariantsConfig;
+  onSave: (config: VariantsConfig) => void;
+  onClose: () => void;
+}) {
+  const { t } = useLanguage();
+  const [localConfig, setLocalConfig] = useState<VariantsConfig>(config);
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white w-[600px] max-h-[85vh] rounded-2xl shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="bg-gradient-to-r from-primary-500 to-accent-500 text-white p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <Copy size={20} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold">{t('生成变种题配置')}</h2>
+                <p className="text-sm opacity-80">{t('基于原题生成变式练习题')}</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-lg transition-colors">
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-5">
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-700">
+              <span className="font-medium">{t('提示：')}</span>{t('变种题数量将根据原始题目数量自动确定')}
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('每题变种数')}</label>
+            <div className="flex gap-3">
+              <button onClick={() => setLocalConfig({ ...localConfig, variantsPerQuestion: 'fewer' })} className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${localConfig.variantsPerQuestion === 'fewer' ? 'bg-primary-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                {t('较少')}
+                <div className="text-xs opacity-80 mt-1">1-2{t('个')}</div>
+              </button>
+              <button onClick={() => setLocalConfig({ ...localConfig, variantsPerQuestion: 'standard' })} className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${localConfig.variantsPerQuestion === 'standard' ? 'bg-primary-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                {t('标准')}
+                <div className="text-xs opacity-80 mt-1">3{t('个')}</div>
+              </button>
+              <button onClick={() => setLocalConfig({ ...localConfig, variantsPerQuestion: 'more' })} className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${localConfig.variantsPerQuestion === 'more' ? 'bg-primary-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                {t('较多')}
+                <div className="text-xs opacity-80 mt-1">4-5{t('个')}</div>
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('变化类型')}</label>
+            <div className="flex gap-3">
+              <button onClick={() => setLocalConfig({ ...localConfig, changeType: 'numbers' })} className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${localConfig.changeType === 'numbers' ? 'bg-primary-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                {t('仅改数字')}
+              </button>
+              <button onClick={() => setLocalConfig({ ...localConfig, changeType: 'context' })} className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${localConfig.changeType === 'context' ? 'bg-primary-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                {t('仅改情境')}
+              </button>
+              <button onClick={() => setLocalConfig({ ...localConfig, changeType: 'both' })} className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${localConfig.changeType === 'both' ? 'bg-primary-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                {t('两者都改')}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div>
+              <span className="text-sm font-medium text-gray-700">{t('保持难度一致')}</span>
+              <p className="text-xs text-gray-500 mt-1">{t('变种题与原题难度相同')}</p>
+            </div>
+            <button onClick={() => setLocalConfig({ ...localConfig, keepDifficulty: !localConfig.keepDifficulty })} className={`w-12 h-6 rounded-full transition-colors relative ${localConfig.keepDifficulty ? 'bg-indigo-500' : 'bg-gray-300'}`}>
+              <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform absolute top-0.5 ${localConfig.keepDifficulty ? 'translate-x-6' : 'translate-x-0.5'}`}></div>
+            </button>
+          </div>
+
+          <LanguageSelector value={localConfig.language} onChange={(val) => setLocalConfig({ ...localConfig, language: val as any })} />
+        </div>
+
+        <div className="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50">
+          <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:text-gray-800">{t('取消')}</button>
+          <button onClick={() => onSave(localConfig)} className="px-6 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium shadow-sm">{t('生成')}</button>
+        </div>
+      </div>
     </div>
   );
 }
