@@ -1,3 +1,8 @@
+// Theme config (colors)
+export { greenThemeColors } from './config/theme.config';
+export type { ThemeColors } from './config/theme.config';
+// CSS: import '@cross/self-learn/styles/theme.css'
+
 // Main components
 export { default as SelfStudyWorkbench } from './components/SelfStudyWorkbench';
 export { default as SpaceManager } from './components/SpaceManager';
