@@ -61,6 +61,8 @@ import { generateExplainQuestionDialogue, generateQuickReplyResponse } from '../
 // ── workbench/ 子组件（只负责渲染，状态和 handler 留在本文件）
 // 详见 ARCHITECTURE.md 了解各文件职责
 import { WorkbenchHeader } from './workbench/header/WorkbenchHeader';
+import { AgentSwitcherModal } from './workbench/agent/AgentSwitcherModal';
+import { getAgentPreset } from '../data/agentPresets';
 import { LeftPanel } from './workbench/resource/LeftPanel';
 import { ChatPanel } from './workbench/chat/ChatPanel';
 import { RightPanel } from './workbench/workspace/RightPanel';
@@ -467,6 +469,8 @@ export default function SelfStudyWorkbench({
 
   // 设置弹窗
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [currentAgentId, setCurrentAgentId] = useState('socratic');
+  const [isAgentSwitcherOpen, setIsAgentSwitcherOpen] = useState(false);
 
   // 发布弹窗
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
@@ -2683,6 +2687,8 @@ export default function SelfStudyWorkbench({
             onNoteInfoOpen={() => setShowNoteInfoModal(true)}
             onLoadScenario={startScenario}
             onExitDemoMode={exitDemoMode}
+            currentAgentName={getAgentPreset(currentAgentId).name}
+            onAgentSwitchOpen={() => setIsAgentSwitcherOpen(true)}
           />
 
       {/* 主内容区 - 三栏布局 */}
@@ -2935,6 +2941,27 @@ export default function SelfStudyWorkbench({
           onClose={() => setEditingTask(null)}
         />
       )}
+
+      {/* AI 学习搭档切换弹窗 */}
+      <AgentSwitcherModal
+        isOpen={isAgentSwitcherOpen}
+        currentAgentId={currentAgentId}
+        onClose={() => setIsAgentSwitcherOpen(false)}
+        onConfirm={(agentId) => {
+          setCurrentAgentId(agentId);
+          setIsAgentSwitcherOpen(false);
+          const agent = getAgentPreset(agentId);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `agent-switch-${Date.now()}`,
+              role: 'assistant',
+              content: `✅ 已切换为 **${agent.name}**\n\n${agent.sampleLine}`,
+              timestamp: new Date(),
+            },
+          ]);
+        }}
+      />
 
       {/* 发布弹窗 */}
       <PublishModal
