@@ -19,6 +19,22 @@ export interface AgentPreset {
 
 export const AGENT_PRESETS: AgentPreset[] = [
   {
+    id: 'socratic',
+    name: '苏格拉底式',
+    tagline: '不给答案，靠提问带你想明白',
+    description:
+      '完全没思路时用它。它不会直接告诉你答案，而是通过一层层提问，带你自己推导出解法。可以调节引导强度——提示给多给少。',
+    tags: ['从零开始', '深度理解', '可调引导强度'],
+    bestFor: '做新题完全没头绪，需要从零搭出解题路径时选它',
+    sampleLine: '别急着要答案，我们一步步来。你觉得这道题第一步应该从哪里入手？',
+    icon: Compass,
+    gradient: 'from-sky-500 to-sky-600',
+    ring: 'ring-sky-500',
+    solidBtn: 'bg-sky-600 hover:bg-sky-700',
+    chipBg: 'bg-sky-50 text-sky-700 border-sky-200',
+    intensityOptions: ['轻提示', '中提示', '不给答案'],
+  },
+  {
     id: 'standard',
     name: '标准助教',
     tagline: '直接讲清楚，效率优先',
@@ -31,22 +47,6 @@ export const AGENT_PRESETS: AgentPreset[] = [
     ring: 'ring-blue-500',
     solidBtn: 'bg-blue-600 hover:bg-blue-700',
     chipBg: 'bg-blue-50 text-blue-700 border-blue-200',
-  },
-  {
-    id: 'socratic',
-    name: '苏格拉底式',
-    tagline: '不给答案，靠提问带你想明白',
-    description:
-      '完全没思路时用它。它不会直接告诉你答案，而是通过一层层提问，带你自己推导出解法。可以调节引导强度——提示给多给少。',
-    tags: ['从零开始', '深度理解', '可调引导强度'],
-    bestFor: '做新题完全没头绪，需要从零搭出解题路径时选它',
-    sampleLine: '别急着要答案，我们一步步来。你觉得这道题第一步应该从哪里入手？',
-    icon: Compass,
-    gradient: 'from-violet-500 to-purple-600',
-    ring: 'ring-violet-500',
-    solidBtn: 'bg-violet-600 hover:bg-violet-700',
-    chipBg: 'bg-violet-50 text-violet-700 border-violet-200',
-    intensityOptions: ['轻提示', '中提示', '不给答案'],
   },
   {
     id: 'feynman',
@@ -110,5 +110,5 @@ export const AGENT_PRESETS: AgentPreset[] = [
 ];
 
 export function getAgentPreset(id: string): AgentPreset {
-  return AGENT_PRESETS.find((a) => a.id === id) || AGENT_PRESETS[1];
+  return AGENT_PRESETS.find((a) => a.id === id) || AGENT_PRESETS[0];
 }

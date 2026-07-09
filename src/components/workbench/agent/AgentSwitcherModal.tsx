@@ -80,8 +80,8 @@ export function AgentSwitcherModal({ isOpen, currentAgentId, onClose, onConfirm 
                     onClick={() => setFocusedIndex(index)}
                     className="shrink-0 transition-all duration-300 ease-out"
                     style={{
-                      transform: `scale(${isFocused ? 1 : Math.abs(offset) === 1 ? 0.82 : 0.66}) translateY(${isFocused ? 0 : 8}px)`,
-                      opacity: isFocused ? 1 : Math.abs(offset) === 1 ? 0.7 : 0.35,
+                      transform: `scale(${isFocused ? 1 : Math.abs(offset) === 1 ? 0.92 : 0.84}) translateY(${isFocused ? 0 : 6}px)`,
+                      opacity: isFocused ? 1 : Math.abs(offset) === 1 ? 0.85 : 0.6,
                       zIndex: isFocused ? 10 : 5 - Math.abs(offset),
                     }}
                   >
