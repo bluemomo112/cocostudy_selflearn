@@ -23,10 +23,10 @@ const SUBJECTS_CN = ['语文', '英语', '数学', '科学', '信息技术', '�
 const SUBJECTS_TW = ['中文', '英文', '數學', '科學', '資訊科技', '物理', '化學', '生物', '歷史', '地理', '經濟與社會', '生活與社會', '公民', '常識', 'STEM', '美術', '體育', '音樂', '宗教', '其他'];
 
 const MOCK_CLASSES = [
-  '中一(1)班', '中一(2)班',
-  '中二(1)班', '中二(2)班',
-  '中三(1)班', '中三(2)班',
-  '中四(1)班', '中四(2)班',
+  { name: '中一(1)班', grade: '中一' }, { name: '中一(2)班', grade: '中一' },
+  { name: '中二(1)班', grade: '中二' }, { name: '中二(2)班', grade: '中二' },
+  { name: '中三(1)班', grade: '中三' }, { name: '中三(2)班', grade: '中三' },
+  { name: '中四(1)班', grade: '中四' }, { name: '中四(2)班', grade: '中四' },
 ];
 
 export default function PublishModal({
@@ -50,8 +50,8 @@ export default function PublishModal({
   const [scope, setScope] = useState<PublishScope>({
     includeResources: true,
     includeTasks: true,
-    includeAISettings: true,
-    includeLearningPath: true,
+    includeAISettings: false,
+    includeLearningPath: false,
   });
   const [isPublishing, setIsPublishing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(isPublished);
@@ -139,6 +139,8 @@ export default function PublishModal({
     });
   };
 
+  const availableClasses = MOCK_CLASSES.filter((item) => !metadata.grade || item.grade === metadata.grade);
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -211,7 +213,13 @@ export default function PublishModal({
                     <label className="block text-xs text-gray-600 mb-2">{t('年級')}</label>
                     <select
                       value={metadata.grade || ''}
-                      onChange={(e) => setMetadata({ ...metadata, grade: e.target.value })}
+                      onChange={(e) => setMetadata({
+                        ...metadata,
+                        grade: e.target.value,
+                        bindClasses: metadata.bindClasses?.filter((className) =>
+                          MOCK_CLASSES.some(item => item.name === className && item.grade === e.target.value)
+                        ),
+                      })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     >
                       <option value="">{t('請選擇年級')}（{t('可選')}）</option>
@@ -268,18 +276,18 @@ export default function PublishModal({
                     <label className="block text-xs text-gray-600 mb-2">{t('綁定班級')}</label>
                     <div className="border border-gray-300 rounded-lg p-3 max-h-40 overflow-y-auto">
                       <div className="space-y-2">
-                        {MOCK_CLASSES.map((className) => (
+                        {availableClasses.map((item) => (
                           <label
-                            key={className}
+                            key={item.name}
                             className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded"
                           >
                             <input
                               type="checkbox"
-                              checked={metadata.bindClasses?.includes(className)}
-                              onChange={() => toggleClass(className)}
+                              checked={metadata.bindClasses?.includes(item.name)}
+                              onChange={() => toggleClass(item.name)}
                               className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
                             />
-                            <span className="text-sm text-gray-700">{className}</span>
+                            <span className="text-sm text-gray-700">{item.name}</span>
                           </label>
                         ))}
                       </div>
