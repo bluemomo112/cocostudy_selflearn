@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { X, Share2, Copy, Check, BarChart3, Download } from 'lucide-react';
+import { X, Share2, Copy, Check, BarChart3, Download, AlertTriangle } from 'lucide-react';
 import { PublishScope, PublishMetadata } from '../types/self-study';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -9,6 +9,8 @@ interface PublishModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPublish: (metadata: PublishMetadata, scope: PublishScope) => void;
+  onSaveDraft: (metadata: PublishMetadata, scope: PublishScope) => void;
+  onUnpublish: () => void;
   isPublished: boolean;
   shareLink?: string;
   currentSpaceName?: string;
@@ -33,6 +35,8 @@ export default function PublishModal({
   isOpen,
   onClose,
   onPublish,
+  onSaveDraft,
+  onUnpublish,
   isPublished,
   shareLink,
   currentSpaceName,
@@ -53,6 +57,7 @@ export default function PublishModal({
   });
   const [isPublishing, setIsPublishing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(isPublished);
+  const [showRepublishConfirm, setShowRepublishConfirm] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const qrRef = useRef<SVGSVGElement>(null);
@@ -87,6 +92,20 @@ export default function PublishModal({
     } finally {
       setIsPublishing(false);
     }
+  };
+
+  const handleSaveDraft = () => {
+    onSaveDraft(metadata, scope);
+    onClose();
+  };
+
+  const handleRepublish = () => {
+    setShowRepublishConfirm(true);
+  };
+
+  const confirmRepublish = async () => {
+    setShowRepublishConfirm(false);
+    await handlePublish();
   };
 
   const copyToClipboard = async (text: string) => {
@@ -165,6 +184,12 @@ export default function PublishModal({
 
         {/* Content */}
         <div className="p-6 space-y-6">
+          {isPublished && !showSuccess && (
+            <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+              <AlertTriangle size={20} className="mt-0.5 flex-shrink-0 text-red-600" />
+              <p>{t('重新发布后，将使用当前配置覆盖学生端配置，并清除学生在该学习空间中的学习数据，包括学习进度、作答记录和完成状态。此操作不可恢复。')}</p>
+            </div>
+          )}
           {!showSuccess ? (
             <>
               {/* 學習空間名稱 */}
@@ -476,6 +501,20 @@ export default function PublishModal({
         <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end gap-3">
           {!showSuccess ? (
             <>
+              {isPublished && (
+                <button
+                  onClick={onUnpublish}
+                  className="mr-auto px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  {t('取消发布')}
+                </button>
+              )}
+              <button
+                onClick={handleSaveDraft}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                {t('保存草稿')}
+              </button>
               <button
                 onClick={onClose}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
@@ -483,7 +522,7 @@ export default function PublishModal({
                 {t('取消')}
               </button>
               <button
-                onClick={handlePublish}
+                onClick={isPublished ? handleRepublish : handlePublish}
                 disabled={isPublishing}
                 className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -508,6 +547,24 @@ export default function PublishModal({
           )}
         </div>
       </div>
+      {showRepublishConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-bold text-gray-900">{t('确认重新发布？')}</h3>
+            <p className="mt-3 text-sm leading-6 text-gray-600">
+              {t('重新发布后，学生原有的学习数据将被清除，并按照当前配置重新开始学习。该操作不可恢复，是否继续？')}
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button onClick={() => setShowRepublishConfirm(false)} className="rounded-lg px-4 py-2 text-gray-700 hover:bg-gray-100">
+                {t('取消')}
+              </button>
+              <button onClick={confirmRepublish} className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700">
+                {t('确认重新发布')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

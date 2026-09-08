@@ -189,7 +189,7 @@ export function WorkbenchHeader({
               className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
             >
               <Share2 size={15} />
-              {t('发布')}
+              {config.publishStatus === 'published' ? t('重新发布') : t('发布')}
             </button>
           )}
 

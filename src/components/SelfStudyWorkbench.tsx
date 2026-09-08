@@ -1698,6 +1698,23 @@ export default function SelfStudyWorkbench({
     });
   };
 
+  const handleSavePublishDraft = (metadata: import('../types/self-study').PublishMetadata, scope: PublishScope) => {
+    handleUpdateConfig({
+      ...config,
+      publishMetadata: metadata,
+      publishScope: scope,
+      updatedAt: new Date(),
+    });
+  };
+
+  const handleUnpublish = () => {
+    handleUpdateConfig({
+      ...config,
+      publishStatus: 'unpublished',
+      updatedAt: new Date(),
+    });
+  };
+
   const handleSave = () => {
     // 保存当前配置
     handleUpdateConfig({ ...config, updatedAt: new Date() });
@@ -2995,6 +3012,8 @@ export default function SelfStudyWorkbench({
         isOpen={isPublishModalOpen}
         onClose={() => setIsPublishModalOpen(false)}
         onPublish={handlePublish}
+        onSaveDraft={handleSavePublishDraft}
+        onUnpublish={handleUnpublish}
         isPublished={config.publishStatus === 'published'}
         shareLink={config.publishedVersions?.[config.publishedVersions.length - 1]?.shareLink}
         currentSpaceName={config.title}
