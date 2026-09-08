@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { X, Share2, Copy, Check, BarChart3, Download, AlertTriangle } from 'lucide-react';
 import { PublishScope, PublishMetadata } from '../types/self-study';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -56,12 +56,19 @@ export default function PublishModal({
     includeTasks: true,
   });
   const [isPublishing, setIsPublishing] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(isPublished);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [showRepublishConfirm, setShowRepublishConfirm] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const qrRef = useRef<SVGSVGElement>(null);
   const { t, language } = useLanguage();
+
+  useEffect(() => {
+    if (isOpen) {
+      setShowSuccess(false);
+      setShowRepublishConfirm(false);
+    }
+  }, [isOpen]);
 
   // 根据语言选择学科列表
   const SUBJECTS = language === 'zh-TW' ? SUBJECTS_TW : SUBJECTS_CN;
