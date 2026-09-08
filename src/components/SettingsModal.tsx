@@ -68,22 +68,7 @@ export default function SettingsModal({ config, onSave, onClose }: SettingsModal
             {/* 基础配置 */}
             <section className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <h3 className="text-base font-bold text-gray-800 mb-4">{t('基础配置')}</h3>
-              <div className="space-y-4">
-                {/* 学习目标 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('学习目标')}</label>
-                  <textarea
-                    value={localConfig.userProfile.goal || ''}
-                    onChange={(e) => setLocalConfig({
-                      ...localConfig,
-                      userProfile: { ...localConfig.userProfile, goal: e.target.value }
-                    })}
-                    placeholder={t('例如：通过 CPA 考试')}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    rows={2}
-                  />
-                </div>
-              </div>
+              <p className="text-sm text-gray-500">{t('自学空间的基础资料已由课程内容和发布配置统一管理。')}</p>
             </section>
 
             {/* AI 配置 */}

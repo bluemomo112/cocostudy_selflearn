@@ -30,6 +30,8 @@ export default function SelfStudyPage() {
       topic: t('Python数据分析'),
       scenario: 'skill_learning',
       learningMode: 'ai_guided',
+      sourceTestId: 'demo-test-1',
+      sourceTestName: t('Python 数据分析基础测验'),
       progress: 45,
       resourceCount: 3,
       lastAccessedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
@@ -59,6 +61,20 @@ export default function SelfStudyPage() {
   const [isAIGenerating, setIsAIGenerating] = useState(false);
   const [isImportingResources, setIsImportingResources] = useState(false);
   const [pendingExamFiles, setPendingExamFiles] = useState<File[] | null>(null);
+
+  // 兼容已存在的演示数据：代码更新前保存的 space_1 没有来源测试字段。
+  useEffect(() => {
+    setSpaces(prev => {
+      const demoSpace = prev.find(space => space.id === 'space_1');
+      if (!demoSpace || demoSpace.sourceTestName) return prev;
+
+      return prev.map(space => space.id === 'space_1' ? {
+        ...space,
+        sourceTestId: 'demo-test-1',
+        sourceTestName: t('Python 数据分析基础测验'),
+      } : space);
+    });
+  }, [setSpaces, t]);
 
   const EXAM_PATTERN = /(?:试卷|测验|测试|考试|期中|期末|月考|模拟|真题|quiz|exam|test|midterm|final|assessment)/i;
 
@@ -126,6 +142,8 @@ export default function SelfStudyPage() {
       topic: undefined,
       scenario: undefined,
       learningMode: 'self_directed',
+      sourceTestId: newSpace.publishMetadata?.sourceTestId,
+      sourceTestName: newSpace.publishMetadata?.sourceTestName,
       progress: 0,
       resourceCount: 0,
       lastAccessedAt: new Date(),
@@ -162,16 +180,20 @@ export default function SelfStudyPage() {
       );
       const mockResources: Resource[] = normalFiles.map((file, index) => {
         const ext = file.name.split('.').pop()?.toLowerCase() || '';
-        let type: 'document' | 'presentation' | 'video' = 'document';
-        let fileType: 'docx' | 'pptx' | 'mp4' = 'docx';
-        if (['ppt', 'pptx'].includes(ext)) { type = 'presentation'; fileType = 'pptx'; }
-        else if (['mp4', 'avi', 'mov'].includes(ext)) { type = 'video'; fileType = 'mp4'; }
+        const isPresentation = ['ppt', 'pptx'].includes(ext);
+        const isVideo = ['mp4', 'avi', 'mov', 'webm'].includes(ext);
+        const isAudio = ['mp3', 'wav', 'm4a', 'ogg'].includes(ext);
+        const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
+        const type: Resource['type'] = isPresentation ? 'presentation' : (isVideo || isAudio) ? 'video' : 'document';
+        const fileType = (isPresentation ? ext : isVideo ? 'video' : isAudio ? 'audio' : isImage ? 'image' : ext) as Resource['fileType'];
         return {
           id: `resource_${Date.now()}_${index}`,
           title: file.name.replace(/\.[^/.]+$/, ''),
           type, fileType,
-          path: `/mock/path/${file.name}`,
+          path: file.name,
+          url: URL.createObjectURL(file),
           description: `${t('上传的文件：')}${file.name}`,
+          knowledgeBase: ['pdf', 'docx', 'txt', 'md'].includes(ext) ? 'supported' : 'unsupported',
           duration: t('10分钟'),
         };
       });
@@ -475,6 +497,8 @@ export default function SelfStudyPage() {
       topic: config.topic,
       scenario: config.scenario,
       learningMode: config.learningMode,
+      sourceTestId: config.publishMetadata?.sourceTestId,
+      sourceTestName: config.publishMetadata?.sourceTestName,
       progress: 0,
       resourceCount: config.resources.length,
       lastAccessedAt: new Date(),

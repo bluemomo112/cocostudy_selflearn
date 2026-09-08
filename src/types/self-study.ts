@@ -81,8 +81,6 @@ export interface PublishMetadata {
 export interface PublishScope {
   includeResources: boolean;
   includeTasks: boolean;
-  includeAISettings: boolean;
-  includeLearningPath: boolean;
 }
 
 // 发布版本

@@ -270,8 +270,8 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
   const [publishScope, setPublishScope] = useState({
     includeResources: true,
     includeTasks: true,
-    includeAISettings: true,
-    includeLearningPath: true,
+    includeAISettings: false,
+    includeLearningPath: false,
   });
 
   // 根据语言选择学科列表
@@ -328,6 +328,11 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
         : [...prev.bindClasses, className],
     }));
   };
+
+  const availableClasses = classes.filter((item: string | { name: string; grade: string }) => {
+    if (typeof item === 'string') return true;
+    return !localConfig.grade || item.grade === localConfig.grade;
+  });
 
   const regenerateCover = () => {
     setIsGeneratingAI(true);
@@ -484,7 +489,19 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
                     <select
                       value={localConfig.grade}
                       onChange={(e) => {
-                        setLocalConfig({ ...localConfig, grade: e.target.value });
+                        const nextGrade = e.target.value;
+                        const nextClasses = classes
+                          .filter((item: string | { name: string; grade: string }) =>
+                            typeof item !== 'string' && item.grade === nextGrade
+                          )
+                          .map((item: string | { name: string; grade: string }) =>
+                            typeof item === 'string' ? item : item.name
+                          );
+                        setLocalConfig({
+                          ...localConfig,
+                          grade: nextGrade,
+                          bindClasses: localConfig.bindClasses.filter((className: string) => nextClasses.includes(className)),
+                        });
                         setPublishError('');
                       }}
                       className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all hover:border-gray-300"
@@ -504,7 +521,9 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
                       <span className="text-red-500">*</span>
                     </label>
                     <div className="flex flex-wrap gap-2.5">
-                      {classes.map((className: string) => (
+                      {availableClasses.map((item: string | { name: string; grade: string }) => {
+                        const className = typeof item === 'string' ? item : item.name;
+                        return (
                         <button
                           key={className}
                           onClick={() => {
@@ -519,7 +538,8 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
                         >
                           {className}
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                   )}

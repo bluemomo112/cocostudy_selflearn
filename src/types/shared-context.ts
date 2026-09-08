@@ -18,7 +18,7 @@ export interface Resource {
   id: string;
   title: string;
   type: 'document' | 'presentation' | 'video' | 'interactive';
-  fileType?: 'docx' | 'pptx' | 'mp4';
+  fileType?: 'pdf' | 'doc' | 'docx' | 'ppt' | 'pptx' | 'txt' | 'md' | 'image' | 'audio' | 'video' | 'mp4';
   path?: string;
   description: string;
   duration?: string;
@@ -32,6 +32,7 @@ export interface Resource {
   visibility?: ResourceVisibility;
   // 内容来源标记（用于区分教师发布内容和学生添加内容）
   source?: 'teacher' | 'student';
+  knowledgeBase?: 'supported' | 'unsupported';
 }
 
 export interface TaskQuestion {

@@ -50,8 +50,6 @@ export default function PublishModal({
   const [scope, setScope] = useState<PublishScope>({
     includeResources: true,
     includeTasks: true,
-    includeAISettings: false,
-    includeLearningPath: false,
   });
   const [isPublishing, setIsPublishing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(isPublished);
@@ -325,30 +323,6 @@ export default function PublishModal({
                     <div>
                       <div className="font-medium text-gray-900">{t('學習任務')}</div>
                       <div className="text-sm text-gray-600">{t('包含所有配置的學習任務和練習')}</div>
-                    </div>
-                  </label>
-                  <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={scope.includeAISettings}
-                      onChange={(e) => setScope({ ...scope, includeAISettings: e.target.checked })}
-                      className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
-                    />
-                    <div>
-                      <div className="font-medium text-gray-900">{t('AI 設置')}</div>
-                      <div className="text-sm text-gray-600">{t('包含 AI 風格、知識邊界等配置')}</div>
-                    </div>
-                  </label>
-                  <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={scope.includeLearningPath}
-                      onChange={(e) => setScope({ ...scope, includeLearningPath: e.target.checked })}
-                      className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
-                    />
-                    <div>
-                      <div className="font-medium text-gray-900">{t('學習路徑')}</div>
-                      <div className="text-sm text-gray-600">{t('包含 AI 生成的學習路徑規劃')}</div>
                     </div>
                   </label>
                 </div>

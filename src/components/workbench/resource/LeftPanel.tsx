@@ -480,12 +480,12 @@ export function LeftPanel(props: LeftPanelProps) {
                     <>
                       {/* 全选控制 */}
                       <div className="flex items-center justify-between px-4 py-2">
-                        <span className="text-xs text-gray-500">{config.resources.length + aiGeneratedResources.length + mockAIResources.length} {t('个来源')}</span>
+                        <span className="text-xs text-gray-500">{config.resources.length + aiGeneratedResources.length + mockAIResources.length} {t('个来源')} · <span className="text-emerald-600">知识库可解析</span> / <span className="text-amber-600">仅可查看</span></span>
                         <button
                           onClick={() => toggleAllResources()}
                           className="text-xs text-gray-600 hover:text-gray-800 font-medium px-2 py-1 rounded"
                         >
-                          {selectedResourceIds.size === config.resources.length + aiGeneratedResources.length + mockAIResources.length ? t('取消全选') : t('全选')}
+                          {selectedResourceIds.size === [...config.resources, ...aiGeneratedResources, ...mockAIResources].filter(r => r.knowledgeBase !== 'unsupported').length ? t('取消全选') : t('全选')}
                         </button>
                       </div>
 
@@ -504,19 +504,23 @@ export function LeftPanel(props: LeftPanelProps) {
                             <IconComponent size={16} className="text-purple-600" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 min-w-0">
                               <p className="text-sm text-gray-800 truncate">{t(cleanTitle)}</p>
                               <span className="flex-shrink-0 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 border border-purple-200">
                                 AI
                               </span>
+                              {resource.knowledgeBase === 'supported' ? <span title="该资源可被解析进知识库，智能体可访问" className="flex-shrink-0 text-[10px] rounded-full bg-emerald-50 px-1.5 py-0.5 text-emerald-700">知识库</span> : resource.knowledgeBase === 'unsupported' ? <span title="该文件格式暂不支持知识库解析，智能体无法读取其内容，仅供查看" className="flex-shrink-0 text-[10px] rounded-full bg-amber-50 px-1.5 py-0.5 text-amber-700">仅查看</span> : null}
                             </div>
                           </div>
-                          <div
-                            onClick={(e) => { e.stopPropagation(); toggleResourceSelection(resource.id); }}
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${selectedResourceIds.has(resource.id) ? 'border-gray-400 bg-gray-500' : 'border-gray-300 bg-white'}`}
-                          >
-                            {selectedResourceIds.has(resource.id) && <Check size={12} className="text-white" />}
-                          </div>
+                          {resource.knowledgeBase !== 'unsupported' && (
+                            <div
+                              onClick={(e) => { e.stopPropagation(); toggleResourceSelection(resource.id); }}
+                              title="加入知识库"
+                              className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${selectedResourceIds.has(resource.id) ? 'border-gray-400 bg-gray-500' : 'border-gray-300 bg-white'}`}
+                            >
+                              {selectedResourceIds.has(resource.id) && <Check size={12} className="text-white" />}
+                            </div>
+                          )}
                         </div>
                         );
                       })}
@@ -547,7 +551,7 @@ export function LeftPanel(props: LeftPanelProps) {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-gray-800 truncate">{t(resource.title)}</p>
+                            <div className="flex items-center gap-2 min-w-0"><p className="text-sm text-gray-800 truncate">{t(resource.title)}</p>{resource.knowledgeBase === 'supported' ? <span title="该资源可被解析进知识库，智能体可访问" className="flex-shrink-0 text-[10px] rounded-full bg-emerald-50 px-1.5 py-0.5 text-emerald-700">知识库</span> : resource.knowledgeBase === 'unsupported' ? <span title="该文件格式暂不支持知识库解析，智能体无法读取其内容，仅供查看" className="flex-shrink-0 text-[10px] rounded-full bg-amber-50 px-1.5 py-0.5 text-amber-700">仅查看</span> : null}</div>
                           </div>
                           {/* 资源可见性指示 + 设置按钮 */}
                           <div className="flex items-center gap-1 flex-shrink-0">
@@ -568,12 +572,15 @@ export function LeftPanel(props: LeftPanelProps) {
                               </button>
                             )}
                           </div>
-                          <div
-                            onClick={(e) => { e.stopPropagation(); toggleResourceSelection(resource.id); }}
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${selectedResourceIds.has(resource.id) ? 'border-gray-400 bg-gray-500' : 'border-gray-300 bg-white'}`}
-                          >
-                            {selectedResourceIds.has(resource.id) && <Check size={12} className="text-white" />}
-                          </div>
+                          {resource.knowledgeBase !== 'unsupported' && (
+                            <div
+                              onClick={(e) => { e.stopPropagation(); toggleResourceSelection(resource.id); }}
+                              title="加入知识库"
+                              className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${selectedResourceIds.has(resource.id) ? 'border-gray-400 bg-gray-500' : 'border-gray-300 bg-white'}`}
+                            >
+                              {selectedResourceIds.has(resource.id) && <Check size={12} className="text-white" />}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </>

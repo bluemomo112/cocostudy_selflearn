@@ -8,3 +8,4 @@ dist/
 image/
 quiz_example/
 docs/
+.claude/

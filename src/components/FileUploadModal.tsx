@@ -109,7 +109,7 @@ export default function FileUploadModal({ isOpen, onClose, onUpload }: FileUploa
               ref={fileInputRef}
               type="file"
               multiple
-              accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.md"
+              accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.md,.jpg,.jpeg,.png,.gif,.webp,.svg,.mp3,.wav,.m4a,.ogg,.mp4,.webm,.mov"
               onChange={handleFileChange}
               className="hidden"
             />

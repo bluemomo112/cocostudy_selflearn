@@ -20,6 +20,7 @@ interface UnifiedResourceLibraryModalProps {
 }
 
 type TabType = 'resources' | 'error_questions' | 'historical_tests' | 'notes' | 'webpages';
+type ResourceScope = 'public' | 'personal';
 
 // 题型映射
 const QUESTION_TYPE_MAP: Record<string, string> = {
@@ -44,6 +45,7 @@ export default function UnifiedResourceLibraryModal({
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterTag, setFilterTag] = useState<string>('all');
+  const [resourceScope, setResourceScope] = useState<ResourceScope>('public');
 
   // 获取所有标签（用于错题本筛选）
   const allTags = useMemo(() => {
@@ -61,11 +63,14 @@ export default function UnifiedResourceLibraryModal({
       source: index % 3 === 0 ? 'personal' : 'shared',
     }));
 
-    return libraryResources.filter(resource =>
-      resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      resource.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [searchQuery]);
+    return libraryResources.filter(resource => {
+      if (resourceScope === 'public' && resource.source !== 'shared') return false;
+      if (resourceScope === 'personal' && resource.source !== 'personal') return false;
+
+      return resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        resource.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+  }, [searchQuery, resourceScope]);
 
   // 过滤后的错题
   const filteredErrorQuestions = useMemo(() => {
@@ -193,6 +198,7 @@ export default function UnifiedResourceLibraryModal({
     setSearchQuery('');
     setFilterType('all');
     setFilterTag('all');
+    setResourceScope('public');
     onClose();
   };
 
@@ -203,6 +209,7 @@ export default function UnifiedResourceLibraryModal({
     setSearchQuery('');
     setFilterType('all');
     setFilterTag('all');
+    if (tab !== 'resources') setResourceScope('public');
   };
 
   const getResourceIcon = (type: string) => {
@@ -243,7 +250,7 @@ export default function UnifiedResourceLibraryModal({
       <div className="fixed inset-0 bg-black/50 z-50" onClick={handleClose} />
 
       {/* 模态框内容 */}
-      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl z-50 w-[90%] max-w-4xl max-h-[85vh] flex flex-col">
+      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl z-50 w-[92vw] max-w-[1100px] h-[88vh] max-h-[900px] flex flex-col">
         {/* 头部 */}
         <div className="p-6 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
           <h3 className="text-xl font-semibold text-gray-900">{t('资源库')}</h3>
@@ -313,6 +320,39 @@ export default function UnifiedResourceLibraryModal({
           <div className="p-6">
             {/* 搜索和筛选 */}
             <div className="mb-4 space-y-3">
+              {activeTab === 'resources' && (
+                <div className="flex gap-6 border-b border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setResourceScope('public');
+                      setSelectedIds(new Set());
+                    }}
+                    className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${
+                      resourceScope === 'public'
+                        ? 'border-primary-600 text-primary-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {t('公共')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setResourceScope('personal');
+                      setSelectedIds(new Set());
+                    }}
+                    className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${
+                      resourceScope === 'personal'
+                        ? 'border-primary-600 text-primary-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {t('我的')}
+                  </button>
+                </div>
+              )}
+
               {/* 搜索框 */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -689,4 +729,3 @@ export default function UnifiedResourceLibraryModal({
     </>
   );
 }
-
