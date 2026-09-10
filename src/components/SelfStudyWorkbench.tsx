@@ -2066,6 +2066,9 @@ export default function SelfStudyWorkbench({
     console.log('=== handleNoteInfoSave 被调用 ===');
     console.log('接收到的配置:', updatedConfig);
 
+    // 如果是发布操作（有 publishedLink 和 publishedCode），标记为已发布
+    const isPublishAction = updatedConfig.publishedLink && updatedConfig.publishedCode;
+
     handleUpdateConfig({
       ...config,
       title: updatedConfig.title,
@@ -2074,20 +2077,13 @@ export default function SelfStudyWorkbench({
       subjects: updatedConfig.subjects,
       grade: updatedConfig.grade,
       bindClasses: updatedConfig.bindClasses,
-      publishScope: updatedConfig.publishScope,
       publishedLink: updatedConfig.publishedLink,
       publishedCode: updatedConfig.publishedCode,
+      publishStatus: isPublishAction ? 'published' : config.publishStatus,
     });
 
-    // 如果是发布操作（有 publishedLink 和 publishedCode），不关闭弹窗
-    // NoteInfoModal 会显示成功界面，用户手动关闭时才会触发 onClose
-    const isPublishAction = updatedConfig.publishedLink && updatedConfig.publishedCode;
-    if (!isPublishAction) {
-      setShowNoteInfoModal(false);
-      console.log('✅ 配置已保存，弹窗已关闭');
-    } else {
-      console.log('✅ 发布操作完成，等待用户关闭成功弹窗');
-    }
+    // NoteInfoModal 在每个操作分支（保存草稿/发布/重新发布）后都会自行调用 onClose
+    console.log(isPublishAction ? '✅ 发布操作完成' : '✅ 配置已保存');
   };
 
   // 切换学习模式
@@ -3025,6 +3021,8 @@ export default function SelfStudyWorkbench({
           config={config}
           onSave={handleNoteInfoSave}
           onClose={() => setShowNoteInfoModal(false)}
+          onUnpublish={handleUnpublish}
+          isPublished={config.publishStatus === 'published'}
           knowledgeLibrary={KNOWLEDGE_POINTS_LIBRARY}
           grades={GRADES}
           classes={MOCK_CLASSES}
