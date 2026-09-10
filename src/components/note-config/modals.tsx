@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { PublishSuccessModal } from './PublishSuccessModal';
 import { isEnabled } from '../../config/version';
 import {
   X,
@@ -22,7 +21,6 @@ import {
   ChevronRight,
   Send,
   FileText,
-  Layers,
   Brain,
   Video,
   Globe,
@@ -246,7 +244,7 @@ const ALL_SUBJECTS_TW = [
 ];
 
 // NoteInfoModal - 配置模态框
-export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grades, classes }: any) {
+export function NoteInfoModal({ config, onSave, onClose, onUnpublish, isPublished, knowledgeLibrary, grades, classes }: any) {
   const { t, language } = useLanguage();
   const [localConfig, setLocalConfig] = useState({
     title: config.title || '',
@@ -260,19 +258,7 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [publishError, setPublishError] = useState('');
   const [customTagInput, setCustomTagInput] = useState('');
-  const [showShareLink, setShowShareLink] = useState(false);
-  const [publishSuccessData, setPublishSuccessData] = useState<{
-    link: string;
-    code: string;
-  } | null>(null);
-
-  // 发布范围选择
-  const [publishScope, setPublishScope] = useState({
-    includeResources: true,
-    includeTasks: true,
-    includeAISettings: true,
-    includeLearningPath: true,
-  });
+  const [showRepublishConfirm, setShowRepublishConfirm] = useState(false);
 
   // 根据语言选择学科列表
   const allSubjects = language === 'zh-TW' ? ALL_SUBJECTS_TW : ALL_SUBJECTS_CN;
@@ -329,6 +315,11 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
     }));
   };
 
+  const availableClasses = classes.filter((item: string | { name: string; grade: string }) => {
+    if (typeof item === 'string') return true;
+    return !localConfig.grade || item.grade === localConfig.grade;
+  });
+
   const regenerateCover = () => {
     setIsGeneratingAI(true);
     setTimeout(() => {
@@ -338,28 +329,26 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
     }, 800);
   };
 
-  const handlePublish = () => {
-    console.log(t('=== 发布按钮被点击 ==='));
-    console.log('当前配置:', localConfig);
-    console.log('发布范围:', publishScope);
-    console.log('年级:', localConfig.grade, '班级:', localConfig.bindClasses);
-
-    // 清除之前的错误
+  // 校验发布配置，通过返回 true
+  const validatePublishConfig = () => {
     setPublishError('');
-
-    // 验证发布配置
     if (!localConfig.grade) {
       console.log(t('❌ 验证失败: 未选择年级'));
       setPublishError('请选择年级后再发布');
-      return;
+      return false;
     }
     if (localConfig.bindClasses.length === 0 && isEnabled('classBinding')) {
       console.log(t('❌ 验证失败: 未绑定班级'));
       setPublishError('请至少绑定一个班级后再发布');
-      return;
+      return false;
     }
+    return true;
+  };
 
-    console.log(t('✅ 验证通过，开始发布...'));
+  // 执行发布（首次发布 / 确认重新发布后调用）
+  const executePublish = () => {
+    console.log('当前配置:', localConfig);
+    console.log('年级:', localConfig.grade, '班级:', localConfig.bindClasses);
 
     // 生成课程链接和随机码（mock）
     const courseId = Math.random().toString(36).substring(2, 10);
@@ -368,39 +357,43 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
 
     console.log('生成的发布数据:', { link, code: randomCode });
 
-    // 保存配置（包含发布信息和发布范围）
+    // 保存配置（发布范围默认包含 agent、学习资源、学习任务）
     onSave({
       ...localConfig,
-      publishScope,
       publishedLink: link,
       publishedCode: randomCode,
     });
 
-    // 切换到成功状态（不关闭弹窗）
-    setPublishSuccessData({ link, code: randomCode });
-
-    console.log(t('✅ 发布成功，切换到成功状态'));
+    console.log(t('✅ 发布成功'));
+    onClose();
   };
 
-  const handleCloseSuccessModal = () => {
-    console.log(t('关闭发布成功弹窗'));
-    setPublishSuccessData(null);
+  // 底部主按钮点击：首次发布直接执行；已发布过则先弹出二次确认
+  const handlePrimaryPublishClick = () => {
+    console.log(t('=== 发布按钮被点击 ==='));
+    if (!validatePublishConfig()) return;
+
+    if (isPublished) {
+      setShowRepublishConfirm(true);
+    } else {
+      executePublish();
+    }
+  };
+
+  const confirmRepublish = () => {
+    setShowRepublishConfirm(false);
+    executePublish();
+  };
+
+  // 取消发布：仅让学生端隐藏内容，不清除学生数据，不触发重新发布确认
+  const handleUnpublishClick = () => {
+    onUnpublish?.();
     onClose();
   };
 
   return (
-    <>
-      {/* 发布成功状态 */}
-      {publishSuccessData ? (
-        <PublishSuccessModal
-          courseTitle={localConfig.title}
-          courseLink={publishSuccessData.link}
-          accessCode={publishSuccessData.code}
-          onClose={handleCloseSuccessModal}
-        />
-      ) : (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center backdrop-blur-sm" onClick={onClose}>
-          <div className="bg-white w-[900px] max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden border border-gray-100" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white w-[900px] max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden border border-gray-100" onClick={(e) => e.stopPropagation()}>
         {/* 头部 */}
         <div className="bg-white border-b border-gray-200 px-6 py-5">
           <div className="flex items-center justify-between">
@@ -484,7 +477,19 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
                     <select
                       value={localConfig.grade}
                       onChange={(e) => {
-                        setLocalConfig({ ...localConfig, grade: e.target.value });
+                        const nextGrade = e.target.value;
+                        const nextClasses = classes
+                          .filter((item: string | { name: string; grade: string }) =>
+                            typeof item !== 'string' && item.grade === nextGrade
+                          )
+                          .map((item: string | { name: string; grade: string }) =>
+                            typeof item === 'string' ? item : item.name
+                          );
+                        setLocalConfig({
+                          ...localConfig,
+                          grade: nextGrade,
+                          bindClasses: localConfig.bindClasses.filter((className: string) => nextClasses.includes(className)),
+                        });
                         setPublishError('');
                       }}
                       className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all hover:border-gray-300"
@@ -504,7 +509,9 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
                       <span className="text-red-500">*</span>
                     </label>
                     <div className="flex flex-wrap gap-2.5">
-                      {classes.map((className: string) => (
+                      {availableClasses.map((item: string | { name: string; grade: string }) => {
+                        const className = typeof item === 'string' ? item : item.name;
+                        return (
                         <button
                           key={className}
                           onClick={() => {
@@ -519,50 +526,8 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
                         >
                           {className}
                         </button>
-                      ))}
-                    </div>
-                  </div>
-                  )}
-
-                  {/* 发布范围选择 */}
-                  {isEnabled('publishScopeOptions') && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2.5 flex items-center gap-2">
-                      <Layers size={16} className="text-purple-600" />{t('发布范围')}<span className="text-xs font-normal text-gray-500">{t('可多选')}</span>
-                    </label>
-                    <div className="flex flex-wrap gap-2.5">
-                      <button
-                        onClick={() => setPublishScope({ ...publishScope, includeResources: !publishScope.includeResources })}
-                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                          publishScope.includeResources
-                            ? 'bg-primary-600 text-white shadow-md shadow-emerald-200'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
-                        }`}
-                      >{t('学习资源')}</button>
-                      <button
-                        onClick={() => setPublishScope({ ...publishScope, includeTasks: !publishScope.includeTasks })}
-                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                          publishScope.includeTasks
-                            ? 'bg-primary-600 text-white shadow-md shadow-emerald-200'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
-                        }`}
-                      >{t('学习任务')}</button>
-                      <button
-                        onClick={() => setPublishScope({ ...publishScope, includeAISettings: !publishScope.includeAISettings })}
-                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                          publishScope.includeAISettings
-                            ? 'bg-primary-600 text-white shadow-md shadow-emerald-200'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
-                        }`}
-                      >{t('AI 设置')}</button>
-                      <button
-                        onClick={() => setPublishScope({ ...publishScope, includeLearningPath: !publishScope.includeLearningPath })}
-                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                          publishScope.includeLearningPath
-                            ? 'bg-primary-600 text-white shadow-md shadow-emerald-200'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
-                        }`}
-                      >{t('学习路径')}</button>
+                        );
+                      })}
                     </div>
                   </div>
                   )}
@@ -574,6 +539,12 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
 
         {/* 底部操作栏 */}
         <div className="px-7 py-5 border-t border-gray-200 bg-gray-50">
+          {isPublished && (
+            <div className="mb-4 flex gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+              <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-600" />
+              <span>{t('重新发布将使用当前配置覆盖学生端配置，并清除学生在该学习空间中的学习数据（学习进度、作答记录和完成状态），此操作不可恢复。')}</span>
+            </div>
+          )}
           {publishError && (
             <div className="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center gap-2">
               <AlertCircle size={16} className="shrink-0" />
@@ -586,13 +557,12 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
                 onClick={onClose}
                 className="px-5 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-xl font-medium transition-all"
               >{t('取消')}</button>
-              {/* 查看分享链接按钮 */}
-              {config.publishedLink && (
+              {/* 取消发布：仅隐藏学生端内容，不清除学生数据 */}
+              {isPublished && (
                 <button
-                  onClick={() => setShowShareLink(true)}
-                  className="px-5 py-2.5 text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-xl font-medium transition-all flex items-center gap-2 border border-primary-200"
-                >
-                  <ExternalLink size={16} />{t('查看分享链接')}</button>
+                  onClick={handleUnpublishClick}
+                  className="px-5 py-2.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl font-medium transition-all"
+                >{t('取消发布')}</button>
               )}
             </div>
             <div className="flex gap-3">
@@ -605,33 +575,40 @@ export function NoteInfoModal({ config, onSave, onClose, knowledgeLibrary, grade
                 className="px-6 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-400 font-medium transition-all shadow-sm"
               >{t('保存草稿')}</button>
               <button
-                onClick={(e) => {
-                  console.log('发布按钮点击事件触发', e);
-                  handlePublish();
-                }}
+                onClick={handlePrimaryPublishClick}
                 className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-xl hover:from-primary-700 hover:to-accent-700 font-medium transition-all flex items-center gap-2 shadow-lg shadow-primary-200"
               >
-                <Send size={16} />{t('发布到班级')}</button>
+                <Send size={16} />{isPublished ? t('重新发布') : t('发布到班级')}</button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 查看分享链接弹窗 - 使用 Portal 渲染到 body */}
-      {showShareLink && config.publishedLink &&
+      {/* 重新发布二次确认弹窗 */}
+      {showRepublishConfirm &&
         createPortal(
-          <PublishSuccessModal
-            courseTitle={localConfig.title}
-            courseLink={config.publishedLink}
-            accessCode={config.publishedCode || ''}
-            onClose={() => setShowShareLink(false)}
-          />,
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+              <h3 className="text-lg font-bold text-gray-900">{t('确认重新发布？')}</h3>
+              <p className="mt-3 text-sm leading-6 text-gray-600">
+                {t('重新发布后，学生原有的学习数据将被清除，并按照当前配置重新开始学习。该操作不可恢复，是否继续？')}
+              </p>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  onClick={() => setShowRepublishConfirm(false)}
+                  className="rounded-xl px-4 py-2.5 text-gray-700 hover:bg-gray-100 font-medium transition-all"
+                >{t('取消')}</button>
+                <button
+                  onClick={confirmRepublish}
+                  className="rounded-xl bg-red-600 px-4 py-2.5 text-white hover:bg-red-700 font-medium transition-all"
+                >{t('确认重新发布')}</button>
+              </div>
+            </div>
+          </div>,
           document.body
         )
       }
-      </div>
-    )}
-    </>
+    </div>
   );
 }
 

@@ -7,4 +7,6 @@ dist/
 .env.local
 image/
 quiz_example/
-docs/
+docs/*
+!docs/prd-self-study-publish.md
+.claude/

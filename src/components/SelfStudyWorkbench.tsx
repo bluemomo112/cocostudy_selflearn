@@ -61,6 +61,8 @@ import { generateExplainQuestionDialogue, generateQuickReplyResponse } from '../
 // ── workbench/ 子组件（只负责渲染，状态和 handler 留在本文件）
 // 详见 ARCHITECTURE.md 了解各文件职责
 import { WorkbenchHeader } from './workbench/header/WorkbenchHeader';
+import { AgentSwitcherModal } from './workbench/agent/AgentSwitcherModal';
+import { getAgentPreset } from '../data/agentPresets';
 import { LeftPanel } from './workbench/resource/LeftPanel';
 import { ChatPanel } from './workbench/chat/ChatPanel';
 import { RightPanel } from './workbench/workspace/RightPanel';
@@ -105,8 +107,18 @@ export default function SelfStudyWorkbench({
   ];
 
   const MOCK_CLASSES = [
-    t('中三(1)班'), t('中三(2)班'), t('中三(3)班'),
-    t('中四(1)班'), t('中四(2)班'), t('中四(3)班')
+    { name: t('中一(1)班'), grade: t('中一') },
+    { name: t('中一(2)班'), grade: t('中一') },
+    { name: t('中二(1)班'), grade: t('中二') },
+    { name: t('中二(2)班'), grade: t('中二') },
+    { name: t('中三(1)班'), grade: t('中三') },
+    { name: t('中三(2)班'), grade: t('中三') },
+    { name: t('中三(3)班'), grade: t('中三') },
+    { name: t('中四(1)班'), grade: t('中四') },
+    { name: t('中四(2)班'), grade: t('中四') },
+    { name: t('中四(3)班'), grade: t('中四') },
+    { name: t('中五(1)班'), grade: t('中五') },
+    { name: t('中六(1)班'), grade: t('中六') },
   ];
 
   const KNOWLEDGE_POINTS_LIBRARY = [
@@ -467,6 +479,8 @@ export default function SelfStudyWorkbench({
 
   // 设置弹窗
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [currentAgentId, setCurrentAgentId] = useState('socratic');
+  const [isAgentSwitcherOpen, setIsAgentSwitcherOpen] = useState(false);
 
   // 发布弹窗
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
@@ -525,6 +539,8 @@ export default function SelfStudyWorkbench({
   );
 
   const toggleResourceSelection = (id: string) => {
+    const resource = [...config.resources, ...mockResources, ...MOCK_AI_RESOURCES].find(r => r.id === id);
+    if (resource && 'knowledgeBase' in resource && resource.knowledgeBase === 'unsupported') return;
     setSelectedResourceIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
@@ -541,7 +557,9 @@ export default function SelfStudyWorkbench({
   };
 
   const toggleAllResources = () => {
-    const allIds = [...config.resources.map(r => r.id), ...aiGeneratedResources.map(r => r.id), ...MOCK_AI_RESOURCES.map(r => r.id)];
+    const allIds = [...config.resources, ...aiGeneratedResources, ...MOCK_AI_RESOURCES]
+      .filter(r => !('knowledgeBase' in r) || r.knowledgeBase !== 'unsupported')
+      .map(r => r.id);
     setSelectedResourceIds(prev => prev.size === allIds.length ? new Set() : new Set(allIds));
   };
 
@@ -716,6 +734,8 @@ export default function SelfStudyWorkbench({
       toolId: 'toolId' in resource ? resource.toolId : undefined,
       data: 'data' in resource ? resource.data : undefined,
       textContent: 'textContent' in resource ? resource.textContent : undefined,
+      fileType: 'fileType' in resource ? resource.fileType : undefined,
+      knowledgeBase: 'knowledgeBase' in resource ? resource.knowledgeBase : undefined,
     } as any);
   };
 
@@ -1659,8 +1679,6 @@ export default function SelfStudyWorkbench({
         title: metadata.spaceName || config.title,
         resources: scope.includeResources ? publishedResources : [],
         tasks: scope.includeTasks ? publishedTasks : [],
-        userProfile: scope.includeAISettings ? config.userProfile : undefined,
-        learningPath: scope.includeLearningPath ? config.learningPath : undefined,
       },
     };
 
@@ -1677,6 +1695,23 @@ export default function SelfStudyWorkbench({
       },
       publishedVersions: [...(config.publishedVersions || []), newVersion],
       currentPublishVersion: newVersion.version,
+    });
+  };
+
+  const handleSavePublishDraft = (metadata: import('../types/self-study').PublishMetadata, scope: PublishScope) => {
+    handleUpdateConfig({
+      ...config,
+      publishMetadata: metadata,
+      publishScope: scope,
+      updatedAt: new Date(),
+    });
+  };
+
+  const handleUnpublish = () => {
+    handleUpdateConfig({
+      ...config,
+      publishStatus: 'unpublished',
+      updatedAt: new Date(),
     });
   };
 
@@ -1700,6 +1735,19 @@ export default function SelfStudyWorkbench({
   // ── [Modal] 资源导入 handlers ─────────────────────────────────
   // 处理文件上传
   const handleFileUpload = (files: File[]) => {
+    const uploadedResources: Resource[] = files.map((file, index) => {
+      const ext = file.name.split('.').pop()?.toLowerCase() || '';
+      const isPresentation = ['ppt', 'pptx'].includes(ext);
+      const isVideo = ['mp4', 'avi', 'mov', 'webm'].includes(ext);
+      const isAudio = ['mp3', 'wav', 'm4a', 'ogg'].includes(ext);
+      const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
+      const type: Resource['type'] = isPresentation ? 'presentation' : (isVideo || isAudio) ? 'video' : 'document';
+      return { id: `upload_${Date.now()}_${index}`, title: file.name.replace(/\.[^/.]+$/, ''), type,
+        fileType: (isPresentation ? ext : isVideo ? 'video' : isAudio ? 'audio' : isImage ? 'image' : ext) as Resource['fileType'],
+        path: file.name, url: URL.createObjectURL(file), description: `上传的文件：${file.name}`,
+        knowledgeBase: ['pdf', 'docx', 'txt', 'md'].includes(ext) ? 'supported' : 'unsupported' };
+    });
+    handleUpdateConfig({ ...config, resources: [...config.resources, ...uploadedResources] });
     // 检测是否包含试卷文件
     const examFiles = files.filter(f => EXAM_PATTERN.test(f.name));
     if (examFiles.length > 0) {
@@ -2018,6 +2066,9 @@ export default function SelfStudyWorkbench({
     console.log('=== handleNoteInfoSave 被调用 ===');
     console.log('接收到的配置:', updatedConfig);
 
+    // 如果是发布操作（有 publishedLink 和 publishedCode），标记为已发布
+    const isPublishAction = updatedConfig.publishedLink && updatedConfig.publishedCode;
+
     handleUpdateConfig({
       ...config,
       title: updatedConfig.title,
@@ -2026,20 +2077,13 @@ export default function SelfStudyWorkbench({
       subjects: updatedConfig.subjects,
       grade: updatedConfig.grade,
       bindClasses: updatedConfig.bindClasses,
-      publishScope: updatedConfig.publishScope,
       publishedLink: updatedConfig.publishedLink,
       publishedCode: updatedConfig.publishedCode,
+      publishStatus: isPublishAction ? 'published' : config.publishStatus,
     });
 
-    // 如果是发布操作（有 publishedLink 和 publishedCode），不关闭弹窗
-    // NoteInfoModal 会显示成功界面，用户手动关闭时才会触发 onClose
-    const isPublishAction = updatedConfig.publishedLink && updatedConfig.publishedCode;
-    if (!isPublishAction) {
-      setShowNoteInfoModal(false);
-      console.log('✅ 配置已保存，弹窗已关闭');
-    } else {
-      console.log('✅ 发布操作完成，等待用户关闭成功弹窗');
-    }
+    // NoteInfoModal 在每个操作分支（保存草稿/发布/重新发布）后都会自行调用 onClose
+    console.log(isPublishAction ? '✅ 发布操作完成' : '✅ 配置已保存');
   };
 
   // 切换学习模式
@@ -2683,6 +2727,8 @@ export default function SelfStudyWorkbench({
             onNoteInfoOpen={() => setShowNoteInfoModal(true)}
             onLoadScenario={startScenario}
             onExitDemoMode={exitDemoMode}
+            currentAgentName={getAgentPreset(currentAgentId).name}
+            onAgentSwitchOpen={() => setIsAgentSwitcherOpen(true)}
           />
 
       {/* 主内容区 - 三栏布局 */}
@@ -2936,11 +2982,34 @@ export default function SelfStudyWorkbench({
         />
       )}
 
+      {/* AI 学习搭档切换弹窗 */}
+      <AgentSwitcherModal
+        isOpen={isAgentSwitcherOpen}
+        currentAgentId={currentAgentId}
+        onClose={() => setIsAgentSwitcherOpen(false)}
+        onConfirm={(agentId) => {
+          setCurrentAgentId(agentId);
+          setIsAgentSwitcherOpen(false);
+          const agent = getAgentPreset(agentId);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `agent-switch-${Date.now()}`,
+              role: 'assistant',
+              content: `✅ 已切换为 **${agent.name}**\n\n${agent.sampleLine}`,
+              timestamp: new Date(),
+            },
+          ]);
+        }}
+      />
+
       {/* 发布弹窗 */}
       <PublishModal
         isOpen={isPublishModalOpen}
         onClose={() => setIsPublishModalOpen(false)}
         onPublish={handlePublish}
+        onSaveDraft={handleSavePublishDraft}
+        onUnpublish={handleUnpublish}
         isPublished={config.publishStatus === 'published'}
         shareLink={config.publishedVersions?.[config.publishedVersions.length - 1]?.shareLink}
         currentSpaceName={config.title}
@@ -2952,6 +3021,8 @@ export default function SelfStudyWorkbench({
           config={config}
           onSave={handleNoteInfoSave}
           onClose={() => setShowNoteInfoModal(false)}
+          onUnpublish={handleUnpublish}
+          isPublished={config.publishStatus === 'published'}
           knowledgeLibrary={KNOWLEDGE_POINTS_LIBRARY}
           grades={GRADES}
           classes={MOCK_CLASSES}

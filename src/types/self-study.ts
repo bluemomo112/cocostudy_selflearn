@@ -81,8 +81,6 @@ export interface PublishMetadata {
 export interface PublishScope {
   includeResources: boolean;
   includeTasks: boolean;
-  includeAISettings: boolean;
-  includeLearningPath: boolean;
 }
 
 // 发布版本
@@ -138,6 +136,7 @@ export interface SpaceConfig {
   // AI 交互配置
   freeConfig?: {
     selectedAgentId: string;
+    customAgentAppId?: string;
     teacherPrompt: string;
     enableFence: boolean;
   };
@@ -181,6 +180,8 @@ export interface SpaceSummary {
   topic?: string;
   scenario?: PresetScenario;
   learningMode: LearningMode;
+  sourceTestId?: string;
+  sourceTestName?: string;
   progress: number;
   resourceCount: number;
   lastAccessedAt?: Date;

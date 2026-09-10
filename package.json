@@ -6,6 +6,7 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./styles/theme.css": "./src/styles/theme.css",
     "./components/*": "./src/components/*.tsx",
     "./components/workbench/shared/types": "./src/components/workbench/shared/types.ts",
     "./types": "./src/types/index.ts",
@@ -13,12 +14,13 @@
     "./contexts": "./src/contexts/index.ts"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --hostname 127.0.0.1 --port 3001",
     "build": "tsc && next build",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "lucide-react": "^0.562.0",
+    "mammoth": "^1.12.0",
     "next": "16.1.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",

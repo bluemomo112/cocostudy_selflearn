@@ -2,7 +2,7 @@
 
 import { SpaceConfig } from '../../../types/self-study';
 import { useLanguage } from '../../../contexts/LanguageContext';
-import { ArrowLeft, Brain, Pencil, Check, X, Settings, Share2, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Brain, Pencil, Check, X, Settings, Share2, BarChart3, UserCog } from 'lucide-react';
 import LanguageSwitch from '../../LanguageSwitch';
 import { getScenariosByCategory } from '../../../data/demoScenarios';
 import { isEnabled } from '../../../config/version';
@@ -26,6 +26,8 @@ interface WorkbenchHeaderProps {
   onLoadScenario?: (scenarioId: string) => void;
   onExitDemoMode?: () => void;
   onStudentComplete?: () => void;
+  currentAgentName?: string;
+  onAgentSwitchOpen?: () => void;
 }
 
 export function WorkbenchHeader({
@@ -47,6 +49,8 @@ export function WorkbenchHeader({
   onLoadScenario,
   onExitDemoMode,
   onStudentComplete,
+  currentAgentName,
+  onAgentSwitchOpen,
 }: WorkbenchHeaderProps) {
   const { t } = useLanguage();
 
@@ -153,6 +157,17 @@ export function WorkbenchHeader({
         )}
 
         <div className="flex items-center gap-2">
+          {/* AI 学习搭档切换 - 仅学生模式显示 */}
+          {isStudentMode && onAgentSwitchOpen && (
+            <button
+              onClick={onAgentSwitchOpen}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              <UserCog size={15} />
+              {currentAgentName || t('学习搭档')}
+            </button>
+          )}
+
           {/* 语言切换 */}
           {isEnabled('languageSwitch') && <LanguageSwitch />}
 
@@ -174,7 +189,7 @@ export function WorkbenchHeader({
               className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
             >
               <Share2 size={15} />
-              {t('发布')}
+              {config.publishStatus === 'published' ? t('重新发布') : t('发布')}
             </button>
           )}
 

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
-import { X, Share2, Copy, Check, BarChart3, Download } from 'lucide-react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { X, Share2, Copy, Check, BarChart3, Download, AlertTriangle } from 'lucide-react';
 import { PublishScope, PublishMetadata } from '../types/self-study';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -9,6 +9,8 @@ interface PublishModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPublish: (metadata: PublishMetadata, scope: PublishScope) => void;
+  onSaveDraft: (metadata: PublishMetadata, scope: PublishScope) => void;
+  onUnpublish: () => void;
   isPublished: boolean;
   shareLink?: string;
   currentSpaceName?: string;
@@ -23,16 +25,18 @@ const SUBJECTS_CN = ['语文', '英语', '数学', '科学', '信息技术', '�
 const SUBJECTS_TW = ['中文', '英文', '數學', '科學', '資訊科技', '物理', '化學', '生物', '歷史', '地理', '經濟與社會', '生活與社會', '公民', '常識', 'STEM', '美術', '體育', '音樂', '宗教', '其他'];
 
 const MOCK_CLASSES = [
-  '中一(1)班', '中一(2)班',
-  '中二(1)班', '中二(2)班',
-  '中三(1)班', '中三(2)班',
-  '中四(1)班', '中四(2)班',
+  { name: '中一(1)班', grade: '中一' }, { name: '中一(2)班', grade: '中一' },
+  { name: '中二(1)班', grade: '中二' }, { name: '中二(2)班', grade: '中二' },
+  { name: '中三(1)班', grade: '中三' }, { name: '中三(2)班', grade: '中三' },
+  { name: '中四(1)班', grade: '中四' }, { name: '中四(2)班', grade: '中四' },
 ];
 
 export default function PublishModal({
   isOpen,
   onClose,
   onPublish,
+  onSaveDraft,
+  onUnpublish,
   isPublished,
   shareLink,
   currentSpaceName,
@@ -50,15 +54,21 @@ export default function PublishModal({
   const [scope, setScope] = useState<PublishScope>({
     includeResources: true,
     includeTasks: true,
-    includeAISettings: true,
-    includeLearningPath: true,
   });
   const [isPublishing, setIsPublishing] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(isPublished);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [showRepublishConfirm, setShowRepublishConfirm] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const qrRef = useRef<SVGSVGElement>(null);
   const { t, language } = useLanguage();
+
+  useEffect(() => {
+    if (isOpen) {
+      setShowSuccess(false);
+      setShowRepublishConfirm(false);
+    }
+  }, [isOpen]);
 
   // 根据语言选择学科列表
   const SUBJECTS = language === 'zh-TW' ? SUBJECTS_TW : SUBJECTS_CN;
@@ -89,6 +99,20 @@ export default function PublishModal({
     } finally {
       setIsPublishing(false);
     }
+  };
+
+  const handleSaveDraft = () => {
+    onSaveDraft(metadata, scope);
+    onClose();
+  };
+
+  const handleRepublish = () => {
+    setShowRepublishConfirm(true);
+  };
+
+  const confirmRepublish = async () => {
+    setShowRepublishConfirm(false);
+    await handlePublish();
   };
 
   const copyToClipboard = async (text: string) => {
@@ -139,6 +163,8 @@ export default function PublishModal({
     });
   };
 
+  const availableClasses = MOCK_CLASSES.filter((item) => !metadata.grade || item.grade === metadata.grade);
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -165,6 +191,12 @@ export default function PublishModal({
 
         {/* Content */}
         <div className="p-6 space-y-6">
+          {isPublished && !showSuccess && (
+            <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+              <AlertTriangle size={20} className="mt-0.5 flex-shrink-0 text-red-600" />
+              <p>{t('重新发布后，将使用当前配置覆盖学生端配置，并清除学生在该学习空间中的学习数据，包括学习进度、作答记录和完成状态。此操作不可恢复。')}</p>
+            </div>
+          )}
           {!showSuccess ? (
             <>
               {/* 學習空間名稱 */}
@@ -211,7 +243,13 @@ export default function PublishModal({
                     <label className="block text-xs text-gray-600 mb-2">{t('年級')}</label>
                     <select
                       value={metadata.grade || ''}
-                      onChange={(e) => setMetadata({ ...metadata, grade: e.target.value })}
+                      onChange={(e) => setMetadata({
+                        ...metadata,
+                        grade: e.target.value,
+                        bindClasses: metadata.bindClasses?.filter((className) =>
+                          MOCK_CLASSES.some(item => item.name === className && item.grade === e.target.value)
+                        ),
+                      })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     >
                       <option value="">{t('請選擇年級')}（{t('可選')}）</option>
@@ -268,18 +306,18 @@ export default function PublishModal({
                     <label className="block text-xs text-gray-600 mb-2">{t('綁定班級')}</label>
                     <div className="border border-gray-300 rounded-lg p-3 max-h-40 overflow-y-auto">
                       <div className="space-y-2">
-                        {MOCK_CLASSES.map((className) => (
+                        {availableClasses.map((item) => (
                           <label
-                            key={className}
+                            key={item.name}
                             className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded"
                           >
                             <input
                               type="checkbox"
-                              checked={metadata.bindClasses?.includes(className)}
-                              onChange={() => toggleClass(className)}
+                              checked={metadata.bindClasses?.includes(item.name)}
+                              onChange={() => toggleClass(item.name)}
                               className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
                             />
-                            <span className="text-sm text-gray-700">{className}</span>
+                            <span className="text-sm text-gray-700">{item.name}</span>
                           </label>
                         ))}
                       </div>
@@ -317,30 +355,6 @@ export default function PublishModal({
                     <div>
                       <div className="font-medium text-gray-900">{t('學習任務')}</div>
                       <div className="text-sm text-gray-600">{t('包含所有配置的學習任務和練習')}</div>
-                    </div>
-                  </label>
-                  <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={scope.includeAISettings}
-                      onChange={(e) => setScope({ ...scope, includeAISettings: e.target.checked })}
-                      className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
-                    />
-                    <div>
-                      <div className="font-medium text-gray-900">{t('AI 設置')}</div>
-                      <div className="text-sm text-gray-600">{t('包含 AI 風格、知識邊界等配置')}</div>
-                    </div>
-                  </label>
-                  <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={scope.includeLearningPath}
-                      onChange={(e) => setScope({ ...scope, includeLearningPath: e.target.checked })}
-                      className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
-                    />
-                    <div>
-                      <div className="font-medium text-gray-900">{t('學習路徑')}</div>
-                      <div className="text-sm text-gray-600">{t('包含 AI 生成的學習路徑規劃')}</div>
                     </div>
                   </label>
                 </div>
@@ -494,6 +508,20 @@ export default function PublishModal({
         <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end gap-3">
           {!showSuccess ? (
             <>
+              {isPublished && (
+                <button
+                  onClick={onUnpublish}
+                  className="mr-auto px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  {t('取消发布')}
+                </button>
+              )}
+              <button
+                onClick={handleSaveDraft}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                {t('保存草稿')}
+              </button>
               <button
                 onClick={onClose}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
@@ -501,7 +529,7 @@ export default function PublishModal({
                 {t('取消')}
               </button>
               <button
-                onClick={handlePublish}
+                onClick={isPublished ? handleRepublish : handlePublish}
                 disabled={isPublishing}
                 className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -526,6 +554,24 @@ export default function PublishModal({
           )}
         </div>
       </div>
+      {showRepublishConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-bold text-gray-900">{t('确认重新发布？')}</h3>
+            <p className="mt-3 text-sm leading-6 text-gray-600">
+              {t('重新发布后，学生原有的学习数据将被清除，并按照当前配置重新开始学习。该操作不可恢复，是否继续？')}
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button onClick={() => setShowRepublishConfirm(false)} className="rounded-lg px-4 py-2 text-gray-700 hover:bg-gray-100">
+                {t('取消')}
+              </button>
+              <button onClick={confirmRepublish} className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700">
+                {t('确认重新发布')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

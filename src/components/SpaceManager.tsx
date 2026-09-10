@@ -17,6 +17,8 @@ import {
   Sparkles,
   TrendingUp,
   Calendar,
+  ClipboardCheck,
+  Network,
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { isEnabled } from '../config/version';
@@ -63,6 +65,8 @@ export default function SpaceManager({
   const getLearningModeLabel = (mode: string) => {
     return LEARNING_MODE_CONFIG[mode as keyof typeof LEARNING_MODE_CONFIG]?.label || mode;
   };
+
+  const isRemedialSpace = (space: SpaceSummary) => Boolean(space.sourceTestId || space.sourceTestName);
 
   // 计算统计数据
   const totalSpaces = spaces.length;
@@ -175,7 +179,36 @@ export default function SpaceManager({
                 onClick={() => onOpenSpace(space.id)}
               >
                 {/* 卡片头部 */}
-                <div className="relative h-32 bg-gradient-to-br from-primary-100 to-accent-100 p-4">
+                <div className={`relative h-32 overflow-hidden p-4 ${
+                  isRemedialSpace(space)
+                    ? 'bg-gradient-to-br from-primary-200 via-primary-100 to-accent-100'
+                    : 'bg-gradient-to-br from-primary-100 via-accent-100 to-primary-50'
+                }`}>
+                  {isRemedialSpace(space) ? (
+                    <>
+                      <div className="absolute -right-5 -top-8 h-36 w-36 rounded-full border-2 border-primary-500/25" />
+                      <div className="absolute right-7 -top-1 h-20 w-20 rounded-full border border-primary-600/20" />
+                      <div className="absolute right-14 top-8 h-2.5 w-2.5 rounded-full bg-primary-600/60 shadow-[0_0_0_5px_rgba(5,150,105,0.12)]" />
+                      <div className="absolute right-6 bottom-8 h-2.5 w-2.5 rounded-full bg-primary-600/60 shadow-[0_0_0_5px_rgba(5,150,105,0.12)]" />
+                      <div className="absolute left-4 bottom-6 h-px w-28 rotate-[-18deg] bg-primary-700/20" />
+                      <div className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg border border-white/70 bg-white/75 px-2.5 py-1.5 text-[11px] font-medium text-primary-700 shadow-sm backdrop-blur-sm">
+                        <ClipboardCheck size={13} className="flex-shrink-0" />
+                        <span>{t('测试修订')}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="absolute -right-8 -top-8 h-36 w-36 rounded-full border border-primary-500/20" />
+                      <div className="absolute right-8 top-8 h-3 w-3 rounded-full bg-accent-600/50 shadow-[0_0_0_6px_rgba(20,184,166,0.12)]" />
+                      <div className="absolute right-20 top-16 h-2 w-2 rounded-full bg-primary-600/50 shadow-[0_0_0_5px_rgba(5,150,105,0.10)]" />
+                      <div className="absolute right-8 top-10 h-px w-16 rotate-[-25deg] bg-primary-700/20" />
+                      <div className="absolute right-10 top-12 h-px w-14 rotate-[25deg] bg-primary-700/20" />
+                      <div className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg border border-white/70 bg-white/60 px-2.5 py-1.5 text-[11px] font-medium text-accent-700 shadow-sm backdrop-blur-sm">
+                        <Network size={13} className="flex-shrink-0" />
+                        <span>{t('自主探索')}</span>
+                      </div>
+                    </>
+                  )}
                   <div className="absolute top-4 left-4 text-4xl">
                     {getScenarioIcon(space.scenario)}
                   </div>
@@ -235,15 +268,10 @@ export default function SpaceManager({
                 </div>
 
                 {/* 卡片内容 */}
-                <div className="p-4">
+                <div className="h-[104px] p-4">
                   <h3 className="font-semibold text-gray-900 mb-1 line-clamp-1 group-hover:text-primary-600 transition-colors">
                     {space.title}
                   </h3>
-                  {space.topic && (
-                    <p className="text-sm text-gray-500 mb-3 line-clamp-1">
-                      {space.topic}
-                    </p>
-                  )}
 
                   {isEnabled('spaceCardDetails') && (
                   <div className="flex items-center justify-between text-xs text-gray-400">
@@ -257,12 +285,6 @@ export default function SpaceManager({
                   </div>
                   )}
 
-                  {/* 学习模式标签 */}
-                  <div className="mt-3 pt-3 border-t border-gray-100">
-                    <span className="text-xs px-2 py-1 bg-primary-50 text-primary-600 rounded-lg">
-                      {getLearningModeLabel(space.learningMode)}
-                    </span>
-                  </div>
                 </div>
               </div>
             ))}

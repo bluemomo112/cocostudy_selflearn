@@ -108,7 +108,7 @@ const VERSION_FLAGS: Record<Version, FeatureFlags> = {
     resourceLibraryExtraTabs: false,
 
     titleInlineEdit: false,
-    settingsButton: false,
+    settingsButton: true,
     dataAnalysisButton: false,
     languageSwitch: true,
     demoSelector: false,
@@ -160,11 +160,11 @@ const VERSION_FLAGS: Record<Version, FeatureFlags> = {
     learningStatusPanel: true,
     studioTools: true,
 
-    settingsModal: false,
+    settingsModal: true,
 
     anonymousMode: false,
-    classBinding: false,
-    publishScopeOptions: false,
+    classBinding: true,
+    publishScopeOptions: true,
     downloadQR: false,
 
     aiLoadingSkeleton: false,
