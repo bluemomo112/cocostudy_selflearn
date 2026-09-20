@@ -1,0 +1,370 @@
+/*
+ * Styles for components ported from DeepTutor (Apache-2.0), scoped under `.dt-scope`.
+ *
+ * - The token block maps the CSS variables DeepTutor components read (`var(--card)`, ...) onto
+ *   self-learn's light theme. Wrap ported components in an element with class `dt-scope`.
+ * - The prose block is DeepTutor web/app/globals.css lines 328-645 with every selector prefixed by
+ *   `.dt-scope` (the host also uses a `.prose` class from @tailwindcss/typography, so it must not
+ *   be overridden globally). It relies on `@apply`, so it has to be pulled in with `@import` from
+ *   the host's Tailwind entry CSS (cross-new/src/app/globals.css).
+ */
+
+.dt-scope {
+  --background: #ffffff;
+  --foreground: #111827;
+  --card: #ffffff;
+  --card-foreground: #111827;
+  --popover: #ffffff;
+  --popover-foreground: #111827;
+  --primary: #059669;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f4f6;
+  --secondary-foreground: #1f2937;
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
+  --accent: #ecfdf5;
+  --accent-foreground: #065f46;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #10b981;
+  --overlay: rgba(17, 24, 39, 0.4);
+  --success: #059669;
+  --success-surface: #ecfdf5;
+  --warning: #b45309;
+  --warning-surface: #fffbeb;
+  --info: #2563eb;
+  --info-surface: #eff6ff;
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-slow: 240ms;
+}
+
+.dt-scope .prose {
+  @apply font-sans text-sm;
+}
+
+.dt-scope .prose pre {
+  @apply rounded-lg p-4 overflow-x-auto my-4;
+  background: #292524;
+  color: #d6d3d1;
+}
+
+.dt-scope .prose code:not(.md-code-block__code):not(.md-inline-code) {
+  @apply px-1.5 py-0.5 rounded text-sm font-mono;
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.dt-scope .prose pre code {
+  @apply bg-transparent text-inherit p-0;
+}
+
+.dt-scope .md-renderer .md-inline-code {
+  @apply px-1.5 py-0.5 rounded text-sm font-mono;
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.dt-scope .md-renderer .md-code-block {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Force light text on dark code blocks regardless of theme. The wrapper
+   .md-code-block always uses a fixed dark background (#1f2937 / #292524),
+   so we need to override .prose pre (color: #D6D3D1) and any inherited
+   --foreground from the prose wrapper that would otherwise render as
+   near-black in the light theme. Specificity (0,2,1) beats .prose pre. */
+.dt-scope .md-renderer .md-code-block,
+.dt-scope .md-renderer .md-code-block pre,
+.dt-scope .md-renderer .md-code-block code {
+  color: #e5e7eb;
+}
+
+.dt-scope .md-renderer .md-code-block pre,
+.dt-scope .md-renderer .md-code-block code {
+  background: transparent !important;
+}
+
+.dt-scope .md-renderer .md-code-block pre {
+  @apply overflow-x-auto;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  padding: 1rem !important;
+}
+
+.dt-scope .md-renderer .md-code-block__code {
+  padding: 0 !important;
+  border-radius: 0 !important;
+  font-size: 0.875rem !important;
+  line-height: 1.7 !important;
+  color: inherit !important;
+}
+
+.dt-scope .md-renderer .md-code-block__code span {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* ─── Headings ─── */
+.dt-scope .prose h1,
+.dt-scope .prose h2,
+.dt-scope .prose h3,
+.dt-scope .prose h4,
+.dt-scope .prose h5,
+.dt-scope .prose h6 {
+  @apply font-sans;
+}
+
+.dt-scope .prose h1 {
+  @apply text-2xl font-bold tracking-tight mt-8 mb-4;
+  color: var(--foreground);
+}
+
+.dt-scope .prose h2 {
+  @apply text-xl font-semibold tracking-tight mt-7 mb-3;
+  color: var(--foreground);
+}
+
+.dt-scope .prose h3 {
+  @apply text-lg font-semibold tracking-tight mt-6 mb-2.5;
+  color: var(--foreground);
+}
+
+.dt-scope .prose h4 {
+  @apply text-base font-semibold tracking-tight mt-5 mb-2;
+  color: var(--foreground);
+}
+
+.dt-scope .prose h5 {
+  @apply text-sm font-semibold tracking-tight mt-4 mb-2;
+  color: var(--foreground);
+}
+
+.dt-scope .prose h6 {
+  @apply text-sm font-semibold tracking-tight mt-4 mb-2;
+  color: var(--muted-foreground);
+}
+
+/* ─── Body text ─── */
+.dt-scope .prose p {
+  @apply mb-4;
+  line-height: 1.75;
+  color: var(--foreground);
+}
+
+.dt-scope .prose strong {
+  @apply font-semibold;
+  color: var(--foreground);
+}
+
+.dt-scope .prose em {
+  @apply italic;
+}
+
+/* ─── Strikethrough ─── */
+.dt-scope .prose del,
+.dt-scope .prose s {
+  @apply line-through;
+  color: var(--muted-foreground);
+}
+
+/* ─── Highlight / Mark ─── */
+.dt-scope .prose mark {
+  @apply rounded px-1 py-0.5;
+  background: #fef08a;
+  color: #422006;
+}
+
+.dark .dt-scope .prose mark {
+  background: #854d0e;
+  color: #fef9c3;
+}
+
+/* ─── Subscript / Superscript ─── */
+.dt-scope .prose sub {
+  @apply text-[0.75em];
+  vertical-align: sub;
+}
+
+.dt-scope .prose sup {
+  @apply text-[0.75em];
+  vertical-align: super;
+}
+
+/* ─── Abbreviation ─── */
+.dt-scope .prose abbr[title] {
+  @apply cursor-help;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+/* ─── Keyboard ─── */
+.dt-scope .prose kbd {
+  @apply inline-block rounded border px-1.5 py-0.5 font-mono text-[0.8em] font-medium leading-none;
+  background: var(--muted);
+  border-color: var(--border);
+  color: var(--foreground);
+  box-shadow: 0 1px 0 1px var(--border);
+}
+
+/* ─── Links ─── */
+.dt-scope .prose a {
+  @apply underline underline-offset-2;
+  color: var(--primary);
+}
+
+/* ─── Lists ─── */
+.dt-scope .prose ul {
+  @apply list-disc list-outside ml-6 mb-4;
+  color: var(--foreground);
+}
+
+.dt-scope .prose ol {
+  @apply list-decimal list-outside ml-6 mb-4;
+  color: var(--foreground);
+}
+
+.dt-scope .prose li {
+  @apply mb-1;
+}
+
+.dt-scope .prose li > ul,
+.dt-scope .prose li > ol {
+  @apply mt-1 mb-0;
+}
+
+/* ─── Task list (GFM) ─── */
+.dt-scope .prose ul:has(> li > input[type="checkbox"]) {
+  @apply list-none ml-0 pl-0;
+}
+
+.dt-scope .prose li:has(> input[type="checkbox"]) {
+  @apply flex items-start gap-0;
+}
+
+.dt-scope .prose li > input[type="checkbox"] {
+  @apply mt-1.5 shrink-0;
+}
+
+/* ─── Blockquote ─── */
+.dt-scope .prose blockquote {
+  @apply border-l-[3px] pl-4 italic my-4;
+  border-color: var(--muted-foreground);
+  color: var(--muted-foreground);
+}
+
+.dt-scope .prose blockquote blockquote {
+  @apply mt-2;
+  border-color: var(--border);
+}
+
+/* ─── Horizontal rule ─── */
+.dt-scope .prose hr {
+  @apply my-6 border-none;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ─── Tables ─── */
+.dt-scope .prose table {
+  @apply border-collapse;
+}
+
+.dt-scope .prose th {
+  @apply font-semibold px-4 py-2 border text-left;
+  background: var(--muted);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+.dt-scope .prose td {
+  @apply px-4 py-2 border;
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+/* ─── Images ─── */
+.dt-scope .prose img {
+  @apply my-4 max-w-full h-auto rounded-lg;
+}
+
+.dt-scope .prose figure {
+  @apply my-4;
+}
+
+.dt-scope .prose figcaption {
+  @apply mt-2 text-center text-sm;
+  color: var(--muted-foreground);
+}
+
+/* ─── Details / Summary ─── */
+.dt-scope .prose details {
+  @apply my-4 rounded-lg border px-4 py-2;
+  background: var(--card);
+  border-color: var(--border);
+}
+
+.dt-scope .prose details:empty,
+.dt-scope .prose details:not(:has(> :not(summary))),
+.dt-scope .md-renderer details:empty,
+.dt-scope .md-renderer details:not(:has(> :not(summary))) {
+  display: none;
+}
+
+.dt-scope .prose > :empty:not(hr):not(br):not(img) {
+  display: none;
+}
+
+.dt-scope .prose summary {
+  @apply cursor-pointer font-medium select-none;
+  color: var(--foreground);
+}
+
+.dt-scope .prose details[open] > summary {
+  @apply mb-2;
+}
+
+/* ─── Definition list ─── */
+.dt-scope .prose dl {
+  @apply my-4;
+}
+
+.dt-scope .prose dt {
+  @apply font-semibold mt-3;
+  color: var(--foreground);
+}
+
+.dt-scope .prose dd {
+  @apply ml-6 mt-1;
+  color: var(--muted-foreground);
+}
+
+/* ─── Footnotes (remark-gfm) ─── */
+.dt-scope .prose .footnotes {
+  @apply mt-8 border-t pt-4 text-sm;
+  border-color: var(--border);
+  color: var(--muted-foreground);
+}
+
+.dt-scope .prose .footnotes ol {
+  @apply ml-4;
+}
+
+/* ─── md-renderer: scope overrides only inside our component ─── */
+.dt-scope .md-renderer .contains-task-list {
+  @apply list-none ml-0 pl-0;
+}
+
+/* Animations */
+
+/* Thinking / streaming affordances used by ModelThinkingCard */
+@keyframes dt-breathing {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+.dt-scope .dt-breathing-text {
+  animation: dt-breathing 1.8s ease-in-out infinite;
+}

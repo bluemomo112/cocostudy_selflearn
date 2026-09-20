@@ -44,7 +44,7 @@ import {
   type VariantsConfig
 } from './note-config/modals';
 import { useRouter } from 'next/navigation';
-import { usePersistedState } from '../utils/storage';
+import { loadFromStorage, usePersistedState } from '../utils/storage';
 import { PublishScope } from '../types/self-study';
 import type { ErrorQuestion, HistoricalTest, Note as KnowledgeNote, InteractiveWebpage } from '../data/mockKnowledgeBase';
 import TaskExpandedCard from './task/TaskExpandedCard';
@@ -1164,6 +1164,8 @@ export default function SelfStudyWorkbench({
   // 初始化欢迎消息 - 改为空白引导状态
   useEffect(() => {
     if (messages.length > 0) return; // already have persisted messages
+    // 持久化的历史此时还没 hydrate 回 state（messages 仍为空），先看存储里有没有，避免用欢迎语覆盖历史
+    if (loadFromStorage<ChatMessage[]>(`self-study:wb:${config.id}:messages`, []).length > 0) return;
 
     // 设置开场引导消息，只用功能按钮（不用快捷回复）
     setMessages([{

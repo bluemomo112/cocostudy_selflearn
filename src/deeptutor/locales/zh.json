@@ -1,1 +1,8 @@
-{}
+{
+  "Diagram rendering error": "图表渲染出错",
+  "Failed to render diagram": "示意图渲染失败",
+  "Model thinking": "模型思考",
+  "Rendering diagram...": "正在渲染图表…",
+  "Show source": "显示源码",
+  "Thinking...": "思考中…"
+}

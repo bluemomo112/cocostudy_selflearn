@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import AssistantResponse from '../../../deeptutor/components/AssistantResponse';
 import { SpaceConfig, LearningMode, LearningPathNode } from '../../../types/self-study';
 import { Task } from '../../../types/shared-context';
 import { useLanguage } from '../../../contexts/LanguageContext';
@@ -293,13 +294,20 @@ export function ChatPanel(props: ChatPanelProps) {
                           ))}
                         </div>
                       ) : null}
-                      <div
-                        className={`text-sm leading-relaxed ${
-                          message.role === 'user' ? 'text-white' : 'text-gray-700'
-                        }`}
-                      >
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{t(message.content)}</ReactMarkdown>
-                      </div>
+                      {message.role === 'assistant' ? (
+                        <div className="dt-scope">
+                          <AssistantResponse
+                            content={t(message.content)}
+                            thinking={message.thinking}
+                            isStreaming={isLoading && message.id === messages[messages.length - 1]?.id}
+                            language="zh"
+                          />
+                        </div>
+                      ) : (
+                        <div className="text-sm leading-relaxed text-white">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{t(message.content)}</ReactMarkdown>
+                        </div>
+                      )}
                     </div>
 
                     {/* 功能卡片 - 仅在没有推荐回复时显示 (3.2 互斥 + 3.3 富卡片) */}
