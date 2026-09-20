@@ -52,9 +52,6 @@ import ExamDetectedModal from './ExamDetectedModal';
 import TaskSettingsPopover from './TaskSettingsPopover';
 import ResourceSettingsPopover from './ResourceSettingsPopover';
 import type { TaskSettings, ResourceVisibility } from '../types/shared-context';
-import { generateMockAIReply as generateMockReply } from '../data/mockAIReplies';
-import type { MockReplyContext } from '../data/mockAIReplies';
-import { generateExplainQuestionDialogue, generateQuickReplyResponse } from '../data/mockQuickReplies';
 
 // ── workbench/ 子组件（只负责渲染，状态和 handler 留在本文件）
 // 详见 ARCHITECTURE.md 了解各文件职责
@@ -65,7 +62,7 @@ import { DeepTutorChat } from '../deeptutor/chatSession';
 import { isDeepTutorReady } from '../deeptutor/config';
 import { kbExists, kbNameForSpace, uploadFilesToKb, waitForKb } from '../deeptutor/knowledge';
 import { ensurePersona } from '../deeptutor/personas';
-import { generateQuestions } from '../deeptutor/quiz';
+import { buildQuizAnalysisPrompt, generateQuestions, gradeObjective, isObjective, judgeSubjective } from '../deeptutor/quiz';
 import {
   generateAudioScript,
   generateDocument,
@@ -796,57 +793,9 @@ export default function SelfStudyWorkbench({
 
   // ── [对话区] ChatPanel handlers ──────────────────────────────
 
-  // 生成 mock AI 回复内容（使用独立的 mock 数据文件）
-  const generateMockAIReply = (userInput: string): string => {
-    const userMsgCount = messages.filter(m => m.role === 'user').length + 1;
-    const masteredCount = learningPath.filter(n => n.status === 'mastered').length;
-    const totalNodes = learningPath.length;
-    const currentNode = learningPath.find(n => n.id === currentNodeId);
-
-    const context: MockReplyContext = {
-      learningMode: config.learningMode,
-      userMsgCount,
-      masteredCount,
-      totalNodes,
-      currentNodeTitle: currentNode?.title,
-    };
-
-    return generateMockReply(userInput, context);
-  };
-
-  // 快速回复处理函数
-  const handleQuickReply = (messageText: string, replyId?: string) => {
-    const userMessage: ChatMessage = {
-      id: `msg_${Date.now()}`,
-      role: 'user',
-      content: messageText,
-      timestamp: new Date(),
-      attachments: attachments.length ? attachments : undefined,
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setIsLoading(true);
-
-    setTimeout(() => {
-      // 如果有 replyId，使用预设的响应
-      let aiContent: string;
-      if (replyId) {
-        aiContent = generateQuickReplyResponse(replyId);
-      } else {
-        // 否则使用通用的 AI 回复生成
-        const userInput = messageText.toLowerCase();
-        aiContent = generateMockAIReply(userInput);
-      }
-
-      const aiReply: ChatMessage = {
-        id: `msg_${Date.now()}_ai`,
-        role: 'assistant',
-        content: aiContent,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, aiReply]);
-      setIsLoading(false);
-    }, 1200);
+  // 快速回复：和手动输入走同一条真实对话通道
+  const handleQuickReply = (messageText: string, _replyId?: string) => {
+    void handleSendMessage(messageText);
   };
 
   // 发送消息
@@ -1351,26 +1300,40 @@ export default function SelfStudyWorkbench({
     }
   };
 
-  const handleGeneratePractice = () => {
+  const handleGeneratePractice = async () => {
     console.log('[ErrorLoop] 生成针对性练习');
-    // Mock: 生成新任务
-    const practiceTask = {
-      id: `task_practice_${Date.now()}`,
-      type: 'quiz',
-      title: `${expandedTask?.title || '测试'} - 针对性练习`,
-      status: 'available',
-      questionCount: 3,
-      generatedAt: new Date().toISOString(),
-      questions: [
-        { id: 'pq1', type: 'single_choice', content: '针对你的薄弱点：光合作用中，水的光解发生在哪里？', options: ['类囊体薄膜', '叶绿体基质', '线粒体', '细胞质'], answer: 'A', explanation: '水的光解是光反应的一部分，发生在类囊体薄膜上。' },
-        { id: 'pq2', type: 'true_false', content: 'C4植物比C3植物更适应高温干旱环境。', options: ['正确', '错误'], answer: 'A', explanation: 'C4植物有特殊的CO₂固定机制，能在高温下维持较高光合速率。' },
-        { id: 'pq3', type: 'single_choice', content: '暗反应（Calvin循环）的主要产物是？', options: ['G3P（甘油醛-3-磷酸）', 'ATP', 'NADPH', 'O₂'], answer: 'A', explanation: 'Calvin循环固定CO₂最终生成G3P，用于合成葡萄糖。' },
-      ],
-    };
-    setGeneratedTasks(prev => [practiceTask as any, ...prev]);
-    setTaskDisplayMode('embedded');
-    setExpandedTask(practiceTask as any);
-    setExplainQuestion((practiceTask.questions[0] as any) as TaskQuestion);
+    const questions = (expandedTask?.questions ?? []) as TaskQuestion[];
+    const wrong = questions.filter((q) => quickResult?.details.some((d) => d.questionId === q.id && !d.correct));
+    const source = wrong.length > 0 ? wrong : questions.slice(0, 3);
+    if (source.length === 0 || isGeneratingTask) return;
+    if (!(await isDeepTutorReady())) {
+      reportStudioError('针对性练习', new Error('AI 服务没有启动，请先启动 DeepTutor 后端。'));
+      return;
+    }
+    setIsGeneratingTask(true);
+    try {
+      const knowledgeBases = configRef.current.resources.some((r) => r.kbStatus === 'ready') ? [kbName] : [];
+      const topic = ['请针对学生做错的这些题背后的薄弱知识点，出新的练习题：', ...source.map((q, i) => `${i + 1}. ${q.content}`)].join('\n');
+      const practiceQuestions = await generateQuestions({ topic, count: 3, difficulty: 'medium', knowledgeBases });
+      const practiceTask = {
+        id: `task_practice_${Date.now()}`,
+        type: 'quiz' as const,
+        title: `${expandedTask?.title || '测试'} - 针对性练习`,
+        status: 'available' as const,
+        questionCount: practiceQuestions.length,
+        generatedAt: new Date(),
+        questions: practiceQuestions,
+        isAIGenerated: true,
+      };
+      setGeneratedTasks((prev) => [practiceTask as any, ...prev]);
+      setTaskDisplayMode('embedded');
+      setExpandedTask(practiceTask as any);
+      setExplainQuestion(practiceQuestions[0]);
+    } catch (error) {
+      reportStudioError('针对性练习', error);
+    } finally {
+      setIsGeneratingTask(false);
+    }
   };
 
   const handleBackToChat = () => {
@@ -1414,40 +1377,19 @@ export default function SelfStudyWorkbench({
     // 3. 设置当前详解的题目
     setExplainQuestion(question);
 
-    // 格式化答案
-    const formatAnswer = (ans: string | string[]) => {
-      return Array.isArray(ans) ? ans.join(', ') : ans;
-    };
-
+    // 4. 让导师真实地讲这道题（带知识库、当前人设）
+    const formatAnswer = (ans: string | string[]) => (Array.isArray(ans) ? ans.join('、') : ans);
     const isCorrect = formatAnswer(userAnswer) === formatAnswer(correctAnswer);
-
-    // 使用新的对话生成函数
-    const dialogue = generateExplainQuestionDialogue(question, userAnswer, correctAnswer, isCorrect);
-
-    // 用户消息
-    const userMsg: ChatMessage = {
-      id: `msg_user_explain_${Date.now()}`,
-      role: 'user',
-      content: dialogue.userMessage,
-      timestamp: new Date(),
-    };
-
-    // AI 回复消息（分成多条短消息）
-    const aiMessages: ChatMessage[] = dialogue.aiMessages.map((content, index) => ({
-      id: `msg_explain_${Date.now()}_${index}`,
-      role: 'assistant' as const,
-      content,
-      timestamp: new Date(Date.now() + index * 100),
-      // 最后一条消息添加快捷回复和功能按钮
-      ...(index === dialogue.aiMessages.length - 1 ? {
-        suggestions: {
-          quickReplies: dialogue.quickReplies,
-          actionButtons: dialogue.actionButtons,
-        },
-      } : {}),
-    }));
-
-    setMessages(prev => [...prev, userMsg, ...aiMessages]);
+    const prompt = [
+      '请给我讲解这道题：',
+      question.content,
+      question.options?.length ? `选项：${question.options.join('；')}` : '',
+      `我的答案：${formatAnswer(userAnswer) || '（没有作答）'}`,
+      `正确答案：${formatAnswer(correctAnswer)}`,
+      question.explanation ? `参考解析：${question.explanation}` : '',
+      isCorrect ? '我答对了，请确认我为什么是对的，再拓展一个相关的点。' : '我答错了，请先指出我的答案错在哪，再带我一步步想到正确答案。',
+    ].filter(Boolean).join('\n');
+    void handleSendMessage(prompt);
   };
 
   // 处理链接添加
@@ -1749,265 +1691,134 @@ export default function SelfStudyWorkbench({
 
   // toggleTaskCompletion - 两阶段提交（核心逻辑，涉及 4+ 个 section 的 state）
   // 修改前请参考 ARCHITECTURE.md → "已知技术债"
-  const toggleTaskCompletion = async (taskId: string, answer?: string) => {
-    // 如果正在提交或批改中，不再处理
-    if (taskStatus === 'submitting' || taskStatus === 'grading') {
-      return;
+  // ── 任务提交：客观题本地判分，主观题交给 DeepTutor 批改，最后由导师做错因分析 ──────
+  const answerText = (value: string | string[] | undefined) => (Array.isArray(value) ? value.join('、') : (value ?? '').toString());
+
+  const markTaskCompleted = (taskId: string) => {
+    setTaskStatus('completed');
+    // 让结果回顾先显示出来，再更新任务完成状态
+    setTimeout(() => {
+      setCompletedTasks((prev) => {
+        const next = new Set(prev);
+        next.add(taskId);
+        return next;
+      });
+    }, 500);
+  };
+
+  const submitQuiz = async (task: any, questions: TaskQuestion[], answer?: string) => {
+    const taskId = task.id as string;
+    const userAnswers = JSON.parse(answer || '{}') as Record<string, string | string[]>;
+    const rows = questions.map((q) => {
+      const userAnswer = userAnswers[q.id];
+      const objective = isObjective(q);
+      return { q, userAnswer, objective, correct: objective ? gradeObjective(q, userAnswer) : false };
+    });
+    const pending = rows.filter((r) => !r.objective);
+    const objectiveCorrect = rows.filter((r) => r.objective && r.correct).length;
+    console.log('[submit] 判分', { taskId, total: rows.length, objectiveCorrect, subjective: pending.length });
+
+    const initial = {
+      allCorrect: pending.length === 0 && objectiveCorrect === rows.length,
+      correctCount: objectiveCorrect,
+      totalCount: rows.length,
+      details: rows.map((r) => ({
+        questionId: r.q.id,
+        correct: r.correct,
+        correctAnswer: r.q.answer,
+        userAnswer: r.userAnswer,
+        explanation: r.q.explanation,
+        gradingStatus: (r.objective ? 'instant' : 'grading') as 'instant' | 'grading',
+      })),
+    };
+    setQuickResultMap((prev) => ({ ...prev, [taskId]: initial }));
+    if (taskDisplayMode === 'fullscreen') setTaskDisplayMode('result_review');
+
+    const attemptNumber = (taskHistory.find((h) => h.taskId === taskId)?.attempts.length || 0) + 1;
+    setTaskHistory((prev) => {
+      const attempt = { attemptNumber, submittedAt: new Date(), score: objectiveCorrect };
+      return prev.some((h) => h.taskId === taskId)
+        ? prev.map((h) => (h.taskId === taskId ? { ...h, attempts: [...h.attempts, attempt] } : h))
+        : [...prev, { taskId, attempts: [attempt] }];
+    });
+
+    if (initial.allCorrect) markTaskCompleted(taskId);
+    else setTimeout(() => setTaskStatus('idle'), 2000);
+
+    if (pending.length > 0) {
+      // 主观题并行批改，每题批完就更新那一题的结果
+      await Promise.all(
+        pending.map(async (r) => {
+          let verdict;
+          try {
+            verdict = await judgeSubjective(r.q, r.userAnswer);
+          } catch (error) {
+            console.error('[submit] 主观题批改失败:', r.q.id, error);
+            verdict = { score: 0, correct: false, feedback: 'AI 批改暂时失败，这一题没有得分，请稍后重新提交。' };
+          }
+          r.correct = verdict.correct;
+          setQuickResultMap((prev) => {
+            const current = prev[taskId];
+            if (!current) return prev;
+            const details = current.details.map((d: any) =>
+              d.questionId === r.q.id ? { ...d, gradingStatus: 'graded' as const, aiScore: verdict.score, aiFeedback: verdict.feedback, correct: verdict.correct } : d,
+            );
+            return { ...prev, [taskId]: { ...current, details } };
+          });
+        }),
+      );
+      const correctCount = rows.filter((r) => r.correct).length;
+      const allCorrect = correctCount === rows.length;
+      setQuickResultMap((prev) => (prev[taskId] ? { ...prev, [taskId]: { ...prev[taskId], correctCount, allCorrect } } : prev));
+      if (allCorrect) markTaskCompleted(taskId);
     }
 
-    // 找到任务信息（从 generatedTasks 中查找）
-    const task = generatedTasks.find(t => t.id === taskId);
+    // 错因分析：让导师（带知识库和当前人设）基于这次作答给出反馈，作为一条助手消息流式显示
+    if (await isDeepTutorReady()) {
+      const prompt = buildQuizAnalysisPrompt({
+        taskTitle: task.title,
+        rows: rows.map((r, i) => ({ index: i + 1, content: r.q.content, userAnswer: answerText(r.userAnswer), correctAnswer: answerText(r.q.answer), correct: r.correct, explanation: r.q.explanation })),
+      });
+      setIsLoading(true);
+      await sendViaDeepTutor(prompt, undefined);
+    }
+  };
+
+  // 作业 / 反思类任务：按任务要求和评分标准，让导师给分并写评语
+  const submitWrittenTask = async (task: any, answer?: string) => {
+    setTaskStatus('grading');
+    const rubric = task.rubric
+      ? [task.rubric.excellent && `优秀：${task.rubric.excellent}`, task.rubric.good && `良好：${task.rubric.good}`, task.rubric.pass && `及格：${task.rubric.pass}`, task.rubric.fail && `不及格：${task.rubric.fail}`].filter(Boolean).join('；')
+      : '';
+    const verdict = await judgeSubjective(
+      { id: task.id, type: 'short_answer', content: task.prompt || task.title, answer: rubric || '（没有标准答案：请判断回答是否切题、完整、有条理、有自己的思考）' },
+      (answer || '').trim(),
+    );
+    markTaskCompleted(task.id);
+    setMessages((prev) => [...prev, { id: `msg_${Date.now()}_feedback`, role: 'assistant', content: `**${task.title}** 批改完成：**${verdict.score} 分**\n\n${verdict.feedback}`, timestamp: new Date() }]);
+  };
+
+  const toggleTaskCompletion = async (taskId: string, answer?: string) => {
+    // 如果正在提交或批改中，不再处理
+    if (taskStatus === 'submitting' || taskStatus === 'grading') return;
+
+    const task = ([...generatedTasks, ...config.tasks] as any[]).find((t) => t.id === taskId);
     if (!task) return;
 
-    // 第一阶段：标记为提交中
     setTaskStatus('submitting');
     setIsLoading(true);
-
     try {
-      // 主观题：先标记为批改中状态
-      if ((task.type as string) === 'assignment' || (task.type as string) === 'reflection') {
-        setTaskStatus('grading');
-      }
-
-      // 调用任务提交API
-      const subjectiveIds = (task.questions || [])
-        .filter((q: any) => q.type === 'short_answer')
-        .map((q: any) => q.id);
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          sessionId,
-          action: 'submit_task',
-          taskId,
-          taskAnswer: answer || '已完成任务',
-          subjectiveQuestionIds: subjectiveIds,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('任务提交失败');
-      }
-
-      const data = await response.json();
-      console.log('[submit_task] API response:', JSON.stringify(data, null, 2));
-
-      // 处理客观题（quiz）- 两阶段流程
-      if (data.taskType === 'quiz' && data.quickResult) {
-        // 找出主观题（short_answer），为其注入 grading 状态
-        const subjectiveQuestionIds = (task.questions || [])
-          .filter((q: any) => q.type === 'short_answer')
-          .map((q: any) => q.id);
-        console.log('[submit_task] subjectiveQuestionIds:', subjectiveQuestionIds);
-        console.log('[submit_task] details questionIds:', data.quickResult.details.map((d: any) => d.questionId));
-
-        // 构建初始 details：客观题 instant，主观题 grading
-        const initialDetails = data.quickResult.details.map((d: any) => {
-          if (subjectiveQuestionIds.includes(d.questionId)) {
-            return { ...d, gradingStatus: 'grading' as const };
-          }
-          return { ...d, gradingStatus: 'instant' as const };
-        });
-
-        const initialResult = { ...data.quickResult, details: initialDetails };
-        setQuickResultMap(prev => ({ ...prev, [taskId]: initialResult }));
-
-        // 全屏模式下自动进入结果回顾
-        if (taskDisplayMode === 'fullscreen') {
-          setTaskDisplayMode('result_review');
-        }
-
-        // 模拟并行 AI 批改主观题（每题独立延迟 2-3 秒）
-        const subjectiveFeedbacks: Record<string, { score: number; feedback: string }> = {
-          'q9_short': {
-            score: 88,
-            feedback: '回答思路清晰，从环境控制、光照管理和营养供给三个维度进行了系统阐述。\n\n✅ 亮点：准确指出密闭环境隔绝外界气候影响，LED光源可灵活调控光周期，营养液循环系统精确调控EC值和pH。\n\n💡 建议：可进一步补充"温控系统的具体参数范围"（如18-25°C），以及"营养液循环频率"对稳定生产的影响，会使论述更加完整。',
-          },
-          'q10_short': {
-            score: 75,
-            feedback: '能够联系所学知识提出多条可能原因，具备一定的系统性思维。\n\n✅ 亮点：提到了EC值、光照和pH三个关键因素，排查方案有一定可操作性。\n\n💡 建议：①根系病害和溶氧不足是重要原因，建议补充；②排查方案可以更具体，例如"EC值低于1.2 mS/cm时补充浓缩液"；③可以按"先排查最常见原因"的逻辑组织答案，体现诊断思维。',
-          },
-        };
-
-        if (subjectiveQuestionIds.length > 0) {
-          subjectiveQuestionIds.forEach((qId: string, idx: number) => {
-            const delay = 4500 + idx * 1200 + Math.random() * 800;
-            setTimeout(() => {
-              const fb = subjectiveFeedbacks[qId] || { score: 70, feedback: '回答基本正确，思路较为清晰，能够抓住核心要点。\n\n💡 建议：可以进一步深化分析，结合具体数据或案例来支撑你的观点，使论述更加完整有力。' };
-              setQuickResultMap(prev => {
-                const current = prev[taskId];
-                if (!current) return prev;
-                const updatedDetails = current.details.map((d: any) =>
-                  d.questionId === qId
-                    ? { ...d, gradingStatus: 'graded' as const, aiScore: fb.score, aiFeedback: fb.feedback, correct: fb.score >= 60 }
-                    : d
-                );
-                return { ...prev, [taskId]: { ...current, details: updatedDetails } };
-              });
-            }, delay);
-          });
-        }
-
-        // 只有全对才标记任务为已完成
-        if (data.quickResult.allCorrect && subjectiveQuestionIds.length === 0) {
-          setTaskStatus('completed');
-          // Delay the completion state update so result review shows first
-          setTimeout(() => {
-            setCompletedTasks((prev) => {
-              const newSet = new Set(prev);
-              newSet.add(taskId);
-              return newSet;
-            });
-          }, 500);
-        } else {
-          // 未全���或有主观题，重置状态允许继续
-          setTimeout(() => {
-            setTaskStatus('idle');
-          }, 2000);
-        }
-
-        // 保存任务历史记录
-        const attemptNumber = (taskHistory.find(h => h.taskId === taskId)?.attempts.length || 0) + 1;
-        setTaskHistory(prev => {
-          const existing = prev.find(h => h.taskId === taskId);
-          const newAttempt = {
-            attemptNumber,
-            submittedAt: new Date(),
-            score: data.quickResult?.correctCount,
-          };
-          if (existing) {
-            return prev.map(h =>
-              h.taskId === taskId
-                ? { ...h, attempts: [...h.attempts, newAttempt] }
-                : h
-            );
-          }
-          return [...prev, { taskId, attempts: [newAttempt] }];
-        });
-
-        // 添加loading消息到对话区
-        const loadingMessage: ChatMessage = {
-          id: `msg_${Date.now()}_loading`,
-          role: 'assistant',
-          content: '正在为你生成详细的学习反馈，请稍候...',
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, loadingMessage]);
-
-        // 异步调用AI分析（不阻塞）
-        setTimeout(async () => {
-          try {
-            const analysisResponse = await fetch('/api/analyze-quiz', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                taskId,
-                taskTitle: task.title,
-                questions: task.questions,
-                userAnswers: JSON.parse(answer || '{}'),
-                results: data.quickResult.details,
-                attemptNumber: data.attemptNumber,
-              }),
-            });
-
-            if (!analysisResponse.ok) {
-              throw new Error('AI分析请求失败');
-            }
-
-            // 处理流式响应
-            const reader = analysisResponse.body?.getReader();
-            const decoder = new TextDecoder();
-            let aiAnalysis = '';
-
-            if (reader) {
-              while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                const chunk = decoder.decode(value, { stream: true });
-                aiAnalysis += chunk;
-
-                // 实时更新消息（替换loading消息和之前的分析消息）
-                setMessages((prev) => {
-                  const analysisMessageId = `msg_${taskId}_analysis`;
-                  const filtered = prev.filter(m =>
-                    m.id !== loadingMessage.id && m.id !== analysisMessageId
-                  );
-                  return [
-                    ...filtered,
-                    {
-                      id: analysisMessageId,
-                      role: 'assistant',
-                      content: aiAnalysis,
-                      timestamp: new Date(),
-                    },
-                  ];
-                });
-              }
-            }
-          } catch (error) {
-            console.error('AI分析失败:', error);
-            // 移除loading消息，显示错误
-            setMessages((prev) => {
-              const filtered = prev.filter(m => m.id !== loadingMessage.id);
-              return [
-                ...filtered,
-                {
-                  id: `msg_${Date.now()}_error`,
-                  role: 'assistant',
-                  content: 'AI分析暂时无法完成，但你的答题结果已经保存。',
-                  timestamp: new Date(),
-                },
-              ];
-            });
-          }
-        }, 500); // 短暂延迟，让用户看到快速判题结果
-      }
-      // 处理主观题（assignment/reflection）
-      else if (data.taskType === 'assignment' || data.taskType === 'reflection') {
-        // 主观题批改完成
-        setTaskStatus('completed');
-
-        // 标记任务为已完成
-        setCompletedTasks((prev) => {
-          const newSet = new Set(prev);
-          newSet.add(taskId);
-          return newSet;
-        });
-
-        // 显示评估反馈
-        if (data.message) {
-          const feedbackMessage: ChatMessage = {
-            id: `msg_${Date.now()}_feedback`,
-            role: 'assistant',
-            content: data.message,
-            timestamp: new Date(),
-          };
-          setMessages((prev) => [...prev, feedbackMessage]);
-        }
-      }
-
+      const questions = (task.questions || []) as TaskQuestion[];
+      if (questions.length > 0) await submitQuiz(task, questions, answer);
+      else await submitWrittenTask(task, answer);
     } catch (error) {
       console.error('任务提交失败:', error);
-
-      // 重置状态
       setTaskStatus('idle');
-      if (expandedTask) {
-        setQuickResultMap(prev => { const { [expandedTask.id]: _, ...rest } = prev; return rest; });
-      }
-
-      // 显示错误消息
-      const errorMessage: ChatMessage = {
-        id: `msg_${Date.now()}_error`,
-        role: 'assistant',
-        content: '任务提交失败，请稍后再试。',
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      setQuickResultMap((prev) => {
+        const { [taskId]: _removed, ...rest } = prev;
+        return rest;
+      });
+      setMessages((prev) => [...prev, { id: `msg_${Date.now()}_error`, role: 'assistant', content: '任务提交失败，请稍后再试。', timestamp: new Date() }]);
     } finally {
       setIsLoading(false);
     }

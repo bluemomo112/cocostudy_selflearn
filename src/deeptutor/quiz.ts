@@ -43,7 +43,19 @@ function trueOrFalse(value: string | undefined): 'true' | 'false' {
   return /^(true|t|yes|对|正确|是|√|✓)/i.test((value ?? '').trim()) ? 'true' : 'false';
 }
 
-export function qaPairToTaskQuestion(pair: QaPair, index: number, idPrefix: string): TaskQuestion {
+/** deep_question leaves retrieval markers such as "[source-1]" in its text; students should not see them. */
+const stripCitations = (text: string) => text.replace(/\s*[\[【](?:source|rag|web|doc)[-_ ]?\d+[\]】]/gi, '').trim();
+
+export function qaPairToTaskQuestion(rawPair: QaPair, index: number, idPrefix: string): TaskQuestion {
+  const pair: QaPair = {
+    ...rawPair,
+    question: stripCitations(rawPair.question),
+    explanation: rawPair.explanation ? stripCitations(rawPair.explanation) : rawPair.explanation,
+    correct_answer: rawPair.correct_answer ? stripCitations(rawPair.correct_answer) : rawPair.correct_answer,
+    options: rawPair.options
+      ? Object.fromEntries(Object.entries(rawPair.options).map(([k, v]) => [k, stripCitations(v)]))
+      : rawPair.options,
+  };
   const id = `${idPrefix}_${index}`;
   const explanation = pair.explanation || undefined;
   const base = { id, content: pair.question, explanation, points: 1 };
