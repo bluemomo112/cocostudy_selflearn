@@ -99,6 +99,33 @@ export async function generateDocument(ctx: StudioContext, kind: DocKind): Promi
   return result.answer;
 }
 
+// ── timeline ─────────────────────────────────────────────────────────────
+
+export interface TimelineEvent {
+  year: string;
+  icon: string;
+  title: string;
+  description: string;
+}
+
+export async function generateTimeline(ctx: StudioContext): Promise<TimelineEvent[]> {
+  requireKb(ctx);
+  const { data } = await runOneShotJson<{ events?: TimelineEvent[] }>(
+    [
+      GROUNDING,
+      '请把学习资料里的知识或事件按发展顺序整理成一条时间线，6-8 个节点。year 写时间或阶段（如「1957 年」「第一步」），icon 用一个贴切的 emoji，description 不超过 40 字。',
+      focusLine(ctx.focus),
+      '只输出 JSON，不要其他内容：{"events":[{"year":"…","icon":"🌱","title":"…","description":"…"}]}',
+    ]
+      .filter(Boolean)
+      .join('\n'),
+    { knowledgeBases: ctx.knowledgeBases, signal: ctx.signal },
+  );
+  const events = (data.events ?? []).filter((e) => e?.title && e?.description);
+  if (events.length === 0) throw new Error('没有生成出时间线，请重试。');
+  return events;
+}
+
 // ── audio overview ───────────────────────────────────────────────────────
 
 export interface AudioChapter {
