@@ -66,6 +66,7 @@ import { getAgentPreset } from '../data/agentPresets';
 import { DeepTutorChat } from '../deeptutor/chatSession';
 import { isDeepTutorReady } from '../deeptutor/config';
 import { kbExists, kbNameForSpace, uploadFilesToKb, waitForKb } from '../deeptutor/knowledge';
+import { ensurePersona } from '../deeptutor/personas';
 import { LeftPanel } from './workbench/resource/LeftPanel';
 import { ChatPanel } from './workbench/chat/ChatPanel';
 import { RightPanel } from './workbench/workspace/RightPanel';
@@ -1571,12 +1572,20 @@ export default function SelfStudyWorkbench({
       }
     };
 
-    console.log('[sendViaDeepTutor] start', { deeptutorSessionId, knowledgeBases });
+    // 当前选中的 agent 预设对应 DeepTutor 的 persona（首次使用时在后端创建）
+    let persona: string | undefined;
+    try {
+      persona = await ensurePersona(currentAgentId);
+    } catch (error) {
+      console.warn('[sendViaDeepTutor] persona 不可用，使用默认人设:', error);
+    }
+
+    console.log('[sendViaDeepTutor] start', { deeptutorSessionId, knowledgeBases, persona });
     const toMessageSources = (list: Array<{ title: string; snippet: string; page?: string; score?: number; url?: string; type?: string }>) =>
       list.map(({ title, snippet, page, score, url, type }) => ({ title, snippet, page, score, url, type }));
     try {
       const result = await chat.runTurn(
-        { content: messageToSend, sessionId: deeptutorSessionId, knowledgeBases },
+        { content: messageToSend, sessionId: deeptutorSessionId, knowledgeBases, extra: persona ? { persona } : undefined },
         {
           onSession: (sid) => setDeeptutorSessionId(sid),
           onAnswer: (answer) => upsertAi({ content: answer, thinking: thinking || undefined }),
