@@ -10,3 +10,5 @@ quiz_example/
 docs/*
 !docs/prd-self-study-publish.md
 .claude/
+!docs/deeptutor-integration/
+!docs/deeptutor-integration/**
