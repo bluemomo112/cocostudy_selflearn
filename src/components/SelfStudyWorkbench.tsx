@@ -63,6 +63,8 @@ import { generateExplainQuestionDialogue, generateQuickReplyResponse } from '../
 import { WorkbenchHeader } from './workbench/header/WorkbenchHeader';
 import { AgentSwitcherModal } from './workbench/agent/AgentSwitcherModal';
 import { getAgentPreset } from '../data/agentPresets';
+import { DeepTutorChat } from '../deeptutor/chatSession';
+import { isDeepTutorReady } from '../deeptutor/config';
 import { LeftPanel } from './workbench/resource/LeftPanel';
 import { ChatPanel } from './workbench/chat/ChatPanel';
 import { RightPanel } from './workbench/workspace/RightPanel';
@@ -422,6 +424,9 @@ export default function SelfStudyWorkbench({
   const [attachments, setAttachments] = useState<Array<{ name: string; url: string; type: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const responseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const deeptutorChatRef = useRef<DeepTutorChat | null>(null);
+  const [deeptutorSessionId, setDeeptutorSessionId] = usePersistedState<string | null>(`self-study:wb:${config.id}:dtSession`, null);
+  useEffect(() => () => deeptutorChatRef.current?.dispose(), []);
   const [sessionId] = useState(`session_${Date.now()}`);
   const [flashingToolId, setFlashingToolId] = useState<string | null>(null);
   const [flashingButtonId, setFlashingButtonId] = useState<string | null>(null);
@@ -1471,6 +1476,60 @@ export default function SelfStudyWorkbench({
   };
 
   // 发送消息
+  // 通过 DeepTutor 后端回复：文字流式展示，推理过程存进 message.thinking
+  const sendViaDeepTutor = async (messageToSend: string, suggestions: ChatMessage['suggestions']) => {
+    if (!deeptutorChatRef.current) deeptutorChatRef.current = new DeepTutorChat();
+    const chat = deeptutorChatRef.current;
+
+    // 知识库接入前的临时做法：把学习资料原文拼进提问（界面上仍只显示学生的原话）
+    const resourceContext = config.resources
+      .filter((r) => r.textContent)
+      .map((r) => `【${r.title}】\n${r.textContent}`)
+      .join('\n\n')
+      .slice(0, 20000);
+    const content = resourceContext
+      ? `以下是本学习空间的学习资料，请以此为依据回答。\n\n${resourceContext}\n\n---\n学生的问题：${messageToSend}`
+      : messageToSend;
+
+    const aiMessageId = `msg_${Date.now()}_ai`;
+    let added = false;
+    let thinking = '';
+    const upsertAi = (patch: Partial<ChatMessage>) => {
+      if (!added) {
+        added = true;
+        setMessages((prev) => [...prev, { id: aiMessageId, role: 'assistant', content: '', timestamp: new Date(), suggestions, ...patch }]);
+      } else {
+        setMessages((prev) => prev.map((m) => (m.id === aiMessageId ? { ...m, ...patch } : m)));
+      }
+    };
+
+    console.log('[sendViaDeepTutor] start', { deeptutorSessionId, resourceContextLen: resourceContext.length });
+    try {
+      const result = await chat.runTurn(
+        { content, sessionId: deeptutorSessionId },
+        {
+          onSession: (sid) => setDeeptutorSessionId(sid),
+          onAnswer: (answer) => upsertAi({ content: answer, thinking: thinking || undefined }),
+          onThinking: (text) => {
+            thinking = text;
+            if (added) upsertAi({ thinking: text });
+          },
+        },
+      );
+      console.log('[sendViaDeepTutor] finished', { status: result.status, error: result.errorMessage, answerLen: result.answer.length });
+      if (result.answer) {
+        upsertAi({ content: result.answer, thinking: thinking || undefined });
+      } else if (result.status !== 'cancelled') {
+        upsertAi({ content: t('抱歉，AI 暂时无法回复，请稍后再试。'), thinking: thinking || undefined });
+      }
+    } catch (error) {
+      console.error('[sendViaDeepTutor] failed:', error);
+      upsertAi({ content: t('抱歉，AI 暂时无法回复，请稍后再试。') });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSendMessage = async (overrideMessage?: string) => {
     const messageToSend = overrideMessage ?? inputMessage;
     if (!messageToSend.trim() || isLoading) return;
@@ -1582,6 +1641,12 @@ export default function SelfStudyWorkbench({
       }
     }
 
+    // DeepTutor 在线就走它；否则回落到下面的 OneHub 通道
+    if (await isDeepTutorReady()) {
+      await sendViaDeepTutor(messageToSend, suggestions);
+      return;
+    }
+
     // 调用真实后端（OneHub gpt-5.6-luna），流式接收回复；把左侧学习资源原文一并发给后端
     try {
       const response = await fetch('/api/chat', {
@@ -1627,6 +1692,19 @@ export default function SelfStudyWorkbench({
   };
 
   const stopGenerating = () => {
+    const chat = deeptutorChatRef.current;
+    if (chat?.busy) {
+      console.log('[stopGenerating] cancelling DeepTutor turn');
+      void chat.cancel();
+      // 服务端迟迟不确认取消时，断开连接，避免界面卡在生成中
+      setTimeout(() => {
+        if (chat.busy) {
+          chat.dispose();
+          deeptutorChatRef.current = null;
+        }
+      }, 5000);
+      return;
+    }
     if (responseTimerRef.current) {
       clearTimeout(responseTimerRef.current);
       responseTimerRef.current = null;

@@ -492,7 +492,7 @@ export function ChatPanel(props: ChatPanelProps) {
             })}
 
             {/* 加载指示器 */}
-            {isLoading && (
+            {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
               <div className="flex gap-3">
                 <div className="w-8 h-8 rounded-full bg-primary-600 flex-shrink-0 flex items-center justify-center">
                   <Bot size={16} className="text-white" />
