@@ -49,7 +49,6 @@ interface LeftPanelProps {
   generatedTasks: any[];
   isGeneratingTask: boolean;
   aiGeneratedResources: any[];
-  mockAIResources: any[];
   examProcessingStep: ExamProcessingStep | null;
   messages: ChatMessage[];
   quickResult: QuickResultData | null;
@@ -98,7 +97,7 @@ export function LeftPanel(props: LeftPanelProps) {
   const {
     config, isLeftCollapsed, leftWidth, isStudentMode, isAIGenerating,
     collapsedPanels, completedTasks, expandedTask, taskDisplayMode,
-    inlineViewingResource, generatedTasks, isGeneratingTask, aiGeneratedResources, mockAIResources,
+    inlineViewingResource, generatedTasks, isGeneratingTask, aiGeneratedResources,
     examProcessingStep, messages, quickResult, taskStatus,
     settingsTaskId, settingsResourceId,
     getThemeClass, getAttemptCount,
@@ -250,24 +249,6 @@ export function LeftPanel(props: LeftPanelProps) {
                       </button>
                       );
                     })}
-                    {mockAIResources.map((resource) => {
-                      const IconComponent = getIconComponent(resource.iconName);
-                      return (
-                      <button
-                        key={resource.id}
-                        onClick={() => {
-                          onSetLeftCollapsed(false);
-                          setTimeout(() => onResourceClick(resource), 100);
-                        }}
-                        className="w-full px-3 py-3 hover:bg-purple-50 transition-colors flex flex-col items-center gap-1 group rounded-lg"
-                        title={resource.title}
-                      >
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <IconComponent size={18} className="text-purple-600" />
-                        </div>
-                      </button>
-                      );
-                    })}
                   </div>
 
                   {/* 任务图标 */}
@@ -388,9 +369,9 @@ export function LeftPanel(props: LeftPanelProps) {
                   <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
                     <FolderOpen size={16} className="text-gray-500" />
                     {t('学习资源')}
-                    {(config.resources.length + aiGeneratedResources.length + mockAIResources.length) > 0 && (
+                    {(config.resources.length + aiGeneratedResources.length) > 0 && (
                       <span className="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">
-                        {config.resources.length + aiGeneratedResources.length + mockAIResources.length}
+                        {config.resources.length + aiGeneratedResources.length}
                       </span>
                     )}
                   </h3>
@@ -480,12 +461,12 @@ export function LeftPanel(props: LeftPanelProps) {
                     <>
                       {/* 全选控制 */}
                       <div className="flex items-center justify-between px-4 py-2">
-                        <span className="text-xs text-gray-500">{config.resources.length + aiGeneratedResources.length + mockAIResources.length} {t('个来源')} · <span className="text-emerald-600">知识库可解析</span> / <span className="text-amber-600">仅可查看</span></span>
+                        <span className="text-xs text-gray-500">{config.resources.length + aiGeneratedResources.length} {t('个来源')} · <span className="text-emerald-600">知识库可解析</span> / <span className="text-amber-600">仅可查看</span></span>
                         <button
                           onClick={() => toggleAllResources()}
                           className="text-xs text-gray-600 hover:text-gray-800 font-medium px-2 py-1 rounded"
                         >
-                          {selectedResourceIds.size === [...config.resources, ...aiGeneratedResources, ...mockAIResources].filter(r => r.knowledgeBase !== 'unsupported').length ? t('取消全选') : t('全选')}
+                          {selectedResourceIds.size === [...config.resources, ...aiGeneratedResources].filter(r => r.knowledgeBase !== 'unsupported').length ? t('取消全选') : t('全选')}
                         </button>
                       </div>
 

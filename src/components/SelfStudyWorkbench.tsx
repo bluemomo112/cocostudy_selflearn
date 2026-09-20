@@ -6,7 +6,6 @@ import remarkGfm from 'remark-gfm';
 import { isEnabled } from '../config/version';
 import { SpaceConfig, LearningMode, LearningPathNode, LEARNING_MODE_CONFIG } from '../types/self-study';
 import { Resource, Task, TaskQuestion } from '../types/shared-context';
-import { mockResources, mockTasks } from '../data/mockLearningData';
 import {
   ArrowLeft, Send, Settings, BookOpen, Brain, Sparkles, FileText, Video,
   FileSpreadsheet, Plus, Upload, Link, GripVertical, X, Check, Zap, FileEdit,
@@ -80,6 +79,9 @@ import { Resizer } from './workbench/shared/Resizer';
 import { THEME, COLLAPSED_WIDTH } from './workbench/shared/constants';
 import { getIconComponent } from './workbench/shared/utils';
 import type { ChatMessage, Note, VoiceRecording, SelfStudyWorkbenchProps } from './workbench/shared/types';
+
+// AI 生成（或手动添加）到「学习任务」区的任务
+type GeneratedTask = Task & { status: 'available'; questionCount: number; generatedAt: Date };
 
 const MOCK_CURRENT_NODE = 'node_3';
 
@@ -272,13 +274,6 @@ export default function SelfStudyWorkbench({
     { id: 'node_5', title: t('综合应用与拓展'), status: 'pending', estimatedTime: 30 },
   ];
 
-  const MOCK_AI_RESOURCES = [
-    { id: 'ai_res_1', title: t('概念图解：核心原理可视化'), type: 'ai_generated', status: 'ready', iconName: 'ImageIcon' },
-    { id: 'ai_res_2', title: t('练习题：基础概念巩固'), type: 'ai_generated', status: 'ready', iconName: 'Pencil' },
-    { id: 'ai_res_3', title: t('知识卡片：公式速记'), type: 'ai_generated', status: 'generating', iconName: 'CreditCard' },
-    { id: 'ai_res_4', title: t('思维导图：知识结构'), type: 'ai_generated', status: 'pending', iconName: 'Workflow' },
-  ];
-
   const STUDIO_TOOLS = [
     // 资源生成类工具
     { id: 'audio_overview', label: t('音频概述'), iconName: 'Mic', description: t('生成音频摘要'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v1' as const },
@@ -299,13 +294,6 @@ export default function SelfStudyWorkbench({
     { id: 'interactive_simulation', label: t('互动模拟'), iconName: 'Activity', description: t('生成互动模拟实验'), status: 'ready' as const, type: 'interactive' as const, minVersion: 'v2' as const },
     { id: 'interactive_test', label: t('互动测试'), iconName: 'Target', description: t('生成互动测试'), status: 'ready' as const, type: 'interactive' as const, minVersion: 'v2' as const },
   ];
-
-  const MOCK_GENERATED_TASKS = mockTasks.map((task, idx) => ({
-    ...task,
-    status: 'available' as const,
-    questionCount: task.questions?.length || 0,
-    generatedAt: new Date(Date.now() - 1000 * 60 * (10 - idx * 2)),
-  }));
 
   // ─────────────────────────────────────────────────────────────
   // SECTION 2: State 定义
@@ -429,14 +417,14 @@ export default function SelfStudyWorkbench({
 
   // 资源和任务选中状态（默认全选）
   const [selectedResourceIds, setSelectedResourceIds] = useState<Set<string>>(() =>
-    new Set([...mockResources, ...config.resources].map(r => r.id))
+    new Set(config.resources.map(r => r.id))
   );
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(() =>
-    new Set([...mockTasks, ...config.tasks].map(t => t.id))
+    new Set(config.tasks.map(t => t.id))
   );
 
   const toggleResourceSelection = (id: string) => {
-    const resource = [...config.resources, ...mockResources, ...MOCK_AI_RESOURCES].find(r => r.id === id);
+    const resource = [...config.resources, ...aiGeneratedResources].find(r => r.id === id);
     if (resource && 'knowledgeBase' in resource && resource.knowledgeBase === 'unsupported') return;
     setSelectedResourceIds(prev => {
       const next = new Set(prev);
@@ -454,7 +442,7 @@ export default function SelfStudyWorkbench({
   };
 
   const toggleAllResources = () => {
-    const allIds = [...config.resources, ...aiGeneratedResources, ...MOCK_AI_RESOURCES]
+    const allIds = [...config.resources, ...aiGeneratedResources]
       .filter(r => !('knowledgeBase' in r) || r.knowledgeBase !== 'unsupported')
       .map(r => r.id);
     setSelectedResourceIds(prev => prev.size === allIds.length ? new Set() : new Set(allIds));
@@ -476,7 +464,7 @@ export default function SelfStudyWorkbench({
   });
 
   // 生成的任务列表（初始为空）
-  const [generatedTasks, setGeneratedTasks] = usePersistedState<typeof MOCK_GENERATED_TASKS>(`self-study:wb:${config.id}:generatedTasks`, []);
+  const [generatedTasks, setGeneratedTasks] = usePersistedState<GeneratedTask[]>(`self-study:wb:${config.id}:generatedTasks`, []);
   const [isGeneratingTask, setIsGeneratingTask] = useState(false);
   const [isReflectionDismissed, setIsReflectionDismissed] = useState(false);
 
@@ -508,7 +496,7 @@ export default function SelfStudyWorkbench({
   }, []);
 
   // 任务编辑弹窗
-  const [editingTask, setEditingTask] = useState<typeof MOCK_GENERATED_TASKS[0] | null>(null);
+  const [editingTask, setEditingTask] = useState<GeneratedTask | null>(null);
 
   // AI生成的资源列表
   const [aiGeneratedResources, setAiGeneratedResources] = usePersistedState<Array<{
@@ -773,23 +761,6 @@ export default function SelfStudyWorkbench({
       setRightTab('workspace');
     }
   }, [config.learningMode]);
-
-  // 监听 isAIGenerating 变化，自动展开任务面板并填充数据
-  useEffect(() => {
-    if (isAIGenerating && generatedTasks.length === 0) {
-      // 立即展开任务面板
-      setCollapsedPanels(prev => ({ ...prev, tasks: false }));
-      setIsGeneratingTask(true);
-
-      // 模拟AI生成过程，延迟后填充mock数据
-      const timer = setTimeout(() => {
-        setGeneratedTasks(MOCK_GENERATED_TASKS);
-        setIsGeneratingTask(false);
-      }, 2000); // 2秒后完成生成
-
-      return () => clearTimeout(timer);
-    }
-  }, [isAIGenerating, generatedTasks.length]);
 
   // ── [对话区] ChatPanel handlers ──────────────────────────────
 
@@ -2055,7 +2026,6 @@ export default function SelfStudyWorkbench({
           taskStatus={taskStatus}
           settingsTaskId={settingsTaskId}
           settingsResourceId={settingsResourceId}
-          mockAIResources={MOCK_AI_RESOURCES}
           selectedResourceIds={selectedResourceIds}
           selectedTaskIds={selectedTaskIds}
           getThemeClass={getThemeClass}
