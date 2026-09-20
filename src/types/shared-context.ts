@@ -33,6 +33,10 @@ export interface Resource {
   // 内容来源标记（用于区分教师发布内容和学生添加内容）
   source?: 'teacher' | 'student';
   knowledgeBase?: 'supported' | 'unsupported';
+  // DeepTutor 知识库入库状态：解析中 / 已可检索 / 失败
+  kbStatus?: 'indexing' | 'ready' | 'failed';
+  kbFile?: string;
+  kbError?: string;
 }
 
 export interface TaskQuestion {

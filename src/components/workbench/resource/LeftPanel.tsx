@@ -510,7 +510,7 @@ export function LeftPanel(props: LeftPanelProps) {
                               <span className="flex-shrink-0 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 border border-purple-200">
                                 AI
                               </span>
-                              {resource.knowledgeBase === 'supported' ? <span title="该资源可被解析进知识库，智能体可访问" className="flex-shrink-0 text-[10px] rounded-full bg-emerald-50 px-1.5 py-0.5 text-emerald-700">知识库</span> : resource.knowledgeBase === 'unsupported' ? <span title="该文件格式暂不支持知识库解析，智能体无法读取其内容，仅供查看" className="flex-shrink-0 text-[10px] rounded-full bg-amber-50 px-1.5 py-0.5 text-amber-700">仅查看</span> : null}
+                              {resource.kbStatus === 'indexing' ? <span title="正在解析进知识库，完成后智能体即可检索" className="flex-shrink-0 text-[10px] rounded-full bg-blue-50 px-1.5 py-0.5 text-blue-700">解析中…</span> : resource.kbStatus === 'failed' ? <span title={resource.kbError || '解析进知识库失败，智能体无法检索该资源'} className="flex-shrink-0 text-[10px] rounded-full bg-red-50 px-1.5 py-0.5 text-red-700">解析失败</span> : (resource.knowledgeBase === 'supported' || resource.kbStatus === 'ready') ? <span title="该资源可被解析进知识库，智能体可访问" className="flex-shrink-0 text-[10px] rounded-full bg-emerald-50 px-1.5 py-0.5 text-emerald-700">知识库</span> : resource.knowledgeBase === 'unsupported' ? <span title="该文件格式暂不支持知识库解析，智能体无法读取其内容，仅供查看" className="flex-shrink-0 text-[10px] rounded-full bg-amber-50 px-1.5 py-0.5 text-amber-700">仅查看</span> : null}
                             </div>
                           </div>
                           {resource.knowledgeBase !== 'unsupported' && (
@@ -552,7 +552,7 @@ export function LeftPanel(props: LeftPanelProps) {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 min-w-0"><p className="text-sm text-gray-800 truncate">{t(resource.title)}</p>{resource.knowledgeBase === 'supported' ? <span title="该资源可被解析进知识库，智能体可访问" className="flex-shrink-0 text-[10px] rounded-full bg-emerald-50 px-1.5 py-0.5 text-emerald-700">知识库</span> : resource.knowledgeBase === 'unsupported' ? <span title="该文件格式暂不支持知识库解析，智能体无法读取其内容，仅供查看" className="flex-shrink-0 text-[10px] rounded-full bg-amber-50 px-1.5 py-0.5 text-amber-700">仅查看</span> : null}</div>
+                            <div className="flex items-center gap-2 min-w-0"><p className="text-sm text-gray-800 truncate">{t(resource.title)}</p>{resource.kbStatus === 'indexing' ? <span title="正在解析进知识库，完成后智能体即可检索" className="flex-shrink-0 text-[10px] rounded-full bg-blue-50 px-1.5 py-0.5 text-blue-700">解析中…</span> : resource.kbStatus === 'failed' ? <span title={resource.kbError || '解析进知识库失败，智能体无法检索该资源'} className="flex-shrink-0 text-[10px] rounded-full bg-red-50 px-1.5 py-0.5 text-red-700">解析失败</span> : (resource.knowledgeBase === 'supported' || resource.kbStatus === 'ready') ? <span title="该资源可被解析进知识库，智能体可访问" className="flex-shrink-0 text-[10px] rounded-full bg-emerald-50 px-1.5 py-0.5 text-emerald-700">知识库</span> : resource.knowledgeBase === 'unsupported' ? <span title="该文件格式暂不支持知识库解析，智能体无法读取其内容，仅供查看" className="flex-shrink-0 text-[10px] rounded-full bg-amber-50 px-1.5 py-0.5 text-amber-700">仅查看</span> : null}</div>
                           </div>
                           {/* 资源可见性指示 + 设置按钮 */}
                           <div className="flex items-center gap-1 flex-shrink-0">

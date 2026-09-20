@@ -4,6 +4,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import AssistantResponse from '../../../deeptutor/components/AssistantResponse';
+import MessageSources from '../../../deeptutor/components/MessageSources';
 import { SpaceConfig, LearningMode, LearningPathNode } from '../../../types/self-study';
 import { Task } from '../../../types/shared-context';
 import { useLanguage } from '../../../contexts/LanguageContext';
@@ -302,6 +303,7 @@ export function ChatPanel(props: ChatPanelProps) {
                             isStreaming={isLoading && message.id === messages[messages.length - 1]?.id}
                             language="zh"
                           />
+                          <MessageSources sources={message.sources} toolCalls={message.toolCalls} />
                         </div>
                       ) : (
                         <div className="text-sm leading-relaxed text-white">

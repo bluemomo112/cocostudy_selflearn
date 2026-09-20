@@ -65,6 +65,7 @@ import { AgentSwitcherModal } from './workbench/agent/AgentSwitcherModal';
 import { getAgentPreset } from '../data/agentPresets';
 import { DeepTutorChat } from '../deeptutor/chatSession';
 import { isDeepTutorReady } from '../deeptutor/config';
+import { kbExists, kbNameForSpace, uploadFilesToKb, waitForKb } from '../deeptutor/knowledge';
 import { LeftPanel } from './workbench/resource/LeftPanel';
 import { ChatPanel } from './workbench/chat/ChatPanel';
 import { RightPanel } from './workbench/workspace/RightPanel';
@@ -165,8 +166,12 @@ export default function SelfStudyWorkbench({
     }
   }, [initialConfig]);
 
+  // 异步回调（知识库解析完成等）里要拿到最新的 config，而不是闭包里的旧值
+  const configRef = useRef(config);
+
   // 更新配置的包装函数
   const handleUpdateConfig = (newConfig: SpaceConfig) => {
+    configRef.current = newConfig;
     setConfig(newConfig);
     if (onUpdateConfig) {
       onUpdateConfig(newConfig);
@@ -174,6 +179,72 @@ export default function SelfStudyWorkbench({
     // 保存到 localStorage
     localStorage.setItem(`self-study:space:${newConfig.id}`, JSON.stringify(newConfig));
   };
+
+  // ── DeepTutor 知识库：每个学习空间一个库，资源上传后自动入库解析 ──
+  const kbName = kbNameForSpace(config.id);
+
+  const patchResources = (patches: Record<string, Partial<Resource>>) => {
+    const cur = configRef.current;
+    handleUpdateConfig({ ...cur, resources: cur.resources.map((r) => (patches[r.id] ? { ...r, ...patches[r.id] } : r)) });
+  };
+
+  // 文本类资源（粘贴的文本、自带 textContent 的资源）转成一个 .md 文件再入库
+  const textResourceToFile = (resource: Resource): File => {
+    const safeTitle = resource.title.replace(/[\\/:*?"<>|#%\r\n]+/g, ' ').trim().slice(0, 60) || 'resource';
+    return new File([resource.textContent ?? ''], `${safeTitle}.md`, { type: 'text/markdown' });
+  };
+
+  const syncResourcesToKb = async (items: Array<{ resource: Resource; file: File }>) => {
+    if (items.length === 0) return;
+    const ids = items.map((i) => i.resource.id);
+    if (!(await isDeepTutorReady())) {
+      console.warn('[kb] DeepTutor 不可用，跳过入库:', ids);
+      return;
+    }
+    console.log('[kb] 入库', kbName, items.map((i) => i.file.name));
+    patchResources(Object.fromEntries(ids.map((id) => [id, { kbStatus: 'indexing' as const, kbError: undefined }])));
+    try {
+      await uploadFilesToKb(kbName, items.map((i) => i.file));
+      await waitForKb(kbName);
+      patchResources(Object.fromEntries(items.map((i) => [i.resource.id, { kbStatus: 'ready' as const, kbFile: i.file.name }])));
+      console.log('[kb] 入库完成', kbName);
+    } catch (error) {
+      console.error('[kb] 入库失败:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      patchResources(Object.fromEntries(ids.map((id) => [id, { kbStatus: 'failed' as const, kbError: message }])));
+    }
+  };
+
+  // 进入空间时：核对知识库是否还在；补上还没入库的文本类资源；接着等上次没解析完的资源
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!(await isDeepTutorReady())) return;
+      const exists = await kbExists(kbName);
+      if (cancelled) return;
+      const cur = configRef.current;
+      if (!exists && cur.resources.some((r) => r.kbStatus)) {
+        // 库已被删除：忘掉旧的入库状态，文本类资源会在下面重新入库
+        patchResources(Object.fromEntries(cur.resources.filter((r) => r.kbStatus).map((r) => [r.id, { kbStatus: undefined, kbFile: undefined, kbError: undefined }])));
+      }
+      const latest = configRef.current.resources;
+      const pending = latest.filter((r) => r.textContent && r.knowledgeBase !== 'unsupported' && !r.kbStatus);
+      const indexing = exists ? latest.filter((r) => r.kbStatus === 'indexing' && !pending.includes(r)) : [];
+      if (indexing.length > 0) {
+        try {
+          await waitForKb(kbName);
+          patchResources(Object.fromEntries(indexing.map((r) => [r.id, { kbStatus: 'ready' as const }])));
+        } catch (error) {
+          patchResources(Object.fromEntries(indexing.map((r) => [r.id, { kbStatus: 'failed' as const, kbError: String(error) }])));
+        }
+      }
+      if (!cancelled) await syncResourcesToKb(pending.map((resource) => ({ resource, file: textResourceToFile(resource) })));
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.id]);
 
   // 主题色工具函数
   const getThemeClass = (type: 'bg' | 'bgHover' | 'text' | 'border' | 'icon'): string => {
@@ -1483,32 +1554,29 @@ export default function SelfStudyWorkbench({
     if (!deeptutorChatRef.current) deeptutorChatRef.current = new DeepTutorChat();
     const chat = deeptutorChatRef.current;
 
-    // 知识库接入前的临时做法：把学习资料原文拼进提问（界面上仍只显示学生的原话）
-    const resourceContext = config.resources
-      .filter((r) => r.textContent)
-      .map((r) => `【${r.title}】\n${r.textContent}`)
-      .join('\n\n')
-      .slice(0, 20000);
-    const content = resourceContext
-      ? `以下是本学习空间的学习资料，请以此为依据回答。\n\n${resourceContext}\n\n---\n学生的问题：${messageToSend}`
-      : messageToSend;
+    // 资源已解析进知识库的话，让智能体检索它并给出引用
+    const knowledgeBases = configRef.current.resources.some((r) => r.kbStatus === 'ready') ? [kbName] : [];
 
     const aiMessageId = `msg_${Date.now()}_ai`;
     let added = false;
     let thinking = '';
+    let toolCalls: ChatMessage['toolCalls'];
+    let sources: ChatMessage['sources'];
     const upsertAi = (patch: Partial<ChatMessage>) => {
       if (!added) {
         added = true;
-        setMessages((prev) => [...prev, { id: aiMessageId, role: 'assistant', content: '', timestamp: new Date(), suggestions, ...patch }]);
+        setMessages((prev) => [...prev, { id: aiMessageId, role: 'assistant', content: '', timestamp: new Date(), suggestions, toolCalls, sources, ...patch }]);
       } else {
         setMessages((prev) => prev.map((m) => (m.id === aiMessageId ? { ...m, ...patch } : m)));
       }
     };
 
-    console.log('[sendViaDeepTutor] start', { deeptutorSessionId, resourceContextLen: resourceContext.length });
+    console.log('[sendViaDeepTutor] start', { deeptutorSessionId, knowledgeBases });
+    const toMessageSources = (list: Array<{ title: string; snippet: string; page?: string; score?: number; url?: string; type?: string }>) =>
+      list.map(({ title, snippet, page, score, url, type }) => ({ title, snippet, page, score, url, type }));
     try {
       const result = await chat.runTurn(
-        { content, sessionId: deeptutorSessionId },
+        { content: messageToSend, sessionId: deeptutorSessionId, knowledgeBases },
         {
           onSession: (sid) => setDeeptutorSessionId(sid),
           onAnswer: (answer) => upsertAi({ content: answer, thinking: thinking || undefined }),
@@ -1516,9 +1584,18 @@ export default function SelfStudyWorkbench({
             thinking = text;
             if (added) upsertAi({ thinking: text });
           },
+          // 检索过程和引用来源在正文之前就会到达，先记下，正文开始时一并带上
+          onToolCalls: (calls) => {
+            toolCalls = calls;
+            if (added) upsertAi({ toolCalls: calls });
+          },
+          onSources: (list) => {
+            sources = toMessageSources(list);
+            if (added) upsertAi({ sources });
+          },
         },
       );
-      console.log('[sendViaDeepTutor] finished', { status: result.status, error: result.errorMessage, answerLen: result.answer.length });
+      console.log('[sendViaDeepTutor] finished', { status: result.status, error: result.errorMessage, answerLen: result.answer.length, sources: result.sources.length, toolCalls: result.toolCalls.length });
       if (result.answer) {
         upsertAi({ content: result.answer, thinking: thinking || undefined });
       } else if (result.status !== 'cancelled') {
@@ -1870,9 +1947,15 @@ export default function SelfStudyWorkbench({
       return { id: `upload_${Date.now()}_${index}`, title: file.name.replace(/\.[^/.]+$/, ''), type,
         fileType: (isPresentation ? ext : isVideo ? 'video' : isAudio ? 'audio' : isImage ? 'image' : ext) as Resource['fileType'],
         path: file.name, url: URL.createObjectURL(file), description: `上传的文件：${file.name}`,
-        knowledgeBase: ['pdf', 'docx', 'txt', 'md'].includes(ext) ? 'supported' : 'unsupported' };
+        knowledgeBase: ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt', 'md', 'csv', 'html'].includes(ext) ? 'supported' : 'unsupported' };
     });
     handleUpdateConfig({ ...config, resources: [...config.resources, ...uploadedResources] });
+    // 可解析的文件送进 DeepTutor 知识库（后台解析，完成后资源标签变为「知识库」）
+    void syncResourcesToKb(
+      uploadedResources
+        .map((resource, i) => ({ resource, file: files[i] }))
+        .filter(({ resource }) => resource.knowledgeBase === 'supported'),
+    );
     // 检测是否包含试卷文件
     const examFiles = files.filter(f => EXAM_PATTERN.test(f.name));
     if (examFiles.length > 0) {
@@ -2102,6 +2185,10 @@ export default function SelfStudyWorkbench({
       ...config,
       resources: [...config.resources, resource],
     });
+    // 粘贴的文本等带 textContent 的资源也入库，让智能体能检索到
+    if (resource.textContent && resource.knowledgeBase !== 'unsupported') {
+      void syncResourcesToKb([{ resource, file: textResourceToFile(resource) }]);
+    }
   };
 
   // 处理知识库导入 - 错题本

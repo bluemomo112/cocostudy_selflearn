@@ -23,6 +23,9 @@ export interface ChatMessage {
   attachments?: Array<{ name: string; url: string; type: string }>;
   // DeepTutor 返回的推理过程（助手消息）
   thinking?: string;
+  // DeepTutor 检索到的引用来源与工具调用（助手消息）
+  sources?: Array<{ title: string; snippet: string; page?: string; score?: number; url?: string; type?: string }>;
+  toolCalls?: Array<{ name: string; query?: string }>;
   // 消息类型
   messageType?: 'normal' | 'knowledge_checkpoint' | 'topic_transition' | 'resource_reference' | 'mode_transition';
   // 知识检查点

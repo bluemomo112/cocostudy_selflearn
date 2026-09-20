@@ -25,12 +25,34 @@ export interface TurnRequest {
   extra?: Partial<Omit<StartTurnMessage, 'type' | 'content'>>;
 }
 
+/** One retrieved passage DeepTutor cites (from `sources` events; RAG sources carry file title, snippet, page, score). */
+export interface TurnSource {
+  type: string;
+  title: string;
+  snippet: string;
+  page?: string;
+  score?: number;
+  url?: string;
+  kbName?: string;
+  chunkId?: string;
+}
+
+/** A tool the tutor ran during the turn (e.g. a knowledge-base retrieval and its query). */
+export interface TurnToolCall {
+  name: string;
+  query?: string;
+}
+
 export interface TurnCallbacks {
   onSession?(sessionId: string, turnId: string): void;
   /** Full answer text so far (narration rounds already removed). */
   onAnswer?(answer: string): void;
   /** Full reasoning text so far. */
   onThinking?(thinking: string): void;
+  /** Deduplicated citations so far. */
+  onSources?(sources: TurnSource[]): void;
+  /** Tool calls so far, in order. */
+  onToolCalls?(calls: TurnToolCall[]): void;
   /** Every stream event, plus the turn's events so far. */
   onEvent?(event: StreamEvent, events: StreamEvent[]): void;
 }
@@ -39,6 +61,8 @@ export interface TurnResult {
   status: TurnStatus;
   answer: string;
   thinking: string;
+  sources: TurnSource[];
+  toolCalls: TurnToolCall[];
   sessionId?: string;
   turnId?: string;
   errorMessage?: string;
@@ -50,6 +74,8 @@ interface ActiveTurn {
   events: StreamEvent[];
   answer: string;
   thinking: string;
+  sources: TurnSource[];
+  toolCalls: TurnToolCall[];
   sessionId?: string;
   turnId?: string;
   errorMessage?: string;
@@ -76,6 +102,8 @@ export class DeepTutorChat {
         events: [],
         answer: '',
         thinking: '',
+        sources: [],
+        toolCalls: [],
         settle: (result) => {
           if (this.active !== turn) return;
           this.active = null;
@@ -164,6 +192,33 @@ export class DeepTutorChat {
         turn.thinking += event.content;
         turn.callbacks.onThinking?.(turn.thinking);
         break;
+      case 'tool_call': {
+        const args = (event.metadata as { args?: { query?: unknown } }).args;
+        turn.toolCalls.push({ name: event.content, query: typeof args?.query === 'string' ? args.query : undefined });
+        turn.callbacks.onToolCalls?.([...turn.toolCalls]);
+        break;
+      }
+      case 'sources': {
+        const list = (event.metadata as { sources?: Array<Record<string, unknown>> }).sources ?? [];
+        for (const item of list) {
+          const chunkId = typeof item.chunk_id === 'string' ? item.chunk_id : undefined;
+          const title = String(item.title ?? item.url ?? '');
+          const snippet = String(item.content ?? '');
+          if (turn.sources.some((x) => (chunkId ? x.chunkId === chunkId : x.title === title && x.snippet === snippet))) continue;
+          turn.sources.push({
+            type: String(item.type ?? ''),
+            title,
+            snippet,
+            page: item.page ? String(item.page) : undefined,
+            score: typeof item.score === 'number' ? item.score : undefined,
+            url: typeof item.url === 'string' ? item.url : undefined,
+            kbName: typeof item.kb_name === 'string' ? item.kb_name : undefined,
+            chunkId,
+          });
+        }
+        turn.callbacks.onSources?.([...turn.sources]);
+        break;
+      }
       case 'error':
         turn.errorMessage = event.content || 'DeepTutor reported an error';
         console.warn(TAG, 'error event', event.content, event.metadata);
@@ -188,6 +243,8 @@ export class DeepTutorChat {
       status,
       answer: turn.answer,
       thinking: turn.thinking,
+      sources: turn.sources,
+      toolCalls: turn.toolCalls,
       sessionId: turn.sessionId,
       turnId: turn.turnId,
       errorMessage: errorMessage ?? turn.errorMessage,
