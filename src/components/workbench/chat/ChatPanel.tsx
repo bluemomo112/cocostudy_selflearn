@@ -5,6 +5,8 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import AssistantResponse from '../../../deeptutor/components/AssistantResponse';
 import MessageSources from '../../../deeptutor/components/MessageSources';
+import MasteryQuestionCard from '../../../deeptutor/components/MasteryQuestionCard';
+import AskUserCard from '../../../deeptutor/components/AskUserCard';
 import { SpaceConfig, LearningMode, LearningPathNode } from '../../../types/self-study';
 import { Task } from '../../../types/shared-context';
 import { useLanguage } from '../../../contexts/LanguageContext';
@@ -53,6 +55,8 @@ interface ChatPanelProps {
   onUpdateTaskState: (taskId: string, stateUpdate: any) => void;
   onSetReflectionDismissed: (dismissed: boolean) => void;
   onSaveToNote?: (messageContent: string) => void;
+  onMasteryAnswer?: (messageId: string, text: string) => void;
+  onAskUserReply?: (messageId: string, answers: Array<{ questionId: string; text: string }>) => void;
   renderKnowledgeCheckpoint?: (message: ChatMessage) => React.ReactNode;
   renderTopicTransition?: (message: ChatMessage) => React.ReactNode;
   renderModeTransition?: (message: ChatMessage) => React.ReactNode;
@@ -83,6 +87,8 @@ export function ChatPanel(props: ChatPanelProps) {
     onUpdateTaskState: updateTaskState,
     onSetReflectionDismissed: setIsReflectionDismissed,
     onSaveToNote,
+    onMasteryAnswer,
+    onAskUserReply,
     renderKnowledgeCheckpoint,
     renderTopicTransition,
     renderModeTransition,
@@ -302,6 +308,22 @@ export function ChatPanel(props: ChatPanelProps) {
                             language="zh"
                           />
                           <MessageSources sources={message.sources} toolCalls={message.toolCalls} />
+                          {message.masteryQuestion ? (
+                            <MasteryQuestionCard
+                              question={message.masteryQuestion}
+                              answered={message.masteryAnswer}
+                              grade={message.masteryGrade}
+                              disabled={isLoading}
+                              onAnswer={(text) => onMasteryAnswer?.(message.id, text)}
+                            />
+                          ) : null}
+                          {message.askUser ? (
+                            <AskUserCard
+                              payload={message.askUser.payload}
+                              answers={message.askUser.answers}
+                              onSubmit={(answers) => onAskUserReply?.(message.id, answers)}
+                            />
+                          ) : null}
                         </div>
                       ) : (
                         <div className="text-sm leading-relaxed text-white">

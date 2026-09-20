@@ -37,6 +37,21 @@ export interface TurnSource {
   chunkId?: string;
 }
 
+/** Questions the tutor pauses the turn for (`ask_user`); answer them with DeepTutorChat.submitUserReply. */
+export interface AskUserPayload {
+  intro?: string | null;
+  questions: Array<{
+    id: string;
+    prompt: string;
+    header?: string;
+    /** Options arrive as { label, description } objects (older builds sent plain strings). */
+    options?: Array<string | { label: string; description?: string }>;
+    multi_select?: boolean;
+    allow_free_text?: boolean;
+    placeholder?: string | null;
+  }>;
+}
+
 /** A tool the tutor ran during the turn (e.g. a knowledge-base retrieval and its query). */
 export interface TurnToolCall {
   name: string;
@@ -53,6 +68,8 @@ export interface TurnCallbacks {
   onSources?(sources: TurnSource[]): void;
   /** Tool calls so far, in order. */
   onToolCalls?(calls: TurnToolCall[]): void;
+  /** The turn is now waiting for the student's answers (see submitUserReply). */
+  onAskUser?(payload: AskUserPayload): void;
   /** Every stream event, plus the turn's events so far. */
   onEvent?(event: StreamEvent, events: StreamEvent[]): void;
 }
@@ -137,6 +154,14 @@ export class DeepTutorChat {
     return this.client.sendAwaitingAck({ type: 'cancel_turn', turn_id: turn.turnId });
   }
 
+  /** Answer the tutor's pending `ask_user` questions; the same turn then continues. Resolves whether the server accepted. */
+  async submitUserReply(answers: Array<{ questionId: string; text: string }>): Promise<boolean> {
+    const turn = this.active;
+    if (!turn?.turnId || !this.client) return false;
+    console.log(TAG, 'submit_user_reply', turn.turnId, answers.length);
+    return this.client.sendAwaitingAck({ type: 'submit_user_reply', turn_id: turn.turnId, answers });
+  }
+
   dispose(): void {
     this.client?.disconnect();
     this.client = null;
@@ -196,6 +221,14 @@ export class DeepTutorChat {
         const args = (event.metadata as { args?: { query?: unknown } }).args;
         turn.toolCalls.push({ name: event.content, query: typeof args?.query === 'string' ? args.query : undefined });
         turn.callbacks.onToolCalls?.([...turn.toolCalls]);
+        break;
+      }
+      case 'tool_result': {
+        const ask = (event.metadata as { tool_metadata?: { ask_user?: AskUserPayload } }).tool_metadata?.ask_user;
+        if (ask?.questions?.length) {
+          console.log(TAG, 'ask_user', ask.questions.map((q) => q.id));
+          turn.callbacks.onAskUser?.(ask);
+        }
         break;
       }
       case 'sources': {

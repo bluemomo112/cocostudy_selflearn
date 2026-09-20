@@ -61,6 +61,7 @@ import { DeepTutorChat } from '../deeptutor/chatSession';
 import { isDeepTutorReady } from '../deeptutor/config';
 import { kbExists, kbNameForSpace, uploadFilesToKb, waitForKb } from '../deeptutor/knowledge';
 import { ensurePersona } from '../deeptutor/personas';
+import { createMasteryPath, fetchMasteryMap, toLearningPath } from '../deeptutor/mastery';
 import { buildQuizAnalysisPrompt, generateQuestions, gradeObjective, isObjective, judgeSubjective } from '../deeptutor/quiz';
 import {
   generateAudioScript,
@@ -82,8 +83,6 @@ import type { ChatMessage, Note, VoiceRecording, SelfStudyWorkbenchProps } from 
 
 // AI 生成（或手动添加）到「学习任务」区的任务
 type GeneratedTask = Task & { status: 'available'; questionCount: number; generatedAt: Date };
-
-const MOCK_CURRENT_NODE = 'node_3';
 
 // ─────────────────────────────────────────────────────────────
 // 主组件
@@ -265,15 +264,6 @@ export default function SelfStudyWorkbench({
     return map[type] ?? '';
   };
 
-  // Mock data with translations
-  const MOCK_LEARNING_PATH: LearningPathNode[] = [
-    { id: 'node_1', title: t('基础概念与定义'), status: 'mastered', estimatedTime: 15 },
-    { id: 'node_2', title: t('核心原理解析'), status: 'mastered', estimatedTime: 20 },
-    { id: 'node_3', title: t('关键公式与推导'), status: 'learning', estimatedTime: 25 },
-    { id: 'node_4', title: t('典型例题分析'), status: 'pending', estimatedTime: 20 },
-    { id: 'node_5', title: t('综合应用与拓展'), status: 'pending', estimatedTime: 30 },
-  ];
-
   const STUDIO_TOOLS = [
     // 资源生成类工具
     { id: 'audio_overview', label: t('音频概述'), iconName: 'Mic', description: t('生成音频摘要'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v1' as const },
@@ -317,6 +307,10 @@ export default function SelfStudyWorkbench({
   const responseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deeptutorChatRef = useRef<DeepTutorChat | null>(null);
   const [deeptutorSessionId, setDeeptutorSessionId] = usePersistedState<string | null>(`self-study:wb:${config.id}:dtSession`, null);
+  // AI 引导模式：一条掌握度路径（DeepTutor mastery path）加它专属的会话
+  const [masteryPathId, setMasteryPathId] = usePersistedState<string | null>(`self-study:wb:${config.id}:masteryPathId`, null);
+  const [guidedSessionId, setGuidedSessionId] = usePersistedState<string | null>(`self-study:wb:${config.id}:dtSessionGuided`, null);
+  const masteryCreatingRef = useRef(false);
   useEffect(() => () => deeptutorChatRef.current?.dispose(), []);
   const [sessionId] = useState(`session_${Date.now()}`);
   const [flashingToolId, setFlashingToolId] = useState<string | null>(null);
@@ -372,8 +366,8 @@ export default function SelfStudyWorkbench({
   const [rightTab, setRightTab] = useState<'workspace' | 'status'>('workspace');
 
   // 学习路径状态
-  const [learningPath, setLearningPath] = usePersistedState<LearningPathNode[]>(`self-study:wb:${config.id}:learningPath`, MOCK_LEARNING_PATH);
-  const [currentNodeId, setCurrentNodeId] = usePersistedState<string>(`self-study:wb:${config.id}:currentNodeId`, MOCK_CURRENT_NODE);
+  const [learningPath, setLearningPath] = usePersistedState<LearningPathNode[]>(`self-study:wb:${config.id}:learningPath`, []);
+  const [currentNodeId, setCurrentNodeId] = usePersistedState<string>(`self-study:wb:${config.id}:currentNodeId`, '');
 
   // 设置弹窗
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -769,9 +763,61 @@ export default function SelfStudyWorkbench({
     void handleSendMessage(messageText);
   };
 
+  // ── 掌握度路径：学习路径面板显示的是 DeepTutor 的真实学习地图 ─────────────────
+  const refreshMastery = async (pathId: string | null = masteryPathId) => {
+    if (!pathId) return;
+    try {
+      const map = await fetchMasteryMap(pathId);
+      if (!map) {
+        // 路径已在 DeepTutor 里被删除：忘掉它，下次进入引导模式会重新创建
+        setMasteryPathId(null);
+        setGuidedSessionId(null);
+        setLearningPath([]);
+        setCurrentNodeId('');
+        return;
+      }
+      const { nodes, currentNodeId: nextNodeId } = toLearningPath(map);
+      setLearningPath(nodes);
+      setCurrentNodeId(nextNodeId);
+      console.log('[mastery] 学习地图', map.map.counts, 'next', map.next?.action);
+    } catch (error) {
+      console.warn('[mastery] 读取学习地图失败:', error);
+    }
+  };
+
+  const hasKbReady = config.resources.some((r) => r.kbStatus === 'ready');
+  useEffect(() => {
+    if (config.learningMode !== 'ai_guided') return;
+    (async () => {
+      if (!(await isDeepTutorReady())) return;
+      // hydrate 之前 state 还是 null，直接读存储，避免重复创建
+      const storedId = masteryPathId ?? loadFromStorage<string | null>(`self-study:wb:${config.id}:masteryPathId`, null);
+      if (storedId) {
+        await refreshMastery(storedId);
+        return;
+      }
+      if (!hasKbReady || masteryCreatingRef.current) return;
+      masteryCreatingRef.current = true;
+      try {
+        const id = await createMasteryPath({ name: config.title || '学习路径', goal: `学好「${config.title || '本空间'}」学习资料里的内容`, kbName, kbLabel: config.title || '学习资料' });
+        setMasteryPathId(id);
+        await refreshMastery(id);
+      } catch (error) {
+        console.error('[mastery] 创建学习路径失败:', error);
+      } finally {
+        masteryCreatingRef.current = false;
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.learningMode, hasKbReady, masteryPathId]);
+
   // 发送消息
   // 通过 DeepTutor 后端回复：文字流式展示，推理过程存进 message.thinking
-  const sendViaDeepTutor = async (messageToSend: string, suggestions: ChatMessage['suggestions']) => {
+  const sendViaDeepTutor = async (
+    messageToSend: string,
+    suggestions: ChatMessage['suggestions'],
+    mastery?: { answer?: { question_id: string; text: string }; questionMessageId?: string },
+  ) => {
     if (!deeptutorChatRef.current) deeptutorChatRef.current = new DeepTutorChat();
     const chat = deeptutorChatRef.current;
 
@@ -783,6 +829,8 @@ export default function SelfStudyWorkbench({
     let thinking = '';
     let toolCalls: ChatMessage['toolCalls'];
     let sources: ChatMessage['sources'];
+    let masteryQuestion: ChatMessage['masteryQuestion'];
+    let askedUser = false;
     const upsertAi = (patch: Partial<ChatMessage>) => {
       if (!added) {
         added = true;
@@ -800,14 +848,25 @@ export default function SelfStudyWorkbench({
       console.warn('[sendViaDeepTutor] persona 不可用，使用默认人设:', error);
     }
 
-    console.log('[sendViaDeepTutor] start', { deeptutorSessionId, knowledgeBases, persona });
+    // AI 引导模式且已有掌握度路径：对话绑定到这条路径，导师会出检查题、判分并更新学习地图
+    const guided = config.learningMode === 'ai_guided' && !!masteryPathId;
+    const sessionId = guided ? guidedSessionId : deeptutorSessionId;
+    const extra: Record<string, unknown> = { ...(persona ? { persona } : {}) };
+    if (guided) {
+      extra.workspace_mode = 'mastery_path';
+      extra.mastery_path_id = masteryPathId;
+      extra.mastery_session_mode = 'study';
+      if (mastery?.answer) extra.mastery_answer = mastery.answer;
+    }
+
+    console.log('[sendViaDeepTutor] start', { sessionId, guided, knowledgeBases, persona });
     const toMessageSources = (list: Array<{ title: string; snippet: string; page?: string; score?: number; url?: string; type?: string }>) =>
       list.map(({ title, snippet, page, score, url, type }) => ({ title, snippet, page, score, url, type }));
     try {
       const result = await chat.runTurn(
-        { content: messageToSend, sessionId: deeptutorSessionId, knowledgeBases, extra: persona ? { persona } : undefined },
+        { content: messageToSend, sessionId, knowledgeBases, extra: Object.keys(extra).length ? (extra as any) : undefined },
         {
-          onSession: (sid) => setDeeptutorSessionId(sid),
+          onSession: (sid) => (guided ? setGuidedSessionId(sid) : setDeeptutorSessionId(sid)),
           onAnswer: (answer) => upsertAi({ content: answer, thinking: thinking || undefined }),
           onThinking: (text) => {
             thinking = text;
@@ -822,12 +881,30 @@ export default function SelfStudyWorkbench({
             sources = toMessageSources(list);
             if (added) upsertAi({ sources });
           },
+          // 导师暂停回合向学生提问（如学习前的摸底）：渲染成卡片，学生提交后同一个回合继续
+          onAskUser: (payload) => {
+            askedUser = true;
+            upsertAi({ askUser: { payload } });
+          },
+          // 掌握度路径的工具结果：检查题（渲染成卡片）和上一题的判分
+          onEvent: (event) => {
+            if (event.type !== 'tool_result') return;
+            const toolMeta = (event.metadata as { tool_metadata?: { mastery_question?: ChatMessage['masteryQuestion']; mastery_grade?: { result?: ChatMessage['masteryGrade'] } } }).tool_metadata;
+            if (toolMeta?.mastery_question) {
+              masteryQuestion = toolMeta.mastery_question;
+              upsertAi({ masteryQuestion });
+            }
+            const grade = toolMeta?.mastery_grade?.result;
+            if (grade && mastery?.questionMessageId) {
+              setMessages((prev) => prev.map((m) => (m.id === mastery.questionMessageId ? { ...m, masteryGrade: grade } : m)));
+            }
+          },
         },
       );
       console.log('[sendViaDeepTutor] finished', { status: result.status, error: result.errorMessage, answerLen: result.answer.length, sources: result.sources.length, toolCalls: result.toolCalls.length });
       if (result.answer) {
         upsertAi({ content: result.answer, thinking: thinking || undefined });
-      } else if (result.status !== 'cancelled') {
+      } else if (result.status !== 'cancelled' && !masteryQuestion && !askedUser) {
         upsertAi({ content: t('抱歉，AI 暂时无法回复，请稍后再试。'), thinking: thinking || undefined });
       }
     } catch (error) {
@@ -835,7 +912,32 @@ export default function SelfStudyWorkbench({
       upsertAi({ content: t('抱歉，AI 暂时无法回复，请稍后再试。') });
     } finally {
       setIsLoading(false);
+      if (guided) void refreshMastery();
     }
+  };
+
+  // 学生回答导师暂停回合时提的问题：答案发回同一个回合，导师接着往下讲
+  const handleAskUserReply = async (messageId: string, answers: Array<{ questionId: string; text: string }>) => {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === messageId && m.askUser ? { ...m, askUser: { ...m.askUser, answers: Object.fromEntries(answers.map((a) => [a.questionId, a.text])) } } : m)),
+    );
+    const accepted = await deeptutorChatRef.current?.submitUserReply(answers);
+    if (!accepted) {
+      setMessages((prev) => [...prev, { id: `msg_${Date.now()}_stale`, role: 'assistant', content: '这个问题已经失效了（可能后端重启过）。请重新发一条消息继续。', timestamp: new Date() }]);
+      setIsLoading(false);
+    }
+  };
+
+  // 学生回答导师的掌握度检查题：把作答发回 DeepTutor，由它判分并更新学习地图
+  const handleMasteryAnswer = (messageId: string, text: string) => {
+    const question = messages.find((m) => m.id === messageId)?.masteryQuestion;
+    if (!question || isLoading) return;
+    setMessages((prev) => [
+      ...prev.map((m) => (m.id === messageId ? { ...m, masteryAnswer: text } : m)),
+      { id: `msg_${Date.now()}`, role: 'user', content: text, timestamp: new Date() },
+    ]);
+    setIsLoading(true);
+    void sendViaDeepTutor(text, undefined, { answer: { question_id: question.question_id, text }, questionMessageId: messageId });
   };
 
   const handleSendMessage = async (overrideMessage?: string) => {
@@ -2099,6 +2201,8 @@ export default function SelfStudyWorkbench({
           onModeChange={handleModeChange}
           onToggleVoiceInput={toggleVoiceInput}
           onStopGenerating={stopGenerating}
+          onMasteryAnswer={handleMasteryAnswer}
+          onAskUserReply={handleAskUserReply}
           onTaskClick={handleTaskClick}
           onCloseTask={closeTask}
           onToggleTaskCompletion={toggleTaskCompletion}

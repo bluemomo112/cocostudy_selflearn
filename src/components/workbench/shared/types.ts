@@ -26,6 +26,12 @@ export interface ChatMessage {
   // DeepTutor 检索到的引用来源与工具调用（助手消息）
   sources?: Array<{ title: string; snippet: string; page?: string; score?: number; url?: string; type?: string }>;
   toolCalls?: Array<{ name: string; query?: string }>;
+  // 掌握度路径：导师出的检查题、学生的作答和判分结果
+  masteryQuestion?: import('../../../deeptutor/mastery').MasteryQuestion;
+  masteryAnswer?: string;
+  masteryGrade?: import('../../../deeptutor/mastery').MasteryGrade;
+  // 导师暂停回合向学生提的问题（如学习前的摸底），以及学生提交的回答
+  askUser?: { payload: import('../../../deeptutor/chatSession').AskUserPayload; answers?: Record<string, string> };
   // 消息类型
   messageType?: 'normal' | 'knowledge_checkpoint' | 'topic_transition' | 'resource_reference' | 'mode_transition';
   // 知识检查点
