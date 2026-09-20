@@ -25,7 +25,6 @@ type FeatureFlags = {
   settingsButton: boolean;       // 3.4 设置按钮
   dataAnalysisButton: boolean;   // 3.6 数据分析按钮
   languageSwitch: boolean;       // 3.7 语言切换
-  demoSelector: boolean;         // 3.8 Demo 场景选择器
 
   // 左栏 - 资源
   linkInputModal: boolean;       // 4.6-4.7 添加链接弹窗
@@ -46,7 +45,6 @@ type FeatureFlags = {
   // 对话
   voiceInput: boolean;           // 5.3 语音输入
   actionButtons: boolean;        // 5.5 功能卡片按钮（Studio 工具）
-  demoActionCards: boolean;      // 5.6 Demo 场景操作卡片
   resourceRefCards: boolean;     // 5.7 资源引用卡片
   knowledgeCheckpoint: boolean;  // 5.8 知识检查点
   topicTransition: boolean;      // 5.9 主题过渡卡片
@@ -93,7 +91,6 @@ type FeatureFlags = {
   // 其他
   aiLoadingSkeleton: boolean;    // 11.3 AI 生成加载动画
   learningModeSwitch: boolean;   // 11.4 学习模式切换
-  demoSystem: boolean;           // 11.8 Demo 场景系统
 };
 
 const VERSION_FLAGS: Record<Version, FeatureFlags> = {
@@ -111,7 +108,6 @@ const VERSION_FLAGS: Record<Version, FeatureFlags> = {
     settingsButton: true,
     dataAnalysisButton: false,
     languageSwitch: true,
-    demoSelector: false,
 
     linkInputModal: false,
     resourceVisibilitySettings: false,
@@ -128,7 +124,6 @@ const VERSION_FLAGS: Record<Version, FeatureFlags> = {
 
     voiceInput: true,
     actionButtons: false,
-    demoActionCards: false,
     resourceRefCards: false,
     knowledgeCheckpoint: false,
     topicTransition: false,
@@ -169,7 +164,6 @@ const VERSION_FLAGS: Record<Version, FeatureFlags> = {
 
     aiLoadingSkeleton: false,
     learningModeSwitch: false,
-    demoSystem: false,
   },
   v2: {
     onboarding: false,
@@ -185,7 +179,6 @@ const VERSION_FLAGS: Record<Version, FeatureFlags> = {
     settingsButton: true,
     dataAnalysisButton: false,
     languageSwitch: true,
-    demoSelector: false,
 
     linkInputModal: true,
     resourceVisibilitySettings: true,
@@ -202,7 +195,6 @@ const VERSION_FLAGS: Record<Version, FeatureFlags> = {
 
     voiceInput: false,
     actionButtons: true,
-    demoActionCards: false,
     resourceRefCards: true,
     knowledgeCheckpoint: false,
     topicTransition: false,
@@ -243,7 +235,6 @@ const VERSION_FLAGS: Record<Version, FeatureFlags> = {
 
     aiLoadingSkeleton: true,
     learningModeSwitch: false,
-    demoSystem: false,
   },
   v3: {
     onboarding: false,
@@ -259,7 +250,6 @@ const VERSION_FLAGS: Record<Version, FeatureFlags> = {
     settingsButton: true,
     dataAnalysisButton: true,
     languageSwitch: true,
-    demoSelector: false,
 
     linkInputModal: true,
     resourceVisibilitySettings: true,
@@ -276,7 +266,6 @@ const VERSION_FLAGS: Record<Version, FeatureFlags> = {
 
     voiceInput: true,
     actionButtons: true,
-    demoActionCards: false,
     resourceRefCards: true,
     knowledgeCheckpoint: true,
     topicTransition: true,
@@ -317,7 +306,6 @@ const VERSION_FLAGS: Record<Version, FeatureFlags> = {
 
     aiLoadingSkeleton: true,
     learningModeSwitch: true,
-    demoSystem: false,
   },
   v4: {
     onboarding: true,
@@ -333,7 +321,6 @@ const VERSION_FLAGS: Record<Version, FeatureFlags> = {
     settingsButton: true,
     dataAnalysisButton: true,
     languageSwitch: true,
-    demoSelector: true,
 
     linkInputModal: true,
     resourceVisibilitySettings: true,
@@ -350,7 +337,6 @@ const VERSION_FLAGS: Record<Version, FeatureFlags> = {
 
     voiceInput: true,
     actionButtons: true,
-    demoActionCards: true,
     resourceRefCards: true,
     knowledgeCheckpoint: true,
     topicTransition: true,
@@ -391,7 +377,6 @@ const VERSION_FLAGS: Record<Version, FeatureFlags> = {
 
     aiLoadingSkeleton: true,
     learningModeSwitch: true,
-    demoSystem: true,
   },
 };
 

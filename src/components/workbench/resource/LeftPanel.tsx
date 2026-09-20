@@ -65,7 +65,6 @@ interface LeftPanelProps {
   onLinkInputOpen: () => void;
   onKnowledgeBaseOpen: () => void;
   onTaskClick: (task: Task) => void;
-  onGenerateTest: () => void;
   onRedoTask: (task: any) => void;
   onSaveResourceVisibility: (resourceId: string, visibility: ResourceVisibility) => void;
   onSaveTaskSettings: (taskId: string, settings: TaskSettings) => void;
@@ -105,7 +104,7 @@ export function LeftPanel(props: LeftPanelProps) {
     getThemeClass, getAttemptCount,
     onSetLeftCollapsed, onTogglePanel, onResourceClick,
     onFileUploadOpen, onLinkInputOpen, onKnowledgeBaseOpen,
-    onTaskClick, onGenerateTest, onRedoTask,
+    onTaskClick, onRedoTask,
     onSaveResourceVisibility, onSaveTaskSettings,
     onSetSettingsTaskId, onSetSettingsResourceId,
     onSetInlineViewingResource,

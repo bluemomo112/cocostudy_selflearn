@@ -7,13 +7,11 @@ import { isEnabled } from '../config/version';
 import { SpaceConfig, LearningMode, LearningPathNode, LEARNING_MODE_CONFIG } from '../types/self-study';
 import { Resource, Task, TaskQuestion } from '../types/shared-context';
 import { mockResources, mockTasks } from '../data/mockLearningData';
-import { findScenarioById, findScenarioByTrigger, getScenariosByCategory } from '../data/demoScenarios';
-import type { DemoScenario, DemoStep } from '../data/demoScenarios';
 import {
   ArrowLeft, Send, Settings, BookOpen, Brain, Sparkles, FileText, Video,
   FileSpreadsheet, Plus, Upload, Link, GripVertical, X, Check, Zap, FileEdit,
-  Activity, Pencil, Save, Target, Lightbulb, MessageCircle, Clock, FolderOpen,
-  ListChecks, ChevronRight, ChevronLeft, Play, Download, Eye, Search, BarChart3, Map,
+  Activity, Pencil, Save, Target, MessageCircle, Clock, FolderOpen,
+  ListChecks, ChevronRight, ChevronLeft, Play, Download, Eye, BarChart3,
   CheckCircle2, Circle, Bot, MessageSquare, Pause, RotateCcw, GitBranch,
   Edit, Image as ImageIcon, Mic, Trash2, Layers, Award, TrendingUp,
   ChevronDown, ChevronUp, Layout, Share2, AlertCircle, Globe, Database,
@@ -275,44 +273,6 @@ export default function SelfStudyWorkbench({
     { id: 'ai_res_4', title: t('思维导图：知识结构'), type: 'ai_generated', status: 'pending', iconName: 'Workflow' },
   ];
 
-  const MOCK_AI_OBSERVATIONS = [
-    {
-      id: 'obs_1',
-      type: 'praise' as const,
-      icon: '🌟',
-      message: t('你对基础概念的理解非常扎实，能够准确地用自己的话解释核心原理。'),
-      timestamp: new Date(Date.now() - 1000 * 60 * 15),
-    },
-    {
-      id: 'obs_2',
-      type: 'suggestion' as const,
-      icon: '💡',
-      message: t('建议在推导公式时多画图辅助理解，这样可以更直观地把握变量之间的关系。'),
-      timestamp: new Date(Date.now() - 1000 * 60 * 5),
-    },
-    {
-      id: 'obs_3',
-      type: 'insight' as const,
-      icon: '🔍',
-      message: t('你倾向于先理解整体框架再深入细节，这是一种很好的学习策略。'),
-      timestamp: new Date(Date.now() - 1000 * 60 * 2),
-    },
-  ];
-
-  const SELF_DIRECTED_QUICK_ACTIONS = [
-    { id: 'search', label: t('搜索概念'), icon: Search, color: 'primary' },
-    { id: 'summarize', label: t('总结要点'), icon: FileText, color: 'emerald' },
-    { id: 'example', label: t('举个例子'), icon: Lightbulb, color: 'amber' },
-    { id: 'generate_quiz', label: t('生成测试'), icon: Zap, color: 'purple' },
-  ];
-
-  const AI_GUIDED_QUICK_ACTIONS = [
-    { id: 'quiz', label: t('考考我'), icon: Zap, color: 'amber' },
-    { id: 'next', label: t('下一知识点'), icon: ChevronRight, color: 'emerald' },
-    { id: 'path', label: t('查看路径'), icon: Map, color: 'primary' },
-    { id: 'hint', label: t('给我提示'), icon: Lightbulb, color: 'purple' },
-  ];
-
   const STUDIO_TOOLS = [
     // 资源生成类工具
     { id: 'audio_overview', label: t('音频概述'), iconName: 'Mic', description: t('生成音频摘要'), status: 'ready' as const, type: 'resource' as const, minVersion: 'v1' as const },
@@ -340,141 +300,6 @@ export default function SelfStudyWorkbench({
     questionCount: task.questions?.length || 0,
     generatedAt: new Date(Date.now() - 1000 * 60 * (10 - idx * 2)),
   }));
-
-  // Mock 对话数据 - 模拟从自由探索到 AI 引导的完整流程
-  const MOCK_SELF_DIRECTED_MESSAGES: ChatMessage[] = [
-    // 1. AI 欢迎（待命风格）
-    {
-      id: 'mock_sd_1',
-      role: 'assistant',
-      content: `${t('你好！👋 欢迎来到「')}${config.title}${t('」的学习空间！')}\n\n${t('我是你的AI学习助手，在这里我会**待命**，等你有问题时随时帮助你。')}\n\n📚 **${t('学习建议')}**：\n1. ${t('左侧是你的学习资料，可以自由浏览')}\n2. ${t('有任何疑问随时在这里问我')}\n3. ${t('右侧可以记录你的学习笔记')}\n\n${t('开始你的探索之旅吧！有什么想了解的？')}`,
-      timestamp: new Date(Date.now() - 1000 * 60 * 30),
-    },
-    // 2. 用户问"植物工厂是什么？"
-    {
-      id: 'mock_sd_2',
-      role: 'user',
-      content: t('植物工厂是什么？跟普通温室有什么区别？'),
-      timestamp: new Date(Date.now() - 1000 * 60 * 28),
-    },
-    // 3. AI 解释 + 资源引用
-    {
-      id: 'mock_sd_3',
-      role: 'assistant',
-      content: `${t('好问题！让我来帮你梳理一下。')}\n\n**${t('植物工厂')}** ${t('是一种完全封闭的室内农业系统，通过人工精确控制光照、温度、湿度、CO₂浓度和营养液等环境因素，实现作物的高效生产。')}\n\n| ${t('对比维度')} | ${t('植物工厂')} | ${t('普通温室')} |\n|---------|---------|--------|\n| ${t('环境控制')} | ${t('完全人工控制')} | ${t('半自然+辅助调控')} |\n| ${t('光源')} | LED${t('人工光')} | ${t('自然光为主')} |\n| ${t('种植方式')} | ${t('水培/气雾培')} | ${t('土培为主')} |\n| ${t('产量')} | ${t('极高（多层立体）')} | ${t('中等')} |\n| ${t('能耗')} | ${t('较高')} | ${t('较低')} |\n\n${t('简单来说，植物工厂就像是给植物建了一个"太空舱"，一切条件都可以精确调控。')}`,
-      timestamp: new Date(Date.now() - 1000 * 60 * 27),
-      messageType: 'resource_reference',
-      resourceRef: {
-        resourceId: 'res_1',
-        resourceTitle: t('认识植物工厂学生手册'),
-        excerpt: t('第一章：植物工厂概述与发展历程'),
-      },
-    },
-    // 4. 用户追问水培
-    {
-      id: 'mock_sd_4',
-      role: 'user',
-      content: t('水培技术听起来很有意思，植物没有土壤怎么活？'),
-      timestamp: new Date(Date.now() - 1000 * 60 * 22),
-    },
-    // 5. AI 解释水培原理 + 资源引用
-    {
-      id: 'mock_sd_5',
-      role: 'assistant',
-      content: `${t('这个问题问得好！其实植物需要的不是"土壤"本身，而是土壤中的**水分**和**矿物质营养**。')}\n\n🌱 **${t('水培的核心原理')}**：\n\n${t('把植物需要的营养元素（氮、磷、钾、钙等16种必需元素）溶解在水中，配制成**营养液**，直接供给植物根系。')}\n\n**${t('三种常见水培方式')}**：\n1. **NFT（${t('薄膜技术')}）**：${t('营养液像薄膜一样流过根系')}\n2. **DFT（${t('深液流技术')}）**：${t('根系浸泡在营养液中')}\n3. **${t('气雾培')}**：${t('将营养液雾化喷洒到根系上')}\n\n${t('水培植物的根系通常更发达、更白净，因为它们可以直接高效地吸收养分。')}`,
-      timestamp: new Date(Date.now() - 1000 * 60 * 20),
-      messageType: 'resource_reference',
-      resourceRef: {
-        resourceId: 'res_2',
-        resourceTitle: t('水培植物工厂学生手册'),
-        excerpt: t('第三章：无土栽培技术详解'),
-      },
-    },
-    // 6. 用户追问营养液
-    {
-      id: 'mock_sd_6',
-      role: 'user',
-      content: t('那营养液的配方是怎么确定的？'),
-      timestamp: new Date(Date.now() - 1000 * 60 * 15),
-    },
-  ];
-
-  const MOCK_AI_GUIDED_EXTRA_MESSAGES: ChatMessage[] = [
-    // 7. 模式切换卡片
-    {
-      id: 'mock_ag_7',
-      role: 'assistant',
-      content: t('好的，让我来带你学习！我会根据你之前的探索情况，从当前进度继续引导。'),
-      timestamp: new Date(Date.now() - 1000 * 60 * 14),
-      messageType: 'mode_transition',
-      modeTransition: {
-        fromMode: 'self_directed',
-        toMode: 'ai_guided',
-      },
-    },
-    // 8. AI 总结已学内容 + 学习路径
-    {
-      id: 'mock_ag_8',
-      role: 'assistant',
-      content: `📊 **${t('学习进度总结')}**\n\n${t('根据你刚才的探索，你已经涉及了以下知识点：')}\n- ✅ ${t('植物工厂的基本概念与定义')}\n- ✅ ${t('植物工厂 vs 传统温室的区别')}\n- ✅ ${t('水培技术的基本原理')}\n\n🗺️ **${t('接下来的学习路径')}**：\n1. 📍 ${t('核心原理解析')}（LED${t('光谱控制')}）← ${t('当前')}\n2. ⬜ ${t('关键公式与推导')}\n3. ⬜ ${t('典型例题分析')}\n4. ⬜ ${t('综合应用与拓展')}\n\n${t('让我们从 LED 光谱控制开始吧！')}`,
-      timestamp: new Date(Date.now() - 1000 * 60 * 13),
-    },
-    // 9. AI 教知识点
-    {
-      id: 'mock_ag_9',
-      role: 'assistant',
-      content: `📍 **${t('核心原理解析：LED 光谱控制')}**\n\n${t('在植物工厂中，LED 灯不只是"照亮"植物，而是通过精确控制**光谱组成**来调控植物生长。')}\n\n🔴 **${t('红光')}（620-780nm）**：${t('促进开花结果、茎伸长')}\n🔵 **${t('蓝光')}（400-500nm）**：${t('促进叶片生长、气孔开放')}\n🟢 **${t('绿光')}（500-565nm）**：${t('穿透冠层，促进下层叶片光合作用')}\n\n💡 **${t('关键概念')}**：\n${t('不同生长阶段需要不同的红蓝光比例：')}\n- ${t('育苗期')}：${t('红:蓝 = 1:1（促进健壮生长）')}\n- ${t('营养生长期')}：${t('红:蓝 = 3:1（促进叶片扩展）')}\n- ${t('开花结果期')}：${t('红:蓝 = 5:1（促进开花）')}\n\n${t('理解了吗？让我来检查一下你的掌握情况。')}`,
-      timestamp: new Date(Date.now() - 1000 * 60 * 11),
-    },
-    // 10. 知识检查点（已答对）
-    {
-      id: 'mock_ag_10',
-      role: 'assistant',
-      content: '',
-      timestamp: new Date(Date.now() - 1000 * 60 * 9),
-      messageType: 'knowledge_checkpoint',
-      checkpoint: {
-        question: t('在植物工厂中，哪种光谱主要促进植物的叶片生长和气孔开放？'),
-        options: [t('红光（620-780nm）'), t('蓝光（400-500nm）'), t('绿光（500-565nm）'), t('紫外光（<400nm）')],
-        correctAnswer: t('蓝光（400-500nm）'),
-        userAnswer: t('蓝光（400-500nm）'),
-        status: 'correct',
-        explanation: t('蓝光（400-500nm）主要促进叶片的营养生长和气孔开放，是植物营养生长阶段的关键光谱。'),
-        relatedNodeId: 'node_2',
-      },
-    },
-    // 11. 主题过渡卡片
-    {
-      id: 'mock_ag_11',
-      role: 'assistant',
-      content: '',
-      timestamp: new Date(Date.now() - 1000 * 60 * 7),
-      messageType: 'topic_transition',
-      transition: {
-        fromTopic: t('核心原理解析'),
-        toTopic: t('关键公式与推导'),
-        fromNodeId: 'node_2',
-        toNodeId: 'node_3',
-        summary: t('你已经掌握了 LED 光谱控制的基本原理，包括红蓝绿光的作用和不同生长阶段的配比。'),
-      },
-    },
-    // 12. 待回答的检查点
-    {
-      id: 'mock_ag_12',
-      role: 'assistant',
-      content: '',
-      timestamp: new Date(Date.now() - 1000 * 60 * 5),
-      messageType: 'knowledge_checkpoint',
-      checkpoint: {
-        question: t('植物工厂中，营养液的 EC 值（电导率）主要反映了什么？'),
-        options: [t('营养液的温度'), t('营养液中离子的总浓度'), t('营养液的酸碱度'), t('营养液的溶氧量')],
-        correctAnswer: t('营养液中离子的总浓度'),
-        status: 'pending',
-        explanation: t('EC 值（Electrical Conductivity）即电导率，反映的是营养液中溶解离子的总浓度。EC 值越高，说明营养液中的矿物质含量越多。'),
-        relatedNodeId: 'node_3',
-      },
-    },
-  ];
 
   // ─────────────────────────────────────────────────────────────
   // SECTION 2: State 定义
@@ -596,19 +421,6 @@ export default function SelfStudyWorkbench({
   // 笔记信息配置弹窗
   const [showNoteInfoModal, setShowNoteInfoModal] = useState(false);
 
-  // 演示模式状态（统一引擎）
-  const [activeScenario, setActiveScenario] = useState<DemoScenario | null>(null);
-  const [demoScenarioStep, setDemoScenarioStep] = useState(0);
-  const demoQuizTaskIdRef = useRef<string | null>(null);
-  const [savedNormalState, setSavedNormalState] = useState<{
-    messages: ChatMessage[];
-    learningMode: LearningMode;
-    learningPath: LearningPathNode[];
-    resources: Resource[];
-    tasks: Task[];
-    completedTasks: string[];
-  } | null>(null);
-
   // 资源和任务选中状态（默认全选）
   const [selectedResourceIds, setSelectedResourceIds] = useState<Set<string>>(() =>
     new Set([...mockResources, ...config.resources].map(r => r.id))
@@ -728,80 +540,6 @@ export default function SelfStudyWorkbench({
   // 子 section 标注各自归属的面板
   // ─────────────────────────────────────────────────────────────
 
-  // [演示模式] 统一入口：启动场景
-  const startScenario = (scenarioId: string) => {
-    const scenario = findScenarioById(scenarioId);
-    if (!scenario) return;
-
-    // 首次进入演示模式时，保存当前状态
-    if (!activeScenario) {
-      setSavedNormalState({
-        messages,
-        learningMode: config.learningMode,
-        learningPath,
-        resources: config.resources,
-        tasks: config.tasks,
-        completedTasks: completedTasksArray,
-      });
-    }
-
-    // 重置步进状态
-    setActiveScenario(scenario);
-    setDemoScenarioStep(0);
-
-    // 播放 step 0（AI 主动发言）
-    const step0 = scenario.steps[0];
-    if (step0 && step0.prefilledInput === null) {
-      const welcomeMsg: ChatMessage = {
-        id: `demo_ai_0_${Date.now()}`,
-        role: 'assistant',
-        content: step0.aiResponse,
-        timestamp: new Date(),
-        actionCards: step0.actionCards,
-      };
-      setMessages(prev => [...prev, welcomeMsg]);
-      executeDemoInjects(step0);
-
-      // 准备下一步
-      const nextStep = scenario.steps[1];
-      if (nextStep?.prefilledInput) {
-        setTimeout(() => setInputMessage(nextStep.prefilledInput!), 300);
-      }
-      setDemoScenarioStep(1);
-    }
-  };
-
-  // [演示模式] 执行步骤的注入副作用
-  const executeDemoInjects = (step: DemoStep) => {
-    if (step.injectTask) {
-      setGeneratedTasks(prev => [step.injectTask as any, ...prev]);
-    }
-    if (step.injectResources) {
-      handleUpdateConfig({
-        ...config,
-        resources: [...config.resources, ...step.injectResources],
-      });
-    }
-  };
-
-  // [演示模式] 退出演示模式
-  const exitDemoMode = () => {
-    if (savedNormalState) {
-      setMessages(savedNormalState.messages);
-      setLearningPath(savedNormalState.learningPath);
-      setCompletedTasksArray(savedNormalState.completedTasks);
-      handleUpdateConfig({
-        ...config,
-        learningMode: savedNormalState.learningMode,
-        resources: savedNormalState.resources,
-        tasks: savedNormalState.tasks,
-      });
-    }
-    setActiveScenario(null);
-    setDemoScenarioStep(0);
-    setSavedNormalState(null);
-  };
-
   // [资源/任务] 统一的资源点击处理 - 所有资源默认全屏打开
   const handleResourceClick = (resource: Resource | typeof aiGeneratedResources[0]) => {
     // 所有资源统一打开全屏 modal
@@ -819,17 +557,6 @@ export default function SelfStudyWorkbench({
       fileType: 'fileType' in resource ? resource.fileType : undefined,
       knowledgeBase: 'knowledgeBase' in resource ? resource.knowledgeBase : undefined,
       } as any);
-  };
-
-  // 生成测试任务
-  const handleGenerateTest = () => {
-    setIsGeneratingTask(true);
-    // 模拟生成过程
-    setTimeout(() => {
-      setGeneratedTasks(MOCK_GENERATED_TASKS);
-      setCollapsedPanels(prev => ({ ...prev, tasks: false })); // 展开任务区域
-      setIsGeneratingTask(false);
-    }, 1500);
   };
 
   // [左侧面板] Studio 工具点击处理
@@ -1131,9 +858,6 @@ export default function SelfStudyWorkbench({
           const pickedQuestions = [...pickedObjective, ...pickedSubjective];
 
           const newTaskId = `gen_task_${Date.now()}`;
-          if (tool.id === 'quiz') {
-            demoQuizTaskIdRef.current = newTaskId;
-          }
           const newTask = {
             id: newTaskId,
             type: 'quiz' as const,
@@ -1336,219 +1060,6 @@ export default function SelfStudyWorkbench({
     }, 1200);
   };
 
-  // 演示劇本發送（統一步進引擎）
-  const handleDemoSend = () => {
-    if (!activeScenario) return;
-    const currentStep = activeScenario.steps[demoScenarioStep];
-    if (!currentStep) return;
-
-    const userMsg: ChatMessage = {
-      id: `demo_user_${Date.now()}`,
-      role: 'user',
-      content: inputMessage,
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, userMsg]);
-    setInputMessage('');
-    setIsLoading(true);
-
-    setTimeout(() => {
-      const aiMsg: ChatMessage = {
-        id: `demo_ai_${demoScenarioStep}_${Date.now()}`,
-        role: 'assistant',
-        content: currentStep.aiResponse,
-        timestamp: new Date(),
-        actionCards: currentStep.actionCards,
-      };
-      setMessages(prev => [...prev, aiMsg]);
-      setIsLoading(false);
-      executeDemoInjects(currentStep);
-
-      const nextStepIndex = demoScenarioStep + 1;
-      if (nextStepIndex >= activeScenario.steps.length) {
-        // 场景结束，但保持演示模式（用户可手动退出）
-        setDemoScenarioStep(nextStepIndex);
-        return;
-      }
-
-      const nextStep = activeScenario.steps[nextStepIndex];
-      if (nextStep.prefilledInput === null) {
-        // 下一步是 AI 主动发言，自动播放
-        setTimeout(() => {
-          const autoMsg: ChatMessage = {
-            id: `demo_ai_${nextStepIndex}_${Date.now()}`,
-            role: 'assistant',
-            content: nextStep.aiResponse,
-            timestamp: new Date(),
-            actionCards: nextStep.actionCards,
-          };
-          setMessages(prev => [...prev, autoMsg]);
-          executeDemoInjects(nextStep);
-
-          const afterAutoIndex = nextStepIndex + 1;
-          setDemoScenarioStep(afterAutoIndex);
-          const afterAutoStep = activeScenario.steps[afterAutoIndex];
-          if (afterAutoStep?.prefilledInput) {
-            setTimeout(() => setInputMessage(afterAutoStep.prefilledInput!), 300);
-          }
-        }, 1200);
-        setDemoScenarioStep(nextStepIndex);
-      } else {
-        // 下一步需要用户输入，预填
-        setTimeout(() => setInputMessage(nextStep.prefilledInput!), 300);
-        setDemoScenarioStep(nextStepIndex);
-      }
-    }, 1200);
-  };
-
-  // 演示劇本操作卡片點擊處理
-  const handleDemoCardAction = (action: string, payload?: string) => {
-    // ── 1. 执行 action 对应的 UI 操作 ──
-    switch (action) {
-      case 'open_panel':
-        if (payload === 'resources' || payload === 'sources') {
-          setCollapsedPanels(prev => ({ ...prev, sources: false, aiResources: false }));
-        } else if (payload === 'tasks') {
-          setRightTab('workspace');
-          setCollapsedPanels(prev => ({ ...prev, tasks: false }));
-        } else if (payload === 'notes') {
-          setRightTab('workspace');
-        } else if (payload === 'log') {
-          setRightTab('status');
-        }
-        break;
-      case 'navigate':
-        if (payload) {
-          const resource = config.resources.find(r => r.id === payload);
-          if (resource) {
-            setViewingResource({
-              id: resource.id,
-              title: resource.title,
-              type: resource.type,
-              description: resource.description,
-            });
-          }
-        }
-        break;
-      case 'open_resource':
-        if (payload) {
-          const res = config.resources.find(r => r.id === payload);
-          if (res) {
-            setViewingResource({
-              id: res.id,
-              title: res.title,
-              type: res.type,
-              description: res.description,
-            });
-          }
-        }
-        break;
-      case 'open_note':
-        setRightTab('workspace');
-        break;
-      case 'generate_mindmap': {
-        const mindMapTool = STUDIO_TOOLS.find(t => t.id === 'mind_map');
-        if (mindMapTool) handleStudioToolClick(mindMapTool);
-        break;
-      }
-      case 'start_quiz':
-        setRightTab('workspace');
-        setCollapsedPanels(prev => ({ ...prev, tasks: false }));
-        break;
-      case 'upload_file':
-        setIsFileUploadOpen(true);
-        break;
-      case 'dismiss':
-        exitDemoMode();
-        return; // dismiss 不推进步骤
-    }
-
-    // ── 2. 推进演示到下一步 ──
-    if (!activeScenario || demoScenarioStep >= activeScenario.steps.length) return;
-
-    const nextStep = activeScenario.steps[demoScenarioStep];
-    if (!nextStep) return;
-
-    if (nextStep.prefilledInput !== null) {
-      // 下一步需要用户输入 → 预填并自动发送
-      setInputMessage(nextStep.prefilledInput);
-      setTimeout(() => {
-        const userMsg: ChatMessage = {
-          id: `demo_user_${Date.now()}`,
-          role: 'user',
-          content: nextStep.prefilledInput!,
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, userMsg]);
-        setInputMessage('');
-        setIsLoading(true);
-
-        setTimeout(() => {
-          const aiMsg: ChatMessage = {
-            id: `demo_ai_${demoScenarioStep}_${Date.now()}`,
-            role: 'assistant',
-            content: nextStep.aiResponse,
-            timestamp: new Date(),
-            actionCards: nextStep.actionCards,
-          };
-          setMessages(prev => [...prev, aiMsg]);
-          setIsLoading(false);
-          executeDemoInjects(nextStep);
-
-          const afterIndex = demoScenarioStep + 1;
-          setDemoScenarioStep(afterIndex);
-
-          // 如果下下步也是 AI 主动发言，继续自动播放
-          const afterStep = activeScenario.steps[afterIndex];
-          if (afterStep?.prefilledInput === null) {
-            setTimeout(() => {
-              const autoMsg: ChatMessage = {
-                id: `demo_ai_${afterIndex}_${Date.now()}`,
-                role: 'assistant',
-                content: afterStep.aiResponse,
-                timestamp: new Date(),
-                actionCards: afterStep.actionCards,
-              };
-              setMessages(prev => [...prev, autoMsg]);
-              executeDemoInjects(afterStep);
-              setDemoScenarioStep(afterIndex + 1);
-
-              const nextNext = activeScenario.steps[afterIndex + 1];
-              if (nextNext?.prefilledInput) {
-                setTimeout(() => setInputMessage(nextNext.prefilledInput!), 300);
-              }
-            }, 1200);
-          } else if (afterStep?.prefilledInput) {
-            setTimeout(() => setInputMessage(afterStep.prefilledInput!), 300);
-          }
-        }, 1200);
-      }, 400);
-    } else {
-      // 下一步是 AI 主动发言 → 直接播放
-      setIsLoading(true);
-      setTimeout(() => {
-        const aiMsg: ChatMessage = {
-          id: `demo_ai_${demoScenarioStep}_${Date.now()}`,
-          role: 'assistant',
-          content: nextStep.aiResponse,
-          timestamp: new Date(),
-          actionCards: nextStep.actionCards,
-        };
-        setMessages(prev => [...prev, aiMsg]);
-        setIsLoading(false);
-        executeDemoInjects(nextStep);
-
-        const afterIndex = demoScenarioStep + 1;
-        setDemoScenarioStep(afterIndex);
-
-        const afterStep = activeScenario.steps[afterIndex];
-        if (afterStep?.prefilledInput) {
-          setTimeout(() => setInputMessage(afterStep.prefilledInput!), 300);
-        }
-      }, 800);
-    }
-  };
-
   // 发送消息
   // 通过 DeepTutor 后端回复：文字流式展示，推理过程存进 message.thinking
   const sendViaDeepTutor = async (messageToSend: string, suggestions: ChatMessage['suggestions']) => {
@@ -1621,11 +1132,6 @@ export default function SelfStudyWorkbench({
   const handleSendMessage = async (overrideMessage?: string) => {
     const messageToSend = overrideMessage ?? inputMessage;
     if (!messageToSend.trim() || isLoading) return;
-
-    if (!overrideMessage && activeScenario && demoScenarioStep < activeScenario.steps.length) {
-      handleDemoSend();
-      return;
-    }
 
     const userMessage: ChatMessage = {
       id: `msg_${Date.now()}`,
@@ -1970,18 +1476,10 @@ export default function SelfStudyWorkbench({
     if (examFiles.length > 0) {
       console.log('[ExamDetect] 检测到试卷文件:', examFiles.map(f => f.name));
       setExamDetectedFiles(examFiles);
-      // 非试卷文件正常处理
-      const normalFiles = files.filter(f => !EXAM_PATTERN.test(f.name));
-      if (normalFiles.length > 0) {
-        // 场景 A：任意文件上传 → 统一上传分析场景
-        startScenario('upload_and_analyze');
-      }
       setIsFileUploadOpen(false);
       return;
     }
 
-    // 场景 A：任意文件上传 → 统一上传分析场景
-    startScenario('upload_and_analyze');
     setIsFileUploadOpen(false);
   };
 
@@ -1999,9 +1497,6 @@ export default function SelfStudyWorkbench({
     setTimeout(() => setExamProcessingStep('converting'), 2500);
     setTimeout(() => {
       setExamProcessingStep('done');
-
-      // 场景路由：统一使用上传分析场景
-      startScenario('upload_and_analyze');
 
       // 清除进度
       setTimeout(() => {
@@ -2203,14 +1698,12 @@ export default function SelfStudyWorkbench({
   // 处理知识库导入 - 错题本
   const handleKnowledgeBaseImport = (errorQuestions: ErrorQuestion[]) => {
     console.log('[Demo] 知识库导入：错题本');
-    startScenario('knowledge_import');
     setShowKnowledgeBaseModal(false);
   };
 
   // 处理知识库导入 - 历史测验
   const handleHistoricalTestImport = (testRecord: HistoricalTest) => {
     console.log('[Demo] 知识库导入：历史测验');
-    startScenario('knowledge_import');
     setShowKnowledgeBaseModal(false);
   };
 
@@ -2605,15 +2098,6 @@ export default function SelfStudyWorkbench({
           return [...prev, { taskId, attempts: [newAttempt] }];
         });
 
-        // 演示劇本測驗：跳過 AI 分析，直接啟動對話劇本
-        if (demoQuizTaskIdRef.current === taskId) {
-          setTimeout(() => {
-            const quizScenario = findScenarioByTrigger('onQuizComplete');
-            if (quizScenario) {
-              startScenario(quizScenario.id);
-            }
-          }, 2000);
-        } else {
         // 添加loading消息到对话区
         const loadingMessage: ChatMessage = {
           id: `msg_${Date.now()}_loading`,
@@ -2693,7 +2177,6 @@ export default function SelfStudyWorkbench({
             });
           }
         }, 500); // 短暂延迟，让用户看到快速判题结果
-        } // end else (non-demo)
       }
       // 处理主观题（assignment/reflection）
       else if (data.taskType === 'assignment' || data.taskType === 'reflection') {
@@ -2937,8 +2420,6 @@ export default function SelfStudyWorkbench({
             isStudentMode={isStudentMode}
             isEditingTitle={isEditingTitle}
             editedTitle={editedTitle}
-            demoMode={!!activeScenario}
-            currentScenario={activeScenario?.id || null}
             onBack={onBack}
             onTitleEdit={() => setIsEditingTitle(true)}
             onTitleSave={handleTitleSave}
@@ -2948,8 +2429,6 @@ export default function SelfStudyWorkbench({
             onPublishOpen={() => setShowNoteInfoModal(true)}
             onViewAnalytics={handleViewAnalytics}
             onNoteInfoOpen={() => setShowNoteInfoModal(true)}
-            onLoadScenario={startScenario}
-            onExitDemoMode={exitDemoMode}
             currentAgentName={getAgentPreset(currentAgentId).name}
             onAgentSwitchOpen={() => setIsAgentSwitcherOpen(true)}
           />
@@ -2988,7 +2467,6 @@ export default function SelfStudyWorkbench({
           onLinkInputOpen={() => setIsLinkInputOpen(true)}
           onKnowledgeBaseOpen={() => setShowKnowledgeBaseModal(true)}
           onTaskClick={handleTaskClick}
-          onGenerateTest={handleGenerateTest}
           onRedoTask={handleRedoTask}
           onSaveResourceVisibility={handleSaveResourceVisibility}
           onSaveTaskSettings={handleSaveTaskSettings}
@@ -3048,7 +2526,6 @@ export default function SelfStudyWorkbench({
           onAttachmentsChange={setAttachments}
           onQuickReply={handleQuickReply}
           onChatAction={handleChatAction}
-          onDemoCardAction={handleDemoCardAction}
           onModeChange={handleModeChange}
           onToggleVoiceInput={toggleVoiceInput}
           onStopGenerating={stopGenerating}

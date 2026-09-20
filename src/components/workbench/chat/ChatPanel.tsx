@@ -14,7 +14,7 @@ import { getIconComponent } from '../shared/utils';
 import { QuickResultData } from '../../task/taskTypes';
 import {
   Send, Bot, Brain, Sparkles, MessageSquare, Mic, X, Check,
-  ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Activity,
+  ChevronLeft, ChevronDown, ChevronUp, Activity,
   Pencil, BookOpen, Target, Lightbulb, MessageCircle, Clock,
   ListChecks, CheckCircle2, Circle, Eye, Play, Zap, FileText,
   AlertCircle, RotateCcw, Pause, GitBranch, Copy,
@@ -43,7 +43,6 @@ interface ChatPanelProps {
   onAttachmentsChange: (attachments: Array<{ name: string; url: string; type: string }>) => void;
   onQuickReply: (reply: string, replyId?: string) => void;
   onChatAction: (actionId: string, studioToolId: string) => void;
-  onDemoCardAction?: (action: string, payload?: string) => void;
   onModeChange: (mode: LearningMode) => void;
   onToggleVoiceInput: () => void;
   onStopGenerating: () => void;
@@ -74,7 +73,6 @@ export function ChatPanel(props: ChatPanelProps) {
     onAttachmentsChange: setAttachments,
     onQuickReply: handleQuickReply,
     onChatAction: handleChatAction,
-    onDemoCardAction,
     onModeChange: handleModeChange,
     onToggleVoiceInput: toggleVoiceInput,
     onStopGenerating: stopGenerating,
@@ -372,28 +370,6 @@ export function ChatPanel(props: ChatPanelProps) {
                               </div>
                             );
                           })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Demo scenario action cards */}
-                    {isEnabled('demoActionCards') && message.role === 'assistant' && message.actionCards && message.actionCards.length > 0 && (
-                      <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
-                        <div className="flex flex-col gap-2">
-                          {message.actionCards.map((card, idx) => (
-                            <div
-                              key={idx}
-                              onClick={() => onDemoCardAction?.(card.action, card.actionPayload)}
-                              className="flex items-center gap-3 p-2.5 rounded-lg border border-gray-200 bg-white hover:border-primary-300 hover:bg-primary-50 cursor-pointer transition-all"
-                            >
-                              <span className="text-xl flex-shrink-0">{card.icon}</span>
-                              <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium text-gray-700">{t(card.title)}</div>
-                                <div className="text-xs text-gray-400 truncate">{t(card.subtitle)}</div>
-                              </div>
-                              <ChevronRight size={14} className="text-gray-400 flex-shrink-0" />
-                            </div>
-                          ))}
                         </div>
                       </div>
                     )}

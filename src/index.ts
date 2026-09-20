@@ -37,7 +37,6 @@ export type { ChatMessage, SelfStudyWorkbenchProps } from './components/workbenc
 // Data
 export * from './data/mockLearningData';
 export * from './data/mockKnowledgeBase';
-export * from './data/demoScenarios';
 
 // Contexts
 export { LanguageProvider, useLanguage } from './contexts/LanguageContext';

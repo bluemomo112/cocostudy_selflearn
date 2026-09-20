@@ -4,7 +4,6 @@ import { SpaceConfig } from '../../../types/self-study';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { ArrowLeft, Brain, Pencil, Check, X, Settings, Share2, BarChart3, UserCog } from 'lucide-react';
 import LanguageSwitch from '../../LanguageSwitch';
-import { getScenariosByCategory } from '../../../data/demoScenarios';
 import { isEnabled } from '../../../config/version';
 
 interface WorkbenchHeaderProps {
@@ -12,8 +11,6 @@ interface WorkbenchHeaderProps {
   isStudentMode: boolean;
   isEditingTitle: boolean;
   editedTitle: string;
-  demoMode?: boolean;
-  currentScenario?: string | null;
   onBack?: () => void;
   onTitleEdit: () => void;
   onTitleSave: () => void;
@@ -23,8 +20,6 @@ interface WorkbenchHeaderProps {
   onPublishOpen: () => void;
   onViewAnalytics: () => void;
   onNoteInfoOpen: () => void;
-  onLoadScenario?: (scenarioId: string) => void;
-  onExitDemoMode?: () => void;
   onStudentComplete?: () => void;
   currentAgentName?: string;
   onAgentSwitchOpen?: () => void;
@@ -35,8 +30,6 @@ export function WorkbenchHeader({
   isStudentMode,
   isEditingTitle,
   editedTitle,
-  demoMode = false,
-  currentScenario = null,
   onBack,
   onTitleEdit,
   onTitleSave,
@@ -46,8 +39,6 @@ export function WorkbenchHeader({
   onPublishOpen,
   onViewAnalytics,
   onNoteInfoOpen,
-  onLoadScenario,
-  onExitDemoMode,
   onStudentComplete,
   currentAgentName,
   onAgentSwitchOpen,
@@ -118,43 +109,6 @@ export function WorkbenchHeader({
             )}
           </div>
         </div>
-
-        {/* 中间：场景选择器（演示模式） */}
-        {isEnabled('demoSelector') && !isStudentMode && onLoadScenario && (
-          <div className="flex items-center gap-3">
-            {demoMode && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg">
-                <span className="text-xs font-medium text-amber-700">{t('演示模式')}</span>
-                {onExitDemoMode && (
-                  <button
-                    onClick={onExitDemoMode}
-                    className="text-xs text-amber-600 hover:text-amber-800 underline"
-                  >
-                    {t('退出')}
-                  </button>
-                )}
-              </div>
-            )}
-            <select
-              value={currentScenario || ''}
-              onChange={(e) => e.target.value && onLoadScenario(e.target.value)}
-              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white hover:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors"
-            >
-              <option value="">{t('选择演示场景')}</option>
-              {getScenariosByCategory().map(({ category, scenarios }) =>
-                scenarios.length > 0 ? (
-                  <optgroup key={category.id} label={t(category.label)}>
-                    {scenarios.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {t(s.name)}
-                      </option>
-                    ))}
-                  </optgroup>
-                ) : null
-              )}
-            </select>
-          </div>
-        )}
 
         <div className="flex items-center gap-2">
           {/* AI 学习搭档切换 - 仅学生模式显示 */}
