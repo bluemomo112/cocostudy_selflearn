@@ -8,7 +8,7 @@ import {
   ChevronDown, ChevronUp, BookOpen, Clock, RefreshCw, HelpCircle,
   Rocket, Star, Trophy, type LucideIcon
 } from 'lucide-react';
-import { mockLearningLog, LOG_ENTRY_CONFIG, type LogEntryType } from '../../../data/mockLearningLogData';
+import { LOG_ENTRY_CONFIG, type LearningLogEntry, type LogEntryType } from '../../../data/learningLog';
 
 // Lucide icon mapping per log type — replaces emoji for visual consistency
 const LOG_TYPE_ICON: Record<LogEntryType, LucideIcon> = {
@@ -62,12 +62,14 @@ interface LearningStatusPanelProps {
   elapsedTime: number;
   learningMode: LearningMode;
   learningPath: LearningPathNode[];
+  logEntries: LearningLogEntry[];
 }
 
 export function LearningStatusPanel({
   elapsedTime,
   learningMode,
   learningPath,
+  logEntries,
 }: LearningStatusPanelProps) {
   const { t } = useLanguage();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -82,7 +84,7 @@ export function LearningStatusPanel({
 
   // 5.2 折叠摘要数据
   const elapsedMins = Math.floor(elapsedTime / 60);
-  const hasLearningData = totalCount > 0 || mockLearningLog.length > 0 || elapsedTime > 0;
+  const hasLearningData = totalCount > 0 || logEntries.length > 0 || elapsedTime > 0;
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -223,14 +225,14 @@ export function LearningStatusPanel({
                 <div className="flex items-center gap-2 mb-3">
                   <Clock size={14} className="text-gray-500" />
                   <span className="text-xs font-bold text-gray-700">{t('学习日志')}</span>
-                  <span className="text-xs text-gray-400 ml-auto">{mockLearningLog.length} {t('条记录')}</span>
+                  <span className="text-xs text-gray-400 ml-auto">{logEntries.length} {t('条记录')}</span>
                 </div>
 
                 <div className="relative pl-6 space-y-3">
                   {/* vertical timeline line */}
                   <div className="absolute left-[9px] top-1 bottom-1 w-px bg-gray-200" />
 
-                  {mockLearningLog.map((log) => {
+                  {logEntries.map((log) => {
                     const cfg = LOG_ENTRY_CONFIG[log.type];
                     const Icon = LOG_TYPE_ICON[log.type];
                     const isMilestone = log.type === 'milestone';

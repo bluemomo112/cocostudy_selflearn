@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { isEnabled } from '../config/version';
@@ -61,6 +61,7 @@ import { DeepTutorChat } from '../deeptutor/chatSession';
 import { isDeepTutorReady } from '../deeptutor/config';
 import { kbExists, kbNameForSpace, uploadFilesToKb, waitForKb } from '../deeptutor/knowledge';
 import { ensurePersona } from '../deeptutor/personas';
+import type { LearningLogEntry } from '../data/learningLog';
 import { createMasteryPath, fetchMasteryMap, toLearningPath } from '../deeptutor/mastery';
 import { buildQuizAnalysisPrompt, generateQuestions, gradeObjective, isObjective, judgeSubjective } from '../deeptutor/quiz';
 import {
@@ -762,6 +763,34 @@ export default function SelfStudyWorkbench({
   const handleQuickReply = (messageText: string, _replyId?: string) => {
     void handleSendMessage(messageText);
   };
+
+  // 学习日志：由真实的学习事件生成（任务提交、AI 生成的学习资料）
+  const learningLog = useMemo<LearningLogEntry[]>(() => {
+    const entries: LearningLogEntry[] = [];
+    const taskTitle = (id: string) => ([...generatedTasks, ...config.tasks] as any[]).find((task) => task.id === id)?.title ?? '任务';
+    for (const history of taskHistory) {
+      for (const attempt of history.attempts) {
+        entries.push({
+          id: `task_${history.taskId}_${attempt.attemptNumber}`,
+          type: 'task_complete',
+          timestamp: new Date(attempt.submittedAt),
+          title: `完成任务：${taskTitle(history.taskId)}`,
+          description: `第 ${attempt.attemptNumber} 次提交，客观题答对 ${attempt.score ?? 0} 题。`,
+          metadata: { score: attempt.score },
+        });
+      }
+    }
+    for (const resource of aiGeneratedResources) {
+      entries.push({
+        id: `resource_${resource.id}`,
+        type: 'knowledge_extension',
+        timestamp: new Date(resource.generatedAt),
+        title: `生成学习资料：${resource.title.replace(/^🤖\s*/, '')}`,
+        description: resource.description ?? '',
+      });
+    }
+    return entries.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }, [taskHistory, aiGeneratedResources, generatedTasks, config.tasks]);
 
   // ── 掌握度路径：学习路径面板显示的是 DeepTutor 的真实学习地图 ─────────────────
   const refreshMastery = async (pathId: string | null = masteryPathId) => {
@@ -2236,6 +2265,7 @@ export default function SelfStudyWorkbench({
           generatingToolId={generatingToolId}
           flashingToolId={flashingToolId}
           elapsedTime={elapsedTime}
+          learningLog={learningLog}
           learningPath={learningPath}
           getThemeClass={getThemeClass}
           onSetRightCollapsed={setIsRightCollapsed}

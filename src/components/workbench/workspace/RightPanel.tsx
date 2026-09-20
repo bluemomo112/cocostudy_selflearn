@@ -5,6 +5,7 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 import { EnhancedNotesPanel } from './EnhancedNotesPanel';
 import { LearningStatusPanel } from './LearningStatusPanel';
 import { COLLAPSED_WIDTH } from '../shared/constants';
+import type { LearningLogEntry } from '../../../data/learningLog';
 import {
   ChevronLeft, ChevronRight, Pencil, Activity, Sparkles, ChevronDown, ChevronUp,
   Mic, Workflow, CreditCard, Clock, BarChart3, Search, ListChecks, Lightbulb,
@@ -40,6 +41,7 @@ interface RightPanelProps {
   flashingToolId: string | null;
   elapsedTime: number;
   learningPath: LearningPathNode[];
+  learningLog: LearningLogEntry[];
   getThemeClass: (type: 'bg' | 'bgHover' | 'text' | 'border' | 'icon') => string;
   onSetRightCollapsed: (collapsed: boolean) => void;
   onSetRightTab: (tab: 'workspace' | 'status') => void;
@@ -61,6 +63,7 @@ export function RightPanel({
   flashingToolId,
   elapsedTime,
   learningPath,
+  learningLog,
   getThemeClass,
   onSetRightCollapsed,
   onSetRightTab,
@@ -248,6 +251,7 @@ export function RightPanel({
               elapsedTime={elapsedTime}
               learningMode={learningMode}
               learningPath={learningPath}
+              logEntries={learningLog}
             />
           )}
         </>
