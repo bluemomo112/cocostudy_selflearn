@@ -16,13 +16,14 @@ import {
   Pencil, BookOpen, Target, Lightbulb, MessageCircle, Clock,
   ListChecks, CheckCircle2, Circle, Eye, Play, Zap, FileText,
   AlertCircle, RotateCcw, Pause, GitBranch, Copy,
-  Save, ClipboardList
+  Save, ClipboardList, ImagePlus, Square, Loader2, Camera
 } from 'lucide-react';
 
 interface ChatPanelProps {
   config: SpaceConfig;
   messages: ChatMessage[];
   inputMessage: string;
+  attachments: Array<{ name: string; url: string; type: string }>;
   isRecordingVoice: boolean;
   isLoading: boolean;
   expandedTask: Task | null;
@@ -37,11 +38,13 @@ interface ChatPanelProps {
   getThemeClass: (type: 'bg' | 'bgHover' | 'text' | 'border' | 'icon') => string;
   onSendMessage: () => void;
   onInputChange: (value: string) => void;
+  onAttachmentsChange: (attachments: Array<{ name: string; url: string; type: string }>) => void;
   onQuickReply: (reply: string, replyId?: string) => void;
   onChatAction: (actionId: string, studioToolId: string) => void;
   onDemoCardAction?: (action: string, payload?: string) => void;
   onModeChange: (mode: LearningMode) => void;
   onToggleVoiceInput: () => void;
+  onStopGenerating: () => void;
   onTaskClick: (task: Task) => void;
   onCloseTask: () => void;
   onToggleTaskCompletion: (taskId: string) => void;
@@ -60,17 +63,19 @@ export function ChatPanel(props: ChatPanelProps) {
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [savedMessageIds, setSavedMessageIds] = useState<Set<string>>(new Set());
   const {
-    config, messages, inputMessage, isRecordingVoice, isLoading,
+    config, messages, inputMessage, attachments, isRecordingVoice, isLoading,
     expandedTask, completedTasks, taskDisplayMode, taskStatus, quickResult,
     learningPath, flashingButtonId, generatingButtonId, isReflectionDismissed,
     getThemeClass,
     onSendMessage: handleSendMessage,
     onInputChange: setInputMessage,
+    onAttachmentsChange: setAttachments,
     onQuickReply: handleQuickReply,
     onChatAction: handleChatAction,
     onDemoCardAction,
     onModeChange: handleModeChange,
     onToggleVoiceInput: toggleVoiceInput,
+    onStopGenerating: stopGenerating,
     onTaskClick: handleTaskClick,
     onCloseTask: closeTask,
     onToggleTaskCompletion: toggleTaskCompletion,
@@ -82,6 +87,69 @@ export function ChatPanel(props: ChatPanelProps) {
     renderTopicTransition,
     renderModeTransition,
   } = props;
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraVideoRef = useRef<HTMLVideoElement>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
+  const [voiceHint, setVoiceHint] = useState('');
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraPreview, setCameraPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    setVoiceHint(isRecordingVoice ? t('正在聆听…再次点击停止') : '');
+  }, [isRecordingVoice, t]);
+
+  const handleFiles = (files: FileList | null) => {
+    if (!files) return;
+    const next = Array.from(files).filter(file => file.type.startsWith('image/')).map(file => ({
+      name: file.name,
+      type: file.type,
+      url: URL.createObjectURL(file),
+    }));
+    if (next.length) setAttachments([...attachments, ...next]);
+  };
+
+  const closeCamera = () => {
+    cameraStreamRef.current?.getTracks().forEach(track => track.stop());
+    cameraStreamRef.current = null;
+    setIsCameraOpen(false);
+    setCameraPreview(null);
+  };
+
+  const openCamera = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      fileInputRef.current?.click();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+      cameraStreamRef.current = stream;
+      setIsCameraOpen(true);
+      requestAnimationFrame(() => {
+        if (cameraVideoRef.current) {
+          cameraVideoRef.current.srcObject = stream;
+          void cameraVideoRef.current.play();
+        }
+      });
+    } catch {
+      fileInputRef.current?.click();
+    }
+  };
+
+  const takePhoto = () => {
+    const video = cameraVideoRef.current;
+    if (!video || video.videoWidth === 0) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d')?.drawImage(video, 0, 0);
+    setCameraPreview(canvas.toDataURL('image/jpeg', 0.9));
+  };
+
+  const useCameraPhoto = () => {
+    if (!cameraPreview) return;
+    setAttachments([...attachments, { name: `拍照_${Date.now()}.jpg`, type: 'image/jpeg', url: cameraPreview }]);
+    closeCamera();
+  };
 
   const handleCopyMessage = (messageId: string, content: string) => {
     navigator.clipboard.writeText(content).then(() => {
@@ -218,6 +286,13 @@ export function ChatPanel(props: ChatPanelProps) {
                   >
                     {/* 消息内容 */}
                     <div className="p-4">
+                      {message.attachments?.length ? (
+                        <div className="mb-3 flex flex-wrap gap-2">
+                          {message.attachments.map((attachment) => (
+                            <img key={attachment.url} src={attachment.url} alt={attachment.name} className="max-h-40 max-w-full rounded-lg object-contain" />
+                          ))}
+                        </div>
+                      ) : null}
                       <div
                         className={`text-sm leading-relaxed ${
                           message.role === 'user' ? 'text-white' : 'text-gray-700'
@@ -446,6 +521,17 @@ export function ChatPanel(props: ChatPanelProps) {
               </div>
             )}
             <div className="relative">
+              <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { handleFiles(e.target.files); e.currentTarget.value = ''; }} />
+              {attachments.length > 0 && (
+                <div className="mb-2 flex gap-2 overflow-x-auto">
+                  {attachments.map((attachment, index) => (
+                    <div key={attachment.url} className="relative flex-shrink-0">
+                      <img src={attachment.url} alt={attachment.name} className="h-14 w-14 rounded-md object-cover border border-gray-200" />
+                      <button type="button" onClick={() => setAttachments(attachments.filter((_, i) => i !== index))} className="absolute -right-1.5 -top-1.5 rounded-full bg-gray-700 p-0.5 text-white" title={t('移除图片')}><X size={11} /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
               <input
                 type="text"
                 value={inputMessage}
@@ -457,34 +543,79 @@ export function ChatPanel(props: ChatPanelProps) {
                     : t('回答问题或提出疑问...')
                 }
                 disabled={isLoading}
-                className={`w-full bg-gray-50 border border-gray-200 rounded-lg pl-4 ${isEnabled('voiceInput') ? 'pr-24' : 'pr-12'} py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50`}
+                className="w-full bg-white border border-gray-200 rounded-xl pl-4 pr-24 py-3.5 text-sm text-gray-700 shadow-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 disabled:bg-gray-50 disabled:opacity-70"
               />
               {/* Mic button */}
               {isEnabled('voiceInput') && (
               <button
                 onClick={toggleVoiceInput}
                 disabled={isLoading}
-                className={`absolute right-14 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-colors ${
+                className={`absolute right-16 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
                   isRecordingVoice
-                    ? 'bg-red-500 text-white'
-                    : 'text-gray-400 hover:text-gray-600'
+                    ? 'bg-red-500 text-white shadow-sm'
+                    : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
                 }`}
                 title={isRecordingVoice ? t('停止录音') : t('语音输入')}
               >
-                <Mic size={16} />
+                {isRecordingVoice ? <Loader2 size={16} className="animate-spin" /> : <Mic size={16} />}
               </button>
               )}
               {/* Send button */}
               <button
-                onClick={() => handleSendMessage()}
-                disabled={isLoading || !inputMessage.trim()}
-                className={`absolute ${isEnabled('voiceInput') ? 'right-2' : 'right-2'} top-1/2 -translate-y-1/2 p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50`}
+                onClick={() => isLoading ? stopGenerating() : handleSendMessage()}
+                disabled={!isLoading && !inputMessage.trim() && attachments.length === 0}
+                className={`absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                  isLoading
+                    ? 'bg-red-500 text-white hover:bg-red-600'
+                    : 'bg-primary-600 text-white hover:bg-primary-700'
+                }`}
               >
-                <Send size={16} />
+                {isLoading ? <Square size={15} /> : <Send size={16} />}
               </button>
+            </div>
+            {/* 底部工具栏：图片、拍照、录音状态 */}
+            <div className="mt-2 flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isLoading} className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50" title={t('选择图片')}>
+                  <ImagePlus size={15} />选择图片
+                </button>
+                <button type="button" onClick={openCamera} disabled={isLoading} className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50" title={t('打开相机拍照')}>
+                  <Camera size={15} />拍照
+                </button>
+              </div>
+              {voiceHint && (
+                <span className="flex items-center gap-1.5 rounded-full border border-primary-100 bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-600">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-400 opacity-60" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-primary-500" />
+                  </span>
+                  {t('正在录音')}
+                </span>
+              )}
             </div>
           </div>
         </div>
+
+        {isCameraOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={closeCamera}>
+            <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+                <div>
+                  <h3 className="font-semibold text-gray-800">拍照添加图片</h3>
+                  <p className="text-xs text-gray-500">建议横向拍摄，保持光线充足，让内容完整入框</p>
+                </div>
+                <button onClick={closeCamera} className="rounded-lg p-2 text-gray-400 hover:bg-gray-100"><X size={18} /></button>
+              </div>
+              <div className="bg-gray-900 p-3">
+                {cameraPreview ? <img src={cameraPreview} alt="拍照预览" className="max-h-[55vh] w-full rounded-lg object-contain" /> : <video ref={cameraVideoRef} playsInline muted className="max-h-[55vh] w-full rounded-lg object-contain" />}
+              </div>
+              <div className="flex items-center justify-between gap-3 px-4 py-3">
+                <span className="text-xs text-gray-500">小贴士：避免反光、倾斜和遮挡</span>
+                {cameraPreview ? <div className="flex gap-2"><button onClick={() => setCameraPreview(null)} className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600"><RotateCcw size={14} />重拍</button><button onClick={useCameraPhoto} className="rounded-lg bg-primary-600 px-4 py-2 text-sm text-white">使用照片</button></div> : <button onClick={takePhoto} className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">拍照</button>}
+              </div>
+            </div>
+          </div>
+        )}
 
     </>
   );

@@ -305,6 +305,7 @@ export function LeftPanel(props: LeftPanelProps) {
                   <ResourceInlineViewer
                     resource={inlineViewingResource}
                     onBack={() => onSetInlineViewingResource(null)}
+                    onSendMessage={onSendMessage}
                     onFullscreen={() => {
                       onSetViewingResource?.({
                         id: inlineViewingResource.id,
@@ -436,7 +437,7 @@ export function LeftPanel(props: LeftPanelProps) {
                       className="flex-1 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-600 hover:bg-gray-100 transition-colors flex items-center justify-center gap-1"
                     >
                       <Link size={12} />
-                      {t('粘贴链接')}
+                      {t('网页 / YouTube')}
                     </button>
                     )}
                     <button

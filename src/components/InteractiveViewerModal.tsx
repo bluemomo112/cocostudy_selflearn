@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Minimize2, Loader2, Play, Pause, Volume2, RotateCcw, ChevronLeft, ChevronRight, FileText, Database, Download } from 'lucide-react';
+import { X, Minimize2, Loader2, Play, Pause, Volume2, RotateCcw, ChevronLeft, ChevronRight, FileText, Database, Download, Copy, MessageSquarePlus, Highlighter, MessageCircle, Check } from 'lucide-react';
 import { Resource } from '../types/shared-context';
 import { useLanguage } from '../contexts/LanguageContext';
 import ReactMarkdown from 'react-markdown';
@@ -284,6 +284,27 @@ export default function InteractiveViewerModal({ resource, onClose, onShrinkToIn
     test: { label: t('测试'), color: 'bg-amber-100 text-amber-700' },
   };
   const [isLoading, setIsLoading] = useState(true);
+  const [selection, setSelection] = useState('');
+  const [highlights, setHighlights] = useState<string[]>([]);
+  const [annotation, setAnnotation] = useState('');
+  const [annotationFor, setAnnotationFor] = useState<string | null>(null);
+
+  const captureSelection = () => {
+    const text = window.getSelection()?.toString().trim() || '';
+    if (text) setSelection(text);
+  };
+
+  const copySelection = async () => {
+    if (selection) await navigator.clipboard.writeText(selection);
+  };
+
+  const addSelectionToChat = () => {
+    if (selection) {
+      // Store intent - will be injected into chat when modal closes
+      const stored = sessionStorage.getItem('sl_text_to_chat') || '';
+      sessionStorage.setItem('sl_text_to_chat', stored + (stored ? '\n\n' : '') + `> ${selection}`);
+    }
+  };
 
   if (!resource) return null;
 
@@ -366,10 +387,27 @@ export default function InteractiveViewerModal({ resource, onClose, onShrinkToIn
           ) : resource.toolId === 'mind_map' && resource.data?.nodes ? (
             <MindMapViewer nodes={resource.data.nodes} />
           ) : resource.textContent ? (
-            <div className="p-6 overflow-y-auto h-full">
-              <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed bg-white rounded-lg border border-gray-200 p-6">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{resource.textContent}</ReactMarkdown>
+            <div className="flex flex-col h-full">
+              <div onMouseUp={captureSelection} onTouchEnd={captureSelection} className="flex-1 overflow-y-auto p-6">
+                <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed bg-white rounded-lg border border-gray-200 p-6">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{resource.textContent}</ReactMarkdown>
+                  {highlights.map((item) => <mark key={item} className="hidden">{item}</mark>)}
+                </div>
               </div>
+              <div className="flex flex-wrap items-center gap-2 border-t border-gray-200 bg-white px-4 py-2 flex-shrink-0">
+                <span className="text-xs text-gray-400">{selection ? `已选 ${selection.length} 字` : '选中文本后使用工具'}</span>
+                <button onClick={copySelection} disabled={!selection} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-40"><Copy size={13} />复制</button>
+                <button onClick={addSelectionToChat} disabled={!selection} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-40"><MessageSquarePlus size={13} />添加到对话</button>
+                <button onClick={() => selection && setHighlights([...highlights, selection])} disabled={!selection} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-amber-700 hover:bg-amber-50 disabled:opacity-40"><Highlighter size={13} />标黄</button>
+                <button onClick={() => selection && setAnnotationFor(selection)} disabled={!selection} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-blue-700 hover:bg-blue-50 disabled:opacity-40"><MessageCircle size={13} />注释</button>
+              </div>
+              {annotationFor && (
+                <div className="border-t border-gray-200 bg-white px-4 py-3 flex-shrink-0">
+                  <div className="mb-2 flex items-center justify-between text-xs text-gray-500"><span>为选中文本添加注释</span><button onClick={() => setAnnotationFor(null)}><X size={14} /></button></div>
+                  <textarea value={annotation} onChange={(e) => setAnnotation(e.target.value)} autoFocus className="h-16 w-full resize-none rounded border border-gray-200 p-2 text-xs outline-none focus:border-primary-400" placeholder="输入你的想法..." />
+                  <div className="mt-2 flex justify-end"><button onClick={() => { setAnnotation(''); setAnnotationFor(null); }} className="inline-flex items-center gap-1 rounded bg-primary-600 px-3 py-1.5 text-xs text-white"><Check size={13} />保存注释</button></div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex items-center justify-center h-full">

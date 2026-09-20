@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { X, Link as LinkIcon, Globe } from 'lucide-react';
+import { X, Link as LinkIcon, Globe, Youtube } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
-type ResourceTypeOption = 'link' | 'interactive';
+type ResourceTypeOption = 'link' | 'youtube' | 'interactive';
 type InteractiveCategory = 'animation' | 'visualization' | 'simulation' | 'test';
 
 interface LinkInputModalProps {
@@ -19,6 +19,7 @@ export default function LinkInputModal({ isOpen, onClose, onAdd }: LinkInputModa
   const [resourceType, setResourceType] = useState<ResourceTypeOption>('link');
   const [interactiveCategory, setInteractiveCategory] = useState<InteractiveCategory>('animation');
   const { t } = useLanguage();
+  const isYoutubeUrl = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)/i.test(url);
 
   // 使用 t() 获取国际化后的互动分类
   const INTERACTIVE_CATEGORIES = useMemo(() => [
@@ -35,7 +36,7 @@ export default function LinkInputModal({ isOpen, onClose, onAdd }: LinkInputModa
       onAdd(
         url.trim(),
         title.trim() || undefined,
-        resourceType,
+        isYoutubeUrl ? 'youtube' : resourceType,
         resourceType === 'interactive' ? interactiveCategory : undefined
       );
       setUrl('');
@@ -91,6 +92,13 @@ export default function LinkInputModal({ isOpen, onClose, onAdd }: LinkInputModa
                 <span className="text-sm font-medium">{t('普通链接')}</span>
               </button>
               <button
+                onClick={() => setResourceType('youtube')}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all ${resourceType === 'youtube' ? 'border-red-500 bg-red-50 text-red-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
+              >
+                <Youtube size={16} />
+                <span className="text-sm font-medium">YouTube 视频</span>
+              </button>
+              <button
                 onClick={() => setResourceType('interactive')}
                 className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all ${
                   resourceType === 'interactive'
@@ -140,7 +148,7 @@ export default function LinkInputModal({ isOpen, onClose, onAdd }: LinkInputModa
                 type="url"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://example.com"
+                placeholder={resourceType === 'youtube' ? 'https://www.youtube.com/watch?v=...' : 'https://example.com'}
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               />
             </div>

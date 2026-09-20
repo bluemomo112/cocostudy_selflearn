@@ -20,6 +20,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  attachments?: Array<{ name: string; url: string; type: string }>;
   // 消息类型
   messageType?: 'normal' | 'knowledge_checkpoint' | 'topic_transition' | 'resource_reference' | 'mode_transition';
   // 知识检查点

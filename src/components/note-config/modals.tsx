@@ -393,9 +393,9 @@ export function NoteInfoModal({ config, onSave, onClose, onUnpublish, isPublishe
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-white w-[900px] max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden border border-gray-100" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white w-[900px] max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* 头部 */}
-        <div className="bg-white border-b border-gray-200 px-6 py-5">
+        <div className="bg-white border-b border-gray-200 px-6 py-5 shrink-0">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold flex items-center gap-2.5 text-gray-900">
@@ -413,7 +413,7 @@ export function NoteInfoModal({ config, onSave, onClose, onUnpublish, isPublishe
           </div>
         </div>
 
-        <div className="p-7 max-h-[calc(90vh-200px)] overflow-y-auto">
+        <div className="p-7 flex-1 min-h-0 overflow-y-auto">
           <div className="space-y-7">
             {/* 课程基本信息 */}
             <div className="space-y-5">
@@ -538,7 +538,7 @@ export function NoteInfoModal({ config, onSave, onClose, onUnpublish, isPublishe
         </div>
 
         {/* 底部操作栏 */}
-        <div className="px-7 py-5 border-t border-gray-200 bg-gray-50">
+        <div className="px-7 py-5 border-t border-gray-200 bg-gray-50 shrink-0">
           {isPublished && (
             <div className="mb-4 flex gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
               <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-600" />

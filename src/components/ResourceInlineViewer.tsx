@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowLeft, Maximize2, Loader2, Sparkles, FileText, Play, Pause, Volume2, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Maximize2, Loader2, Sparkles, FileText, Play, Pause, Volume2, RotateCcw, ChevronLeft, ChevronRight, Copy, MessageSquarePlus, Highlighter, MessageCircle, Check, X } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -30,6 +30,7 @@ interface ResourceInlineViewerProps {
   resource: InlineViewResource;
   onBack: () => void;
   onFullscreen: () => void;
+  onSendMessage?: (message: string) => void;
 }
 
 // Flashcard 组件
@@ -268,9 +269,26 @@ function MindMapViewer({ nodes }: { nodes: { center: string; branches: Array<{ t
   );
 }
 
-export default function ResourceInlineViewer({ resource, onBack, onFullscreen }: ResourceInlineViewerProps) {
+export default function ResourceInlineViewer({ resource, onBack, onFullscreen, onSendMessage }: ResourceInlineViewerProps) {
   const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(true);
+  const [selection, setSelection] = useState('');
+  const [highlights, setHighlights] = useState<string[]>([]);
+  const [annotation, setAnnotation] = useState('');
+  const [annotationFor, setAnnotationFor] = useState<string | null>(null);
+
+  const captureSelection = () => {
+    const text = window.getSelection()?.toString().trim() || '';
+    if (text) setSelection(text);
+  };
+
+  const copySelection = async () => {
+    if (selection) await navigator.clipboard.writeText(selection);
+  };
+
+  const addSelectionToChat = () => {
+    if (selection) onSendMessage?.(`请结合当前学习资料，解释这段内容：\n\n> ${selection}`);
+  };
 
   const hasIframeContent = !!resource.url;
   const hasCustomViewer = ['flashcards', 'audio_overview', 'timeline', 'mind_map'].includes(resource.toolId || '');
@@ -354,8 +372,9 @@ export default function ResourceInlineViewer({ resource, onBack, onFullscreen }:
                 {resource.description && (
                   <p className="text-sm text-gray-600 leading-relaxed">{t(resource.description)}</p>
                 )}
-                <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed bg-white rounded-lg border border-gray-200 p-4">
+                <div onMouseUp={captureSelection} onTouchEnd={captureSelection} className="prose prose-sm max-w-none text-gray-700 leading-relaxed bg-white rounded-lg border border-gray-200 p-4">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{t(resource.textContent)}</ReactMarkdown>
+                  {highlights.map((item) => <mark key={item} className="hidden">{item}</mark>)}
                 </div>
               </div>
             ) : (
@@ -380,6 +399,22 @@ export default function ResourceInlineViewer({ resource, onBack, onFullscreen }:
           </>
         )}
       </div>
+      {resource.textContent && (
+        <div className="flex flex-wrap items-center gap-2 border-t border-gray-200 bg-white px-3 py-2">
+          <span className="text-xs text-gray-400">{selection ? `已选 ${selection.length} 字` : '选中文本后使用工具'}</span>
+          <button onClick={copySelection} disabled={!selection} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-40"><Copy size={13} />复制</button>
+          <button onClick={addSelectionToChat} disabled={!selection || !onSendMessage} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-40"><MessageSquarePlus size={13} />添加到对话</button>
+          <button onClick={() => selection && setHighlights([...highlights, selection])} disabled={!selection} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-amber-700 hover:bg-amber-50 disabled:opacity-40"><Highlighter size={13} />标黄</button>
+          <button onClick={() => selection && setAnnotationFor(selection)} disabled={!selection} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-blue-700 hover:bg-blue-50 disabled:opacity-40"><MessageCircle size={13} />注释</button>
+        </div>
+      )}
+      {annotationFor && (
+        <div className="absolute bottom-12 left-3 right-3 z-20 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
+          <div className="mb-2 flex items-center justify-between text-xs text-gray-500"><span>为选中文本添加注释</span><button onClick={() => setAnnotationFor(null)}><X size={14} /></button></div>
+          <textarea value={annotation} onChange={(e) => setAnnotation(e.target.value)} autoFocus className="h-16 w-full resize-none rounded border border-gray-200 p-2 text-xs outline-none focus:border-primary-400" placeholder="输入你的想法..." />
+          <div className="mt-2 flex justify-end"><button onClick={() => { setAnnotation(''); setAnnotationFor(null); }} className="inline-flex items-center gap-1 rounded bg-primary-600 px-3 py-1.5 text-xs text-white"><Check size={13} />保存注释</button></div>
+        </div>
+      )}
     </div>
   );
 }

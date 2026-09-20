@@ -419,7 +419,9 @@ export default function SelfStudyWorkbench({
   // 聊天状态
   const [messages, setMessages] = usePersistedState<ChatMessage[]>(`self-study:wb:${config.id}:messages`, []);
   const [inputMessage, setInputMessage] = useState('');
+  const [attachments, setAttachments] = useState<Array<{ name: string; url: string; type: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const responseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [sessionId] = useState(`session_${Date.now()}`);
   const [flashingToolId, setFlashingToolId] = useState<string | null>(null);
   const [flashingButtonId, setFlashingButtonId] = useState<string | null>(null);
@@ -601,6 +603,9 @@ export default function SelfStudyWorkbench({
         recognitionInstance.onend = () => {
           setIsRecordingVoice(false);
         };
+        recognitionInstance.onerror = () => {
+          setIsRecordingVoice(false);
+        };
 
         recognitionRef.current = recognitionInstance;
       }
@@ -736,7 +741,7 @@ export default function SelfStudyWorkbench({
       textContent: 'textContent' in resource ? resource.textContent : undefined,
       fileType: 'fileType' in resource ? resource.fileType : undefined,
       knowledgeBase: 'knowledgeBase' in resource ? resource.knowledgeBase : undefined,
-    } as any);
+      } as any);
   };
 
   // 生成测试任务
@@ -1224,6 +1229,7 @@ export default function SelfStudyWorkbench({
       role: 'user',
       content: messageText,
       timestamp: new Date(),
+      attachments: attachments.length ? attachments : undefined,
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -1483,110 +1489,149 @@ export default function SelfStudyWorkbench({
 
     setMessages((prev) => [...prev, userMessage]);
     const userInput = messageToSend.toLowerCase();
-    if (!overrideMessage) setInputMessage('');
+    if (!overrideMessage) {
+      setInputMessage('');
+      setAttachments([]);
+    }
     setIsLoading(true);
 
-    // 模拟 AI 回复 - 根据模式和输入内容生成不同回复
-    setTimeout(() => {
-      const aiContent = generateMockAIReply(userInput);
+    // 根据对话内容生成推荐回复和功能按钮
+    let suggestions: ChatMessage['suggestions'] = undefined;
 
-      // 根据对话内容生成推荐回复和功能按钮
-      let suggestions: ChatMessage['suggestions'] = undefined;
-
-      if (config.learningMode === 'self_directed') {
-        // 自由探索模式的建议
-        if (userInput.includes('搜索') || userInput.includes('概念')) {
-          suggestions = {
-            quickReplies: [
-              { id: 'more_detail', label: t('再详细一点') },
-              { id: 'example', label: t('举个例子') },
-              { id: 'related', label: t('相关概念') }
-            ],
-            actionButtons: [
-              { id: 'mind_map', label: t('生成思维导图'), iconName: 'Workflow', studioToolId: 'mind_map' },
-              { id: 'flashcards', label: t('生成记忆卡片'), iconName: 'CreditCard', studioToolId: 'flashcards' }
-            ]
-          };
-        } else if (userInput.includes('总结') || userInput.includes('要点')) {
-          suggestions = {
-            quickReplies: [
-              { id: 'quiz_me', label: t('考考我') },
-              { id: 'continue', label: t('继续学习') }
-            ],
-            actionButtons: [
-              { id: 'quiz', label: t('基于要点生成测试'), iconName: 'TestTube2', studioToolId: 'quiz' },
-              { id: 'mind_map', label: t('生成思维导图'), iconName: 'Workflow', studioToolId: 'mind_map' }
-            ]
-          };
-        } else if (userInput.includes('例子') || userInput.includes('举例')) {
-          suggestions = {
-            quickReplies: [
-              { id: 'more_examples', label: t('更多例子') },
-              { id: 'practice', label: t('我来试试') }
-            ],
-            actionButtons: [
-              { id: 'animation', label: t('生成讲解动画'), iconName: 'Film', studioToolId: 'interactive_animation' }
-            ]
-          };
-        } else {
-          suggestions = {
-            quickReplies: [
-              { id: 'quiz_me', label: t('考考我') },
-              { id: 'explain_more', label: t('再解释一下') },
-              { id: 'example', label: t('举个例子') }
-            ]
-          };
-        }
+    if (config.learningMode === 'self_directed') {
+      // 自由探索模式的建议
+      if (userInput.includes('搜索') || userInput.includes('概念')) {
+        suggestions = {
+          quickReplies: [
+            { id: 'more_detail', label: t('再详细一点') },
+            { id: 'example', label: t('举个例子') },
+            { id: 'related', label: t('相关概念') }
+          ],
+          actionButtons: [
+            { id: 'mind_map', label: t('生成思维导图'), iconName: 'Workflow', studioToolId: 'mind_map' },
+            { id: 'flashcards', label: t('生成记忆卡片'), iconName: 'CreditCard', studioToolId: 'flashcards' }
+          ]
+        };
+      } else if (userInput.includes('总结') || userInput.includes('要点')) {
+        suggestions = {
+          quickReplies: [
+            { id: 'quiz_me', label: t('考考我') },
+            { id: 'continue', label: t('继续学习') }
+          ],
+          actionButtons: [
+            { id: 'quiz', label: t('基于要点生成测试'), iconName: 'TestTube2', studioToolId: 'quiz' },
+            { id: 'mind_map', label: t('生成思维导图'), iconName: 'Workflow', studioToolId: 'mind_map' }
+          ]
+        };
+      } else if (userInput.includes('例子') || userInput.includes('举例')) {
+        suggestions = {
+          quickReplies: [
+            { id: 'more_examples', label: t('更多例子') },
+            { id: 'practice', label: t('我来试试') }
+          ],
+          actionButtons: [
+            { id: 'animation', label: t('生成讲解动画'), iconName: 'Film', studioToolId: 'interactive_animation' }
+          ]
+        };
       } else {
-        // AI引导模式的建议
-        if (userInput.includes('考考') || userInput.includes('测试')) {
-          suggestions = {
-            quickReplies: [
-              { id: 'more_quiz', label: t('考考我更多') },
-              { id: 'hint', label: t('给我提示') }
-            ],
-            actionButtons: [
-              { id: 'quiz', label: t('生成正式测试'), iconName: 'TestTube2', studioToolId: 'quiz' }
-            ]
-          };
-        } else if (userInput.includes('下一') || userInput.includes('继续')) {
-          suggestions = {
-            quickReplies: [
-              { id: 'ready', label: t('准备好了') },
-              { id: 'review', label: t('先复习一下') }
-            ]
-          };
-        } else if (userInput.includes('路径') || userInput.includes('进度')) {
-          suggestions = {
-            quickReplies: [
-              { id: 'continue', label: t('继续学习') },
-              { id: 'review', label: t('复习已学内容') }
-            ],
-            actionButtons: [
-              { id: 'summary', label: t('生成学习报告'), iconName: 'BarChart3', studioToolId: 'summary' }
-            ]
-          };
-        } else {
-          suggestions = {
-            quickReplies: [
-              { id: 'quiz_me', label: t('考考我') },
-              { id: 'next', label: t('下一知识点') },
-              { id: 'hint', label: t('给我提示') }
-            ]
-          };
-        }
+        suggestions = {
+          quickReplies: [
+            { id: 'quiz_me', label: t('考考我') },
+            { id: 'explain_more', label: t('再解释一下') },
+            { id: 'example', label: t('举个例子') }
+          ]
+        };
+      }
+    } else {
+      // AI引导模式的建议
+      if (userInput.includes('考考') || userInput.includes('测试')) {
+        suggestions = {
+          quickReplies: [
+            { id: 'more_quiz', label: t('考考我更多') },
+            { id: 'hint', label: t('给我提示') }
+          ],
+          actionButtons: [
+            { id: 'quiz', label: t('生成正式测试'), iconName: 'TestTube2', studioToolId: 'quiz' }
+          ]
+        };
+      } else if (userInput.includes('下一') || userInput.includes('继续')) {
+        suggestions = {
+          quickReplies: [
+            { id: 'ready', label: t('准备好了') },
+            { id: 'review', label: t('先复习一下') }
+          ]
+        };
+      } else if (userInput.includes('路径') || userInput.includes('进度')) {
+        suggestions = {
+          quickReplies: [
+            { id: 'continue', label: t('继续学习') },
+            { id: 'review', label: t('复习已学内容') }
+          ],
+          actionButtons: [
+            { id: 'summary', label: t('生成学习报告'), iconName: 'BarChart3', studioToolId: 'summary' }
+          ]
+        };
+      } else {
+        suggestions = {
+          quickReplies: [
+            { id: 'quiz_me', label: t('考考我') },
+            { id: 'next', label: t('下一知识点') },
+            { id: 'hint', label: t('给我提示') }
+          ]
+        };
+      }
+    }
+
+    // 调用真实后端（OneHub gpt-5.6-luna），流式接收回复；把左侧学习资源原文一并发给后端
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'chat',
+          message: messageToSend,
+          learningMode: config.learningMode,
+          history: messages.slice(-10).map((m) => ({ role: m.role, content: m.content })),
+          resources: config.resources.map((r) => ({ id: r.id, title: r.title, textContent: r.textContent })),
+        }),
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error(`chat request failed: ${response.status}`);
       }
 
-      const aiReply: ChatMessage = {
+      setIsLoading(false);
+      const aiMessageId = `msg_${Date.now()}_ai`;
+      setMessages((prev) => [...prev, { id: aiMessageId, role: 'assistant', content: '', timestamp: new Date(), suggestions }]);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        fullContent += decoder.decode(value, { stream: true });
+        setMessages((prev) => prev.map((m) => (m.id === aiMessageId ? { ...m, content: fullContent } : m)));
+      }
+    } catch (error) {
+      console.error('[handleSendMessage] AI 回复请求失败:', error);
+      setIsLoading(false);
+      setMessages((prev) => [...prev, {
         id: `msg_${Date.now()}_ai`,
         role: 'assistant',
-        content: aiContent,
+        content: t('抱歉，AI 暂时无法回复，请稍后再试。'),
         timestamp: new Date(),
-        suggestions,
-      };
-      setMessages((prev) => [...prev, aiReply]);
-      setIsLoading(false);
-    }, 1200);
+      }]);
+    }
+  };
+
+  const stopGenerating = () => {
+    if (responseTimerRef.current) {
+      clearTimeout(responseTimerRef.current);
+      responseTimerRef.current = null;
+    }
+    setIsLoading(false);
   };
 
   // 处理聊天功能按钮点击
@@ -1951,13 +1996,15 @@ export default function SelfStudyWorkbench({
 
   // 处理链接添加
   const handleLinkAdd = (url: string, title?: string, resourceType?: string, interactiveCategory?: string) => {
+    const youtubeId = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([^?&/]+)/i)?.[1];
+    const isYoutube = resourceType === 'youtube' || !!youtubeId;
     const newResource: Resource = {
       id: `resource_${Date.now()}`,
-      title: title || url,
-      type: resourceType === 'interactive' ? 'interactive' : 'document',
+      title: title || (isYoutube ? 'YouTube 视频' : url),
+      type: isYoutube ? 'video' : resourceType === 'interactive' ? 'interactive' : 'document',
       description: url,
-      ...(resourceType === 'interactive' ? {
-        url,
+      ...(isYoutube || resourceType === 'interactive' ? {
+        url: isYoutube ? `https://www.youtube.com/embed/${youtubeId}` : url,
         interactiveCategory: interactiveCategory as Resource['interactiveCategory'],
       } : {}),
     };
@@ -2807,6 +2854,7 @@ export default function SelfStudyWorkbench({
           config={config}
           messages={messages}
           inputMessage={inputMessage}
+          attachments={attachments}
           isRecordingVoice={isRecordingVoice}
           isLoading={isLoading}
           expandedTask={expandedTask}
@@ -2821,11 +2869,13 @@ export default function SelfStudyWorkbench({
           getThemeClass={getThemeClass}
           onSendMessage={handleSendMessage}
           onInputChange={setInputMessage}
+          onAttachmentsChange={setAttachments}
           onQuickReply={handleQuickReply}
           onChatAction={handleChatAction}
           onDemoCardAction={handleDemoCardAction}
           onModeChange={handleModeChange}
           onToggleVoiceInput={toggleVoiceInput}
+          onStopGenerating={stopGenerating}
           onTaskClick={handleTaskClick}
           onCloseTask={closeTask}
           onToggleTaskCompletion={toggleTaskCompletion}
