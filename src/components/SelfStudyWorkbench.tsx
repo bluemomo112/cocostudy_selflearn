@@ -173,6 +173,10 @@ export default function SelfStudyWorkbench({
     }
   }, [initialConfig]);
 
+  // 学生的学习进度（聊天记录、DeepTutor 会话、掌握度路径、任务记录）和老师的编辑状态分开存；
+  // 老师生成的资源、任务和工具配置仍按空间共享。目前没有账号体系，同一浏览器里的学生共用一份。
+  const progressScope = isStudentMode ? `${config.id}:student` : config.id;
+
   // 异步回调（知识库解析完成等）里要拿到最新的 config，而不是闭包里的旧值
   const configRef = useRef(config);
 
@@ -301,16 +305,16 @@ export default function SelfStudyWorkbench({
   const COLLAPSED_WIDTH = 72;
 
   // 聊天状态
-  const [messages, setMessages] = usePersistedState<ChatMessage[]>(`self-study:wb:${config.id}:messages`, []);
+  const [messages, setMessages] = usePersistedState<ChatMessage[]>(`self-study:wb:${progressScope}:messages`, []);
   const [inputMessage, setInputMessage] = useState('');
   const [attachments, setAttachments] = useState<Array<{ name: string; url: string; type: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const responseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deeptutorChatRef = useRef<DeepTutorChat | null>(null);
-  const [deeptutorSessionId, setDeeptutorSessionId] = usePersistedState<string | null>(`self-study:wb:${config.id}:dtSession`, null);
+  const [deeptutorSessionId, setDeeptutorSessionId] = usePersistedState<string | null>(`self-study:wb:${progressScope}:dtSession`, null);
   // AI 引导模式：一条掌握度路径（DeepTutor mastery path）加它专属的会话
-  const [masteryPathId, setMasteryPathId] = usePersistedState<string | null>(`self-study:wb:${config.id}:masteryPathId`, null);
-  const [guidedSessionId, setGuidedSessionId] = usePersistedState<string | null>(`self-study:wb:${config.id}:dtSessionGuided`, null);
+  const [masteryPathId, setMasteryPathId] = usePersistedState<string | null>(`self-study:wb:${progressScope}:masteryPathId`, null);
+  const [guidedSessionId, setGuidedSessionId] = usePersistedState<string | null>(`self-study:wb:${progressScope}:dtSessionGuided`, null);
   const masteryCreatingRef = useRef(false);
   useEffect(() => () => deeptutorChatRef.current?.dispose(), []);
   const [sessionId] = useState(`session_${Date.now()}`);
@@ -334,7 +338,7 @@ export default function SelfStudyWorkbench({
   const [explainQuestion, setExplainQuestion] = useState<TaskQuestion | null>(null);
   const [quickResultMap, setQuickResultMap] = useState<Record<string, { allCorrect: boolean; correctCount: number; totalCount: number; details: any[] }>>({});
   const quickResult = expandedTask ? quickResultMap[expandedTask.id] || null : null;
-  const [completedTasksArray, setCompletedTasksArray] = usePersistedState<string[]>(`self-study:wb:${config.id}:completedTasks`, []);
+  const [completedTasksArray, setCompletedTasksArray] = usePersistedState<string[]>(`self-study:wb:${progressScope}:completedTasks`, []);
   const completedTasks = new Set(completedTasksArray);
   const setCompletedTasks = (updater: Set<string> | ((prev: Set<string>) => Set<string>)) => {
     if (typeof updater === 'function') {
@@ -352,14 +356,14 @@ export default function SelfStudyWorkbench({
       submittedAt: Date;
       score?: number;
     }>;
-  }>>(`self-study:wb:${config.id}:taskHistory`, []);
+  }>>(`self-study:wb:${progressScope}:taskHistory`, []);
 
   // 语音输入状态
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const recognitionRef = useRef<any>(null);
 
   // 计时器状态
-  const [elapsedTime, setElapsedTime] = usePersistedState<number>(`self-study:wb:${config.id}:elapsedTime`, 0);
+  const [elapsedTime, setElapsedTime] = usePersistedState<number>(`self-study:wb:${progressScope}:elapsedTime`, 0);
   const [isTimerRunning, setIsTimerRunning] = useState(true);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -367,8 +371,8 @@ export default function SelfStudyWorkbench({
   const [rightTab, setRightTab] = useState<'workspace' | 'status'>('workspace');
 
   // 学习路径状态
-  const [learningPath, setLearningPath] = usePersistedState<LearningPathNode[]>(`self-study:wb:${config.id}:learningPath`, []);
-  const [currentNodeId, setCurrentNodeId] = usePersistedState<string>(`self-study:wb:${config.id}:currentNodeId`, '');
+  const [learningPath, setLearningPath] = usePersistedState<LearningPathNode[]>(`self-study:wb:${progressScope}:learningPath`, []);
+  const [currentNodeId, setCurrentNodeId] = usePersistedState<string>(`self-study:wb:${progressScope}:currentNodeId`, '');
 
   // 设置弹窗
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -747,7 +751,7 @@ export default function SelfStudyWorkbench({
   useEffect(() => {
     if (messages.length > 0) return; // already have persisted messages
     // 持久化的历史此时还没 hydrate 回 state（messages 仍为空），先看存储里有没有，避免用欢迎语覆盖历史
-    if (loadFromStorage<ChatMessage[]>(`self-study:wb:${config.id}:messages`, []).length > 0) return;
+    if (loadFromStorage<ChatMessage[]>(`self-study:wb:${progressScope}:messages`, []).length > 0) return;
 
     // 设置开场引导消息，只用功能按钮（不用快捷回复）
     setMessages([{
@@ -837,7 +841,7 @@ export default function SelfStudyWorkbench({
     (async () => {
       if (!(await isDeepTutorReady())) return;
       // hydrate 之前 state 还是 null，直接读存储，避免重复创建
-      const storedId = masteryPathId ?? loadFromStorage<string | null>(`self-study:wb:${config.id}:masteryPathId`, null);
+      const storedId = masteryPathId ?? loadFromStorage<string | null>(`self-study:wb:${progressScope}:masteryPathId`, null);
       if (storedId) {
         await refreshMastery(storedId);
         return;
