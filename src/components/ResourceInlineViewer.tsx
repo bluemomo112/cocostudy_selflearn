@@ -5,6 +5,7 @@ import { ArrowLeft, Maximize2, Loader2, Sparkles, FileText, Play, Pause, Volume2
 import { useLanguage } from '../contexts/LanguageContext';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import UploadedFileViewer from './UploadedFileViewer';
 
 const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
   animation: { label: '动画', color: 'bg-purple-100 text-purple-700' },
@@ -24,6 +25,9 @@ export interface InlineViewResource {
   icon?: string;
   toolId?: string;
   data?: any; // 结构化数据
+  // 上传的文件：按文件类型渲染（PDF、图片、音视频、docx），不能当互动网页放进沙箱 iframe
+  fileType?: string;
+  path?: string;
 }
 
 interface ResourceInlineViewerProps {
@@ -290,7 +294,8 @@ export default function ResourceInlineViewer({ resource, onBack, onFullscreen, o
     if (selection) onSendMessage?.(`请结合当前学习资料，解释这段内容：\n\n> ${selection}`);
   };
 
-  const hasIframeContent = !!resource.url;
+  const isUploadedFile = !!(resource.fileType && resource.url);
+  const hasIframeContent = !!resource.url && !isUploadedFile;
   const hasCustomViewer = ['flashcards', 'audio_overview', 'timeline', 'mind_map'].includes(resource.toolId || '');
   const canFullscreen = true; // 所有资源都可以全屏查看
   const category = resource.interactiveCategory
@@ -330,7 +335,9 @@ export default function ResourceInlineViewer({ resource, onBack, onFullscreen, o
 
       {/* Content */}
       <div className="flex-1 relative bg-gray-50 overflow-hidden">
-        {hasIframeContent ? (
+        {isUploadedFile ? (
+          <UploadedFileViewer resource={resource} />
+        ) : hasIframeContent ? (
           <>
             {isLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">

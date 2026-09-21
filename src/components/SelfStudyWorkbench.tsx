@@ -59,7 +59,7 @@ import { AgentSwitcherModal } from './workbench/agent/AgentSwitcherModal';
 import { getAgentPreset } from '../data/agentPresets';
 import { DeepTutorChat } from '../deeptutor/chatSession';
 import { isDeepTutorReady } from '../deeptutor/config';
-import { kbExists, kbNameForSpace, uploadFilesToKb, waitForKb } from '../deeptutor/knowledge';
+import { kbExists, kbFileUrl, kbNameForSpace, uploadFilesToKb, waitForKb } from '../deeptutor/knowledge';
 import { ensurePersona } from '../deeptutor/personas';
 import type { LearningLogEntry } from '../data/learningLog';
 import { createMasteryPath, fetchMasteryMap, toLearningPath } from '../deeptutor/mastery';
@@ -533,20 +533,37 @@ export default function SelfStudyWorkbench({
   // ─────────────────────────────────────────────────────────────
 
   // [资源/任务] 统一的资源点击处理 - 所有资源默认全屏打开
-  const handleResourceClick = (resource: Resource | typeof aiGeneratedResources[0]) => {
+  // 上传文件的 blob: 链接刷新后会失效；资源已入库的话，改用 DeepTutor 知识库里保存的原文件
+  const resolveViewUrl = async (url: string | undefined, kbFile: string | undefined): Promise<string | undefined> => {
+    if (!url || !url.startsWith('blob:') || !kbFile) return url;
+    const controller = new AbortController();
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      controller.abort(); // 只要确认链接还活着，不用读完整个文件
+      if (response.ok) return url;
+    } catch {
+      // blob 已失效，落到知识库原文件
+    }
+    return kbFileUrl(kbName, kbFile);
+  };
+
+  const handleResourceClick = async (resource: Resource | typeof aiGeneratedResources[0]) => {
     // 所有资源统一打开全屏 modal
     setInlineViewingResource(null);
+    const kbFile = 'kbFile' in resource ? resource.kbFile : undefined;
+    const viewUrl = await resolveViewUrl('url' in resource ? resource.url : undefined, kbFile);
     setViewingResource({
       id: resource.id,
       title: resource.title,
       type: 'interactive',
       description: 'description' in resource ? (resource.description || '') : '',
-      url: 'url' in resource ? resource.url : undefined,
+      url: viewUrl,
       interactiveCategory: 'interactiveCategory' in resource ? resource.interactiveCategory as Resource['interactiveCategory'] : undefined,
       toolId: 'toolId' in resource ? resource.toolId : undefined,
       data: 'data' in resource ? resource.data : undefined,
       textContent: 'textContent' in resource ? resource.textContent : undefined,
       fileType: 'fileType' in resource ? resource.fileType : undefined,
+      path: 'path' in resource ? resource.path : undefined,
       knowledgeBase: 'knowledgeBase' in resource ? resource.knowledgeBase : undefined,
       } as any);
   };
@@ -2522,6 +2539,8 @@ export default function SelfStudyWorkbench({
               interactiveCategory: viewingResource.interactiveCategory,
               data: (viewingResource as any).data,
               textContent: (viewingResource as any).textContent,
+              fileType: viewingResource.fileType,
+              path: viewingResource.path,
             });
             setViewingResource(null);
           }

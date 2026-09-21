@@ -297,6 +297,8 @@ export function LeftPanel(props: LeftPanelProps) {
                         toolId: inlineViewingResource.toolId,
                         data: inlineViewingResource.data,
                         textContent: inlineViewingResource.textContent,
+                        fileType: inlineViewingResource.fileType,
+                        path: inlineViewingResource.path,
                       } as any);
                       onSetInlineViewingResource(null);
                     }}
