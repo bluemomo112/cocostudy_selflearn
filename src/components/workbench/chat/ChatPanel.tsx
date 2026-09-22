@@ -616,18 +616,18 @@ export function ChatPanel(props: ChatPanelProps) {
 
         {isCameraOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={closeCamera}>
-            <div className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+            <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-100 px-4 py-3">
                 <div>
                   <h3 className="font-semibold text-gray-800">拍照添加图片</h3>
                   <p className="text-xs text-gray-500">建议横向拍摄，保持光线充足，让内容完整入框</p>
                 </div>
                 <button onClick={closeCamera} className="rounded-lg p-2 text-gray-400 hover:bg-gray-100"><X size={18} /></button>
               </div>
-              <div className="bg-gray-900 p-3">
-                {cameraPreview ? <img src={cameraPreview} alt="拍照预览" className="max-h-[70vh] w-full rounded-lg object-contain" /> : <video ref={cameraVideoRef} playsInline muted className="max-h-[70vh] w-full rounded-lg object-contain" />}
+              <div className="flex min-h-[60vh] flex-1 items-center justify-center bg-gray-900 p-3">
+                {cameraPreview ? <img src={cameraPreview} alt="拍照预览" className="max-h-full max-w-full rounded-lg object-contain" /> : <video ref={cameraVideoRef} playsInline muted className="max-h-full max-w-full rounded-lg object-contain" />}
               </div>
-              <div className="flex items-center justify-between gap-3 px-4 py-3">
+              <div className="flex flex-shrink-0 items-center justify-between gap-3 px-4 py-3">
                 <span className="text-xs text-gray-500">小贴士：避免反光、倾斜和遮挡</span>
                 {cameraPreview ? <div className="flex gap-2"><button onClick={() => setCameraPreview(null)} className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600"><RotateCcw size={14} />重拍</button><button onClick={useCameraPhoto} className="rounded-lg bg-primary-600 px-4 py-2 text-sm text-white">使用照片</button></div> : <button onClick={takePhoto} className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">拍照</button>}
               </div>
