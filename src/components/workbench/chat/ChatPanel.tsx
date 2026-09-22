@@ -20,7 +20,7 @@ import {
   Pencil, BookOpen, Target, Lightbulb, MessageCircle, Clock,
   ListChecks, CheckCircle2, Circle, Eye, Play, Zap, FileText,
   AlertCircle, RotateCcw, Pause, GitBranch, Copy,
-  Save, ClipboardList, ImagePlus, Square, Loader2, Camera
+  Save, ClipboardList, ImagePlus, Square, Camera
 } from 'lucide-react';
 
 interface ChatPanelProps {
@@ -99,6 +99,7 @@ export function ChatPanel(props: ChatPanelProps) {
   const [voiceHint, setVoiceHint] = useState('');
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [cameraPreview, setCameraPreview] = useState<string | null>(null);
+  const [isImageMenuOpen, setIsImageMenuOpen] = useState(false);
 
   useEffect(() => {
     setVoiceHint(isRecordingVoice ? t('正在聆听…再次点击停止') : '');
@@ -546,67 +547,76 @@ export function ChatPanel(props: ChatPanelProps) {
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSendMessage()}
                 placeholder={
-                  config.learningMode === 'self_directed'
+                  voiceHint || (config.learningMode === 'self_directed'
                     ? t('有什么问题？随时问我...')
-                    : t('回答问题或提出疑问...')
+                    : t('回答问题或提出疑问...'))
                 }
                 disabled={isLoading}
-                className="w-full bg-white border border-gray-200 rounded-xl pl-4 pr-24 py-3.5 text-sm text-gray-700 shadow-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 disabled:bg-gray-50 disabled:opacity-70"
+                className={`w-full bg-white border rounded-xl pl-4 pr-36 py-3.5 text-sm text-gray-700 shadow-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 disabled:bg-gray-50 disabled:opacity-70 ${
+                  isRecordingVoice ? 'border-primary-400 ring-2 ring-primary-100' : 'border-gray-200'
+                }`}
               />
-              {/* Mic button */}
-              {isEnabled('voiceInput') && (
-              <button
-                onClick={toggleVoiceInput}
-                disabled={isLoading}
-                className={`absolute right-16 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
-                  isRecordingVoice
-                    ? 'bg-red-500 text-white shadow-sm'
-                    : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
-                }`}
-                title={isRecordingVoice ? t('停止录音') : t('语音输入')}
-              >
-                {isRecordingVoice ? <Loader2 size={16} className="animate-spin" /> : <Mic size={16} />}
-              </button>
-              )}
-              {/* Send button */}
-              <button
-                onClick={() => isLoading ? stopGenerating() : handleSendMessage()}
-                disabled={!isLoading && !inputMessage.trim() && attachments.length === 0}
-                className={`absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-                  isLoading
-                    ? 'bg-red-500 text-white hover:bg-red-600'
-                    : 'bg-primary-600 text-white hover:bg-primary-700'
-                }`}
-              >
-                {isLoading ? <Square size={15} /> : <Send size={16} />}
-              </button>
-            </div>
-            {/* 底部工具栏：图片、拍照、录音状态 */}
-            <div className="mt-2 flex items-center justify-between">
-              <div className="flex items-center gap-1">
-                <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isLoading} className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50" title={t('选择图片')}>
-                  <ImagePlus size={15} />选择图片
+              <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
+                {/* Mic button */}
+                {isEnabled('voiceInput') && (
+                <button
+                  type="button"
+                  onClick={toggleVoiceInput}
+                  disabled={isLoading}
+                  className={`relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors disabled:opacity-50 ${
+                    isRecordingVoice
+                      ? 'bg-primary-600 text-white'
+                      : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+                  }`}
+                  title={isRecordingVoice ? t('停止录音') : t('语音输入')}
+                >
+                  {isRecordingVoice && <span className="absolute inset-0 animate-ping rounded-lg bg-primary-500 opacity-50" />}
+                  {isRecordingVoice ? <Square size={14} fill="currentColor" className="relative" /> : <Mic size={16} className="relative" />}
                 </button>
-                <button type="button" onClick={openCamera} disabled={isLoading} className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50" title={t('打开相机拍照')}>
-                  <Camera size={15} />拍照
+                )}
+                {/* 图片：点击后选择“从相册选择”或“拍照” */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsImageMenuOpen(!isImageMenuOpen)}
+                    disabled={isLoading}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50"
+                    title={t('添加图片')}
+                  >
+                    <ImagePlus size={16} />
+                  </button>
+                  {isImageMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-30" onClick={() => setIsImageMenuOpen(false)} />
+                      <div className="absolute bottom-full right-0 z-40 mb-2 w-32 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                        <button type="button" onClick={() => { setIsImageMenuOpen(false); fileInputRef.current?.click(); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50">
+                          <ImagePlus size={14} />{t('选择图片')}
+                        </button>
+                        <button type="button" onClick={() => { setIsImageMenuOpen(false); openCamera(); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50">
+                          <Camera size={14} />{t('拍照')}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+                {/* Send / Stop button */}
+                <button
+                  type="button"
+                  onClick={() => isLoading ? stopGenerating() : handleSendMessage()}
+                  disabled={!isLoading && !inputMessage.trim() && attachments.length === 0}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600 text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  title={isLoading ? t('停止生成') : t('发送')}
+                >
+                  {isLoading ? <Square size={14} fill="currentColor" /> : <Send size={16} />}
                 </button>
               </div>
-              {voiceHint && (
-                <span className="flex items-center gap-1.5 rounded-full border border-primary-100 bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-600">
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-400 opacity-60" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-primary-500" />
-                  </span>
-                  {t('正在录音')}
-                </span>
-              )}
             </div>
           </div>
         </div>
 
         {isCameraOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={closeCamera}>
-            <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
                 <div>
                   <h3 className="font-semibold text-gray-800">拍照添加图片</h3>
@@ -615,7 +625,7 @@ export function ChatPanel(props: ChatPanelProps) {
                 <button onClick={closeCamera} className="rounded-lg p-2 text-gray-400 hover:bg-gray-100"><X size={18} /></button>
               </div>
               <div className="bg-gray-900 p-3">
-                {cameraPreview ? <img src={cameraPreview} alt="拍照预览" className="max-h-[55vh] w-full rounded-lg object-contain" /> : <video ref={cameraVideoRef} playsInline muted className="max-h-[55vh] w-full rounded-lg object-contain" />}
+                {cameraPreview ? <img src={cameraPreview} alt="拍照预览" className="max-h-[70vh] w-full rounded-lg object-contain" /> : <video ref={cameraVideoRef} playsInline muted className="max-h-[70vh] w-full rounded-lg object-contain" />}
               </div>
               <div className="flex items-center justify-between gap-3 px-4 py-3">
                 <span className="text-xs text-gray-500">小贴士：避免反光、倾斜和遮挡</span>
