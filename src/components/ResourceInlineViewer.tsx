@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { ArrowLeft, Maximize2, Loader2, Sparkles, FileText, Play, Pause, Volume2, RotateCcw, ChevronLeft, ChevronRight, Copy, MessageSquarePlus, Highlighter, MessageCircle, Check, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowLeft, Maximize2, Loader2, Sparkles, FileText, Play, Pause, Volume2, RotateCcw, ChevronLeft, ChevronRight, Copy, Highlighter, Check } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -29,6 +29,11 @@ export interface InlineViewResource {
   fileType?: string;
   path?: string;
 }
+
+const HIGHLIGHT_NAME = 'resource-highlight';
+// 浮动控件的近似尺寸，仅用于定位时避开视口边缘
+const TOOLBAR_WIDTH = 200;
+const TOOLBAR_HEIGHT = 36;
 
 interface ResourceInlineViewerProps {
   resource: InlineViewResource;
@@ -276,22 +281,69 @@ function MindMapViewer({ nodes }: { nodes: { center: string; branches: Array<{ t
 export default function ResourceInlineViewer({ resource, onBack, onFullscreen, onSendMessage }: ResourceInlineViewerProps) {
   const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(true);
-  const [selection, setSelection] = useState('');
-  const [highlights, setHighlights] = useState<string[]>([]);
-  const [annotation, setAnnotation] = useState('');
-  const [annotationFor, setAnnotationFor] = useState<string | null>(null);
+  const textRef = useRef<HTMLDivElement>(null);
+  const highlightRef = useRef<Highlight | null>(null);
+  const [selectionToolbar, setSelectionToolbar] = useState<{ text: string; top: number; left: number } | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  const captureSelection = () => {
-    const text = window.getSelection()?.toString().trim() || '';
-    if (text) setSelection(text);
+  // 高亮用 CSS Custom Highlight API：不改 DOM，不会和 ReactMarkdown 的渲染冲突
+  useEffect(() => {
+    if (typeof Highlight === 'undefined' || !CSS.highlights) return;
+    const highlight = new Highlight();
+    highlightRef.current = highlight;
+    CSS.highlights.set(HIGHLIGHT_NAME, highlight);
+    return () => {
+      CSS.highlights.delete(HIGHLIGHT_NAME);
+      highlightRef.current = null;
+    };
+  }, [resource.id]);
+
+  // 滚动后选区位置变了，浮动控件先收起
+  useEffect(() => {
+    if (!selectionToolbar) return;
+    const hide = () => setSelectionToolbar(null);
+    window.addEventListener('scroll', hide, true);
+    return () => window.removeEventListener('scroll', hide, true);
+  }, [selectionToolbar]);
+
+  const updateSelectionToolbar = () => {
+    const selection = window.getSelection();
+    const text = selection?.toString().trim() || '';
+    if (!selection || !text || selection.rangeCount === 0 || !textRef.current?.contains(selection.anchorNode)) {
+      setSelectionToolbar(null);
+      return;
+    }
+    const rect = selection.getRangeAt(0).getBoundingClientRect();
+    setSelectionToolbar({
+      text,
+      // 优先贴在选区上方；上方放不下就贴在下方
+      top: rect.top >= TOOLBAR_HEIGHT + 8 ? rect.top - TOOLBAR_HEIGHT - 6 : rect.bottom + 6,
+      left: Math.min(window.innerWidth - TOOLBAR_WIDTH / 2 - 8, Math.max(TOOLBAR_WIDTH / 2 + 8, rect.left + rect.width / 2)),
+    });
+  };
+
+  const closeSelectionToolbar = () => {
+    window.getSelection()?.removeAllRanges();
+    setSelectionToolbar(null);
+  };
+
+  const askAI = () => {
+    if (!selectionToolbar) return;
+    onSendMessage?.(`请结合当前学习资料，解释这段内容：\n\n> ${selectionToolbar.text}`);
+    closeSelectionToolbar();
   };
 
   const copySelection = async () => {
-    if (selection) await navigator.clipboard.writeText(selection);
+    if (!selectionToolbar) return;
+    await navigator.clipboard.writeText(selectionToolbar.text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
   };
 
-  const addSelectionToChat = () => {
-    if (selection) onSendMessage?.(`请结合当前学习资料，解释这段内容：\n\n> ${selection}`);
+  const highlightSelection = () => {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) highlightRef.current?.add(selection.getRangeAt(0).cloneRange());
+    closeSelectionToolbar();
   };
 
   const isUploadedFile = !!(resource.fileType && resource.url);
@@ -379,9 +431,8 @@ export default function ResourceInlineViewer({ resource, onBack, onFullscreen, o
                 {resource.description && (
                   <p className="text-sm text-gray-600 leading-relaxed">{t(resource.description)}</p>
                 )}
-                <div onMouseUp={captureSelection} onTouchEnd={captureSelection} className="prose prose-sm max-w-none text-gray-700 leading-relaxed bg-white rounded-lg border border-gray-200 p-4">
+                <div ref={textRef} onMouseUp={updateSelectionToolbar} onTouchEnd={updateSelectionToolbar} className="prose prose-sm max-w-none text-gray-700 leading-relaxed bg-white rounded-lg border border-gray-200 p-4">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{t(resource.textContent)}</ReactMarkdown>
-                  {highlights.map((item) => <mark key={item} className="hidden">{item}</mark>)}
                 </div>
               </div>
             ) : (
@@ -406,20 +457,20 @@ export default function ResourceInlineViewer({ resource, onBack, onFullscreen, o
           </>
         )}
       </div>
-      {resource.textContent && (
-        <div className="flex flex-wrap items-center gap-2 border-t border-gray-200 bg-white px-3 py-2">
-          <span className="text-xs text-gray-400">{selection ? `已选 ${selection.length} 字` : '选中文本后使用工具'}</span>
-          <button onClick={copySelection} disabled={!selection} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-40"><Copy size={13} />复制</button>
-          <button onClick={addSelectionToChat} disabled={!selection || !onSendMessage} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-40"><MessageSquarePlus size={13} />添加到对话</button>
-          <button onClick={() => selection && setHighlights([...highlights, selection])} disabled={!selection} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-amber-700 hover:bg-amber-50 disabled:opacity-40"><Highlighter size={13} />标黄</button>
-          <button onClick={() => selection && setAnnotationFor(selection)} disabled={!selection} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-blue-700 hover:bg-blue-50 disabled:opacity-40"><MessageCircle size={13} />注释</button>
-        </div>
-      )}
-      {annotationFor && (
-        <div className="absolute bottom-12 left-3 right-3 z-20 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
-          <div className="mb-2 flex items-center justify-between text-xs text-gray-500"><span>为选中文本添加注释</span><button onClick={() => setAnnotationFor(null)}><X size={14} /></button></div>
-          <textarea value={annotation} onChange={(e) => setAnnotation(e.target.value)} autoFocus className="h-16 w-full resize-none rounded border border-gray-200 p-2 text-xs outline-none focus:border-primary-400" placeholder="输入你的想法..." />
-          <div className="mt-2 flex justify-end"><button onClick={() => { setAnnotation(''); setAnnotationFor(null); }} className="inline-flex items-center gap-1 rounded bg-primary-600 px-3 py-1.5 text-xs text-white"><Check size={13} />保存注释</button></div>
+      <style>{`::highlight(${HIGHLIGHT_NAME}) { background-color: #fde68a; color: inherit; }`}</style>
+      {selectionToolbar && (
+        <div
+          className="fixed z-50 flex -translate-x-1/2 items-center gap-0.5 rounded-lg border border-gray-200 bg-white px-1 py-1 shadow-lg"
+          style={{ top: selectionToolbar.top, left: selectionToolbar.left, height: TOOLBAR_HEIGHT }}
+          onMouseDown={(event) => event.preventDefault()}
+        >
+          {onSendMessage && (
+            <button onClick={askAI} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary-700 hover:bg-primary-50"><Sparkles size={13} />{t('问AI')}</button>
+          )}
+          <button onClick={copySelection} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-600 hover:bg-gray-100">
+            {copied ? <Check size={13} /> : <Copy size={13} />}{copied ? t('已复制') : t('复制')}
+          </button>
+          <button onClick={highlightSelection} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-amber-700 hover:bg-amber-50"><Highlighter size={13} />{t('高亮')}</button>
         </div>
       )}
     </div>
