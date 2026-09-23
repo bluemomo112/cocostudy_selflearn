@@ -465,6 +465,9 @@ export default function SelfStudyWorkbench({
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const recognitionRef = useRef<any>(null);
 
+  // 输入框图片附件（选择图片 / 拍照）
+  const [attachments, setAttachments] = useState<Array<{ name: string; url: string; type: string }>>([]);
+
   // 计时器状态
   const [elapsedTime, setElapsedTime] = usePersistedState<number>(`self-study:wb:${config.id}:elapsedTime`, 0);
   const [isTimerRunning, setIsTimerRunning] = useState(true);
@@ -1479,11 +1482,15 @@ export default function SelfStudyWorkbench({
       role: 'user',
       content: messageToSend,
       timestamp: new Date(),
+      attachments: attachments.length > 0 ? attachments : undefined,
     };
 
     setMessages((prev) => [...prev, userMessage]);
     const userInput = messageToSend.toLowerCase();
-    if (!overrideMessage) setInputMessage('');
+    if (!overrideMessage) {
+      setInputMessage('');
+      setAttachments([]);
+    }
     setIsLoading(true);
 
     // 模拟 AI 回复 - 根据模式和输入内容生成不同回复
@@ -2807,6 +2814,8 @@ export default function SelfStudyWorkbench({
           config={config}
           messages={messages}
           inputMessage={inputMessage}
+          attachments={attachments}
+          onAttachmentsChange={setAttachments}
           isRecordingVoice={isRecordingVoice}
           isLoading={isLoading}
           expandedTask={expandedTask}
