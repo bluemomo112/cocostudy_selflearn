@@ -305,6 +305,7 @@ export function LeftPanel(props: LeftPanelProps) {
                   <ResourceInlineViewer
                     resource={inlineViewingResource}
                     onBack={() => onSetInlineViewingResource(null)}
+                    onSendMessage={onSendMessage}
                     onFullscreen={() => {
                       onSetViewingResource?.({
                         id: inlineViewingResource.id,

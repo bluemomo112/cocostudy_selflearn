@@ -2793,6 +2793,7 @@ export default function SelfStudyWorkbench({
           onSetTaskDisplayMode={setTaskDisplayMode}
           onSetExplainQuestion={setExplainQuestion}
           onExplainQuestion={handleExplainQuestion}
+          onSendMessage={handleSendMessage}
           generatingToolId={generatingToolId}
           onTriggerVariantGeneration={() => {
             const variantTool = STUDIO_TOOLS.find(t => t.id === 'generate_variant_question');
