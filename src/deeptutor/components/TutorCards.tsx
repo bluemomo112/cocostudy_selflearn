@@ -6,7 +6,7 @@
  * `splitContentSegments` (../lib/parse-cards) and rendered in place of the raw ```card:xxx
  * fenced block, so the student sees a real roadmap/result card instead of a generic code block.
  */
-import { Map, RotateCcw, CheckCircle2, AlertTriangle, ListOrdered } from 'lucide-react';
+import { Map, RotateCcw, CheckCircle2, AlertTriangle, ListOrdered, BookOpen } from 'lucide-react';
 import type { RoadmapCardData, ReviewResultCardData, ReviewOrderCardData } from '../lib/parse-cards';
 
 const ACCENT: Record<'new' | 'review', { border: string; chipBg: string; chipText: string; icon: string }> = {
@@ -52,8 +52,12 @@ export function RoadmapCard({ data }: { data: RoadmapCardData }) {
               <div className="text-gray-800">
                 <span className="font-medium">「{item.title}」</span>
                 {item.focus && <span className="text-gray-500">· 重点：{item.focus}</span>}
+                {item.material && (
+                  <span title={`《${item.material}》`} className="inline-flex align-middle ml-1.5 text-gray-300 hover:text-gray-500 cursor-help">
+                    <BookOpen size={12} />
+                  </span>
+                )}
               </div>
-              {item.material && <div className="text-gray-400 text-xs mt-0.5">《{item.material}》</div>}
               {item.outcome && <div className="text-gray-600 text-xs mt-1">学完你能：{item.outcome}</div>}
             </div>
           </li>

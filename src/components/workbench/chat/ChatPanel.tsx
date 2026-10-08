@@ -305,7 +305,7 @@ export function ChatPanel(props: ChatPanelProps) {
                       {message.role === 'assistant' ? (
                         <div className="dt-scope">
                           {isLoading && message.id === messages[messages.length - 1]?.id
-                            && !message.content?.trim() && !message.thinking?.trim() && (
+                            && !message.content?.trim() && (
                             <div className="flex items-center gap-2 text-gray-500 mb-1">
                               <Activity size={14} className="animate-spin" />
                               <span className="text-sm">{t('思考中...')}</span>
