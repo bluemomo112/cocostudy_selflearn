@@ -7,6 +7,8 @@ import AssistantResponse from '../../../deeptutor/components/AssistantResponse';
 import MessageSources from '../../../deeptutor/components/MessageSources';
 import MasteryQuestionCard from '../../../deeptutor/components/MasteryQuestionCard';
 import AskUserCard from '../../../deeptutor/components/AskUserCard';
+import { RoadmapCard, ReviewResultCard, ReviewOrderCard } from '../../../deeptutor/components/TutorCards';
+import { splitContentSegments } from '../../../deeptutor/lib/parse-cards';
 import { SpaceConfig, LearningMode, LearningPathNode } from '../../../types/self-study';
 import { Task } from '../../../types/shared-context';
 import { useLanguage } from '../../../contexts/LanguageContext';
@@ -302,12 +304,46 @@ export function ChatPanel(props: ChatPanelProps) {
                       ) : null}
                       {message.role === 'assistant' ? (
                         <div className="dt-scope">
-                          <AssistantResponse
-                            content={t(message.content)}
-                            thinking={message.thinking}
-                            isStreaming={isLoading && message.id === messages[messages.length - 1]?.id}
-                            language="zh"
-                          />
+                          {isLoading && message.id === messages[messages.length - 1]?.id
+                            && !message.content?.trim() && !message.thinking?.trim() && (
+                            <div className="flex items-center gap-2 text-gray-500 mb-1">
+                              <Activity size={14} className="animate-spin" />
+                              <span className="text-sm">{t('思考中...')}</span>
+                            </div>
+                          )}
+                          {(() => {
+                            const isStreamingMsg = isLoading && message.id === messages[messages.length - 1]?.id;
+                            const segments = splitContentSegments(t(message.content));
+                            let textSeen = false;
+                            return segments.map((seg, i) => {
+                              if (seg.type === 'text') {
+                                const showThinking = !textSeen;
+                                textSeen = true;
+                                return (
+                                  <AssistantResponse
+                                    key={i}
+                                    content={seg.text}
+                                    thinking={showThinking ? message.thinking : undefined}
+                                    isStreaming={isStreamingMsg}
+                                    language="zh"
+                                  />
+                                );
+                              }
+                              if (seg.data?.kind === 'roadmap-new' || seg.data?.kind === 'roadmap-review') {
+                                return <RoadmapCard key={i} data={seg.data} />;
+                              } else if (seg.data?.kind === 'review-result') {
+                                return <ReviewResultCard key={i} data={seg.data} />;
+                              } else if (seg.data?.kind === 'review-order') {
+                                return <ReviewOrderCard key={i} data={seg.data} />;
+                              }
+                              // 解析不出结构化数据时，至少把原文显示出来，不丢内容
+                              return (
+                                <pre key={i} className="mt-2 p-3 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-600 whitespace-pre-wrap">
+                                  {seg.raw}
+                                </pre>
+                              );
+                            });
+                          })()}
                           <MessageSources sources={message.sources} toolCalls={message.toolCalls} />
                           {message.masteryQuestion ? (
                             <MasteryQuestionCard
@@ -480,21 +516,6 @@ export function ChatPanel(props: ChatPanelProps) {
                     );
                   })()}
 
-                  {/* 推荐回复 - 在对话框外下方，长条形输入框样式 */}
-                  {message.role === 'assistant' && message.suggestions?.quickReplies && message.suggestions.quickReplies.length > 0 && (
-                    <div className="mt-2 flex flex-col gap-2">
-                      {message.suggestions.quickReplies.map((reply) => (
-                        <button
-                          key={reply.id}
-                          onClick={() => handleQuickReply(reply.label, reply.id)}
-                          className="px-4 py-3 text-sm text-left rounded-lg border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 text-gray-700 transition-all hover:shadow-sm flex items-start gap-2"
-                        >
-                          <Send size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
-                          <span>{t(reply.label)}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </div>
               );

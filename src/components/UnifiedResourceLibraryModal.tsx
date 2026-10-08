@@ -17,6 +17,9 @@ interface UnifiedResourceLibraryModalProps {
   onImportHistoricalTest?: (testRecord: HistoricalTest) => void;
   onImportNotes?: (notes: Note[]) => void;
   onImportWebpages?: (webpages: InteractiveWebpage[]) => void;
+  /** "个人"分类下的真实数据：已经解析好、可以直接复用的资源（不用重新上传/重新解析）。 */
+  personalResources?: Resource[];
+  personalResourcesLoading?: boolean;
 }
 
 type TabType = 'resources' | 'error_questions' | 'historical_tests' | 'notes' | 'webpages';
@@ -37,7 +40,9 @@ export default function UnifiedResourceLibraryModal({
   onImportErrorQuestions,
   onImportHistoricalTest,
   onImportNotes,
-  onImportWebpages
+  onImportWebpages,
+  personalResources = [],
+  personalResourcesLoading = false,
 }: UnifiedResourceLibraryModalProps) {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<TabType>('resources');
@@ -56,21 +61,17 @@ export default function UnifiedResourceLibraryModal({
     return Array.from(tags);
   }, []);
 
-  // 过滤后的学习资料
+  // 过滤后的学习资料："个人"用真实的、已经解析好的资源；"公共"暂时还是示例数据
   const filteredResources = useMemo(() => {
-    const libraryResources = mockResources.map((resource, index) => ({
-      ...resource,
-      source: index % 3 === 0 ? 'personal' : 'shared',
-    }));
+    const libraryResources = resourceScope === 'personal'
+      ? personalResources.map((resource) => ({ ...resource, source: 'personal' as const }))
+      : mockResources.map((resource) => ({ ...resource, source: 'shared' as const }));
 
-    return libraryResources.filter(resource => {
-      if (resourceScope === 'public' && resource.source !== 'shared') return false;
-      if (resourceScope === 'personal' && resource.source !== 'personal') return false;
-
-      return resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        resource.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    });
-  }, [searchQuery, resourceScope]);
+    return libraryResources.filter(resource =>
+      resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      resource.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [searchQuery, resourceScope, personalResources]);
 
   // 过滤后的错题
   const filteredErrorQuestions = useMemo(() => {
@@ -436,9 +437,13 @@ export default function UnifiedResourceLibraryModal({
             {/* 学习资料列表 */}
             {activeTab === 'resources' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {filteredResources.length === 0 ? (
+                {resourceScope === 'personal' && personalResourcesLoading ? (
                   <div className="col-span-2 text-center py-12 text-gray-400">
-                    <p>{t('没有找到相关资源')}</p>
+                    <p>{t('正在读取已解析的资源…')}</p>
+                  </div>
+                ) : filteredResources.length === 0 ? (
+                  <div className="col-span-2 text-center py-12 text-gray-400">
+                    <p>{resourceScope === 'personal' ? t('还没有可以直接复用的资源，在别的空间解析过的文件会出现在这里') : t('没有找到相关资源')}</p>
                   </div>
                 ) : (
                   filteredResources.map((resource) => {

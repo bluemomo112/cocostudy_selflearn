@@ -30,6 +30,11 @@ export function kbNameForSpace(spaceId: string): string {
   return `cross-${spaceId}`.replace(FORBIDDEN, '_').slice(0, 120);
 }
 
+/** One KB per resource (not one shared KB per space), so a turn can include just the checked resources. */
+export function kbNameForResource(spaceId: string, resourceId: string): string {
+  return `cross-${spaceId}-${resourceId}`.replace(FORBIDDEN, '_').slice(0, 120);
+}
+
 async function readError(res: Response): Promise<string> {
   try {
     const body = await res.json();
@@ -110,6 +115,47 @@ export async function waitForKb(
 /** Download URL of an original file inside a KB (used for previews). */
 export function kbFileUrl(name: string, filename: string): string {
   return deeptutorApiUrl(`/api/knowledge-bases/${encodeURIComponent(name)}/files/${encodeURIComponent(filename)}`);
+}
+
+export interface KbFile {
+  name: string;
+  size: number;
+  mime_type?: string;
+}
+
+/** Original files stored in a KB (each of our per-resource KBs holds exactly one). */
+export async function listKbFiles(name: string): Promise<KbFile[]> {
+  const res = await fetch(deeptutorApiUrl(`/api/knowledge-bases/${encodeURIComponent(name)}/files`));
+  if (!res.ok) throw new Error(`list kb files failed: ${res.status} ${await readError(res)}`);
+  const data = await res.json();
+  return Array.isArray(data.files) ? data.files : [];
+}
+
+export interface ImportableKbResource {
+  kbName: string;
+  fileName: string;
+  size: number;
+  mimeType?: string;
+}
+
+/**
+ * Every already-parsed, ready-to-use file across all of self-learn's KBs on this (now dedicated)
+ * DeepTutor instance, except the ones excluded (typically the current space's own resources).
+ * Lets the "import from library" modal offer resources without re-uploading/re-indexing them.
+ */
+export async function listImportableResources(excludeKbNames: Set<string>): Promise<ImportableKbResource[]> {
+  const kbs = await listKnowledgeBases();
+  const candidates = kbs.filter((kb) => kb.name.startsWith('cross-') && kb.status === 'ready' && !excludeKbNames.has(kb.name));
+  const results = await Promise.all(candidates.map(async (kb): Promise<ImportableKbResource[]> => {
+    try {
+      const files = await listKbFiles(kb.name);
+      return files.map((f) => ({ kbName: kb.name, fileName: f.name, size: f.size, mimeType: f.mime_type }));
+    } catch (error) {
+      console.warn(TAG, '读取知识库文件列表失败，跳过', kb.name, error);
+      return [];
+    }
+  }));
+  return results.flat();
 }
 
 export async function deleteKnowledgeBase(name: string): Promise<void> {

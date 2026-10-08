@@ -59,7 +59,7 @@ import { AgentSwitcherModal } from './workbench/agent/AgentSwitcherModal';
 import { getAgentPreset } from '../data/agentPresets';
 import { DeepTutorChat } from '../deeptutor/chatSession';
 import { isDeepTutorReady } from '../deeptutor/config';
-import { kbExists, kbFileUrl, kbNameForSpace, uploadFilesToKb, waitForKb } from '../deeptutor/knowledge';
+import { kbExists, kbFileUrl, kbNameForResource, uploadFilesToKb, waitForKb, listImportableResources, type ImportableKbResource } from '../deeptutor/knowledge';
 import { ensurePersona } from '../deeptutor/personas';
 import type { LearningLogEntry } from '../data/learningLog';
 import { createMasteryPath, fetchMasteryMap, toLearningPath } from '../deeptutor/mastery';
@@ -84,6 +84,16 @@ import type { ChatMessage, Note, VoiceRecording, SelfStudyWorkbenchProps } from 
 
 // AI 生成（或手动添加）到「学习任务」区的任务
 type GeneratedTask = Task & { status: 'available'; questionCount: number; generatedAt: Date };
+
+// 学生画像默认值：真正的年级/学科/学习目标录入流程接上之前，先用这份默认值填进导师开场看到的上下文
+const DEFAULT_STUDENT_PROFILE = { grade: '五年级', subject: '数学', learningIntention: '掌握这一课的知识点' };
+
+function buildStudentContextLine(config: Pick<SpaceConfig, 'grade' | 'subjects' | 'userProfile'>): string {
+  const grade = config.grade || DEFAULT_STUDENT_PROFILE.grade;
+  const subject = config.subjects?.[0] || DEFAULT_STUDENT_PROFILE.subject;
+  const learningIntention = config.userProfile?.goal || DEFAULT_STUDENT_PROFILE.learningIntention;
+  return `（学生信息：年级=${grade}，学科=${subject}，学习目标=${learningIntention}）`;
+}
 
 // ─────────────────────────────────────────────────────────────
 // 主组件
@@ -138,8 +148,13 @@ export default function SelfStudyWorkbench({
 
   // 如果传入 spaceId，从 localStorage 加载配置（学生模式）
   const [config, setConfig] = useState<SpaceConfig>(() => {
-    if (spaceId && !initialConfig) {
-      const stored = localStorage.getItem(`self-study:space:${spaceId}`);
+    // 自己的存储（由 handleUpdateConfig 持续写入）是这个空间的权威数据；宿主传入的 initialConfig
+    // 只是它自己另存的一份副本，可能因为没有同步到每一次内部更新而落后（比如资源入库、AI 生成）。
+    // 只有在自己从没存过这个空间时，才用 initialConfig 作为起点。
+    // 教师端（cross-new）只传 config，不传 spaceId，这时用 config.id 当查找键。
+    const effectiveId = spaceId || initialConfig?.id;
+    if (effectiveId) {
+      const stored = localStorage.getItem(`self-study:space:${effectiveId}`);
       if (stored) {
         return JSON.parse(stored);
       }
@@ -166,12 +181,23 @@ export default function SelfStudyWorkbench({
     };
   });
 
-  // 同步外部 config 变化
+  // 同步外部 config 变化：只在宿主真的切换到另一个空间（id 变了）时才采用它传入的副本，
+  // 不能每次 initialConfig 引用变化就套用——宿主那份是另存的快照，会落后于下面 handleUpdateConfig
+  // 持续写入的 self-study:space:<id>，之前的写法会把已经入库好的资源、生成的任务等重新冲掉。
   useEffect(() => {
-    if (initialConfig) {
-      setConfig(initialConfig);
+    if (!initialConfig || initialConfig.id === config.id) return;
+    setConfig(initialConfig);
+  }, [initialConfig, config.id]);
+
+  // 挂载时如果用了自己更权威的存储而不是宿主传入的（落后的）副本，顺手把宿主那份纠正回去，
+  // 不然它会一直停留在旧快照上，下次整个页面重新加载又会读到同一份旧数据。
+  useEffect(() => {
+    if (initialConfig && initialConfig.id === config.id && initialConfig !== config) {
+      onUpdateConfig?.(config);
     }
-  }, [initialConfig]);
+    // 只在挂载时纠正一次；后续变化都已经在 handleUpdateConfig 里同步给宿主了
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 学生的学习进度（聊天记录、DeepTutor 会话、掌握度路径、任务记录）和老师的编辑状态分开存；
   // 老师生成的资源、任务和工具配置仍按空间共享。目前没有账号体系，同一浏览器里的学生共用一份。
@@ -191,8 +217,12 @@ export default function SelfStudyWorkbench({
     localStorage.setItem(`self-study:space:${newConfig.id}`, JSON.stringify(newConfig));
   };
 
-  // ── DeepTutor 知识库：每个学习空间一个库，资源上传后自动入库解析 ──
-  const kbName = kbNameForSpace(config.id);
+  // ── DeepTutor 知识库：每份资源自己一个库，这样一轮对话能只带勾选中的资源 ──
+  // 从资源库导入的资源会带上 kbName（复用别的空间已经解析好的库），没有的话按当前空间+资源 id 算
+  const kbNameForResourceId = (resourceId: string) => {
+    const override = configRef.current.resources.find((r) => r.id === resourceId)?.kbName;
+    return override || kbNameForResource(config.id, resourceId);
+  };
 
   const patchResources = (patches: Record<string, Partial<Resource>>) => {
     const cur = configRef.current;
@@ -205,50 +235,75 @@ export default function SelfStudyWorkbench({
     return new File([resource.textContent ?? ''], `${safeTitle}.md`, { type: 'text/markdown' });
   };
 
-  const syncResourcesToKb = async (items: Array<{ resource: Resource; file: File }>) => {
-    if (items.length === 0) return;
-    const ids = items.map((i) => i.resource.id);
-    if (!(await isDeepTutorReady())) {
-      console.warn('[kb] DeepTutor 不可用，跳过入库:', ids);
-      return;
-    }
-    console.log('[kb] 入库', kbName, items.map((i) => i.file.name));
-    patchResources(Object.fromEntries(ids.map((id) => [id, { kbStatus: 'indexing' as const, kbError: undefined }])));
-    try {
-      await uploadFilesToKb(kbName, items.map((i) => i.file));
-      await waitForKb(kbName);
-      patchResources(Object.fromEntries(items.map((i) => [i.resource.id, { kbStatus: 'ready' as const, kbFile: i.file.name }])));
-      console.log('[kb] 入库完成', kbName);
-    } catch (error) {
-      console.error('[kb] 入库失败:', error);
-      const message = error instanceof Error ? error.message : String(error);
-      patchResources(Object.fromEntries(ids.map((id) => [id, { kbStatus: 'failed' as const, kbError: message }])));
-    }
+  // 把"从资源库导入"查到的、已经解析好的 DeepTutor 文件包成 Resource：kbStatus 直接是 ready，不用重新上传/解析
+  const importableKbResourceToResource = (item: ImportableKbResource): Resource => {
+    const ext = item.fileName.split('.').pop()?.toLowerCase() || '';
+    const isPresentation = ['ppt', 'pptx'].includes(ext);
+    const isVideo = ['mp4', 'avi', 'mov', 'webm'].includes(ext);
+    const isAudio = ['mp3', 'wav', 'm4a', 'ogg'].includes(ext);
+    const type: Resource['type'] = isPresentation ? 'presentation' : (isVideo || isAudio) ? 'video' : 'document';
+    return {
+      id: `kb_${item.kbName}`,
+      title: item.fileName.replace(/\.[^/.]+$/, ''),
+      type,
+      fileType: (isPresentation ? ext : isVideo ? 'video' : isAudio ? 'audio' : ext) as Resource['fileType'],
+      description: `${(item.size / 1024).toFixed(0)} KB · 已解析`,
+      knowledgeBase: 'supported',
+      kbStatus: 'ready',
+      kbFile: item.fileName,
+      kbName: item.kbName,
+    };
   };
 
-  // 进入空间时：核对知识库是否还在；补上还没入库的文本类资源；接着等上次没解析完的资源
+  const syncResourcesToKb = async (items: Array<{ resource: Resource; file: File }>) => {
+    if (items.length === 0) return;
+    if (!(await isDeepTutorReady())) {
+      console.warn('[kb] DeepTutor 不可用，跳过入库:', items.map((i) => i.resource.id));
+      return;
+    }
+    patchResources(Object.fromEntries(items.map((i) => [i.resource.id, { kbStatus: 'indexing' as const, kbError: undefined }])));
+    await Promise.all(items.map(async ({ resource, file }) => {
+      const name = kbNameForResourceId(resource.id);
+      try {
+        console.log('[kb] 入库', name, file.name);
+        await uploadFilesToKb(name, [file]);
+        await waitForKb(name);
+        patchResources({ [resource.id]: { kbStatus: 'ready' as const, kbFile: file.name } });
+        console.log('[kb] 入库完成', name);
+      } catch (error) {
+        console.error('[kb] 入库失败:', error);
+        const message = error instanceof Error ? error.message : String(error);
+        patchResources({ [resource.id]: { kbStatus: 'failed' as const, kbError: message } });
+      }
+    }));
+  };
+
+  // 进入空间时：核对每份资源自己的知识库是否还在；补上还没入库的文本类资源；接着等上次没解析完的资源
   useEffect(() => {
     let cancelled = false;
     (async () => {
       if (!(await isDeepTutorReady())) return;
-      const exists = await kbExists(kbName);
-      if (cancelled) return;
-      const cur = configRef.current;
-      if (!exists && cur.resources.some((r) => r.kbStatus)) {
-        // 库已被删除：忘掉旧的入库状态，文本类资源会在下面重新入库
-        patchResources(Object.fromEntries(cur.resources.filter((r) => r.kbStatus).map((r) => [r.id, { kbStatus: undefined, kbFile: undefined, kbError: undefined }])));
-      }
-      const latest = configRef.current.resources;
-      const pending = latest.filter((r) => r.textContent && r.knowledgeBase !== 'unsupported' && !r.kbStatus);
-      const indexing = exists ? latest.filter((r) => r.kbStatus === 'indexing' && !pending.includes(r)) : [];
-      if (indexing.length > 0) {
-        try {
-          await waitForKb(kbName);
-          patchResources(Object.fromEntries(indexing.map((r) => [r.id, { kbStatus: 'ready' as const }])));
-        } catch (error) {
-          patchResources(Object.fromEntries(indexing.map((r) => [r.id, { kbStatus: 'failed' as const, kbError: String(error) }])));
+      const tracked = configRef.current.resources.filter((r) => r.kbStatus);
+      await Promise.all(tracked.map(async (r) => {
+        const name = kbNameForResourceId(r.id);
+        const exists = await kbExists(name);
+        if (cancelled) return;
+        if (!exists) {
+          // 库已被删除：忘掉旧的入库状态，文本类资源会在下面重新入库
+          patchResources({ [r.id]: { kbStatus: undefined, kbFile: undefined, kbError: undefined } });
+          return;
         }
-      }
+        if (r.kbStatus === 'indexing') {
+          try {
+            await waitForKb(name);
+            if (!cancelled) patchResources({ [r.id]: { kbStatus: 'ready' as const } });
+          } catch (error) {
+            if (!cancelled) patchResources({ [r.id]: { kbStatus: 'failed' as const, kbError: String(error) } });
+          }
+        }
+      }));
+      if (cancelled) return;
+      const pending = configRef.current.resources.filter((r) => r.textContent && r.knowledgeBase !== 'unsupported' && !r.kbStatus);
       if (!cancelled) await syncResourcesToKb(pending.map((resource) => ({ resource, file: textResourceToFile(resource) })));
     })();
     return () => {
@@ -376,8 +431,11 @@ export default function SelfStudyWorkbench({
 
   // 设置弹窗
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [currentAgentId, setCurrentAgentId] = useState('socratic');
+  // 对话区当前 Agent：默认取自设置里的「AI 配置」，默认新知导师；也可在对话框里临时切换风格
+  const [currentAgentId, setCurrentAgentId] = useState(config.freeConfig?.selectedAgentId || 'new_knowledge_tutor');
   const [isAgentSwitcherOpen, setIsAgentSwitcherOpen] = useState(false);
+  // 空间里出现第一份解析就绪的资源时，自动让当前 agent（新知/复习）开讲一次，不用学生先开口
+  const autoKickoffFiredRef = useRef(false);
 
   // 发布弹窗
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
@@ -390,6 +448,35 @@ export default function SelfStudyWorkbench({
 
   // 资源库导入弹窗
   const [showKnowledgeBaseModal, setShowKnowledgeBaseModal] = useState(false);
+  // "个人"分类：别的空间已经解析好、可以直接复用的资源（弹窗打开时才去查，不用一直轮询）
+  const [personalImportableResources, setPersonalImportableResources] = useState<Resource[]>([]);
+  const [personalResourcesLoading, setPersonalResourcesLoading] = useState(false);
+
+  useEffect(() => {
+    if (!showKnowledgeBaseModal) return;
+    let cancelled = false;
+    (async () => {
+      setPersonalResourcesLoading(true);
+      try {
+        if (!(await isDeepTutorReady())) {
+          if (!cancelled) setPersonalImportableResources([]);
+          return;
+        }
+        const excludeNames = new Set(configRef.current.resources.map((r) => kbNameForResourceId(r.id)));
+        const items = await listImportableResources(excludeNames);
+        if (!cancelled) setPersonalImportableResources(items.map(importableKbResourceToResource));
+      } catch (error) {
+        console.warn('[resource-library] 读取已解析资源失败:', error);
+        if (!cancelled) setPersonalImportableResources([]);
+      } finally {
+        if (!cancelled) setPersonalResourcesLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showKnowledgeBaseModal]);
 
   // 试卷检测状态
   const [examDetectedFiles, setExamDetectedFiles] = useState<File[] | null>(null);
@@ -538,7 +625,7 @@ export default function SelfStudyWorkbench({
 
   // [资源/任务] 统一的资源点击处理 - 所有资源默认全屏打开
   // 上传文件的 blob: 链接刷新后会失效；资源已入库的话，改用 DeepTutor 知识库里保存的原文件
-  const resolveViewUrl = async (url: string | undefined, kbFile: string | undefined): Promise<string | undefined> => {
+  const resolveViewUrl = async (url: string | undefined, kbFile: string | undefined, resourceId: string): Promise<string | undefined> => {
     if (!url || !url.startsWith('blob:') || !kbFile) return url;
     const controller = new AbortController();
     try {
@@ -548,14 +635,14 @@ export default function SelfStudyWorkbench({
     } catch {
       // blob 已失效，落到知识库原文件
     }
-    return kbFileUrl(kbName, kbFile);
+    return kbFileUrl(kbNameForResourceId(resourceId), kbFile);
   };
 
   const handleResourceClick = async (resource: Resource | typeof aiGeneratedResources[0]) => {
     // 所有资源统一打开全屏 modal
     setInlineViewingResource(null);
     const kbFile = 'kbFile' in resource ? resource.kbFile : undefined;
-    const viewUrl = await resolveViewUrl('url' in resource ? resource.url : undefined, kbFile);
+    const viewUrl = await resolveViewUrl('url' in resource ? resource.url : undefined, kbFile, resource.id);
     setViewingResource({
       id: resource.id,
       title: resource.title,
@@ -615,7 +702,7 @@ export default function SelfStudyWorkbench({
       reportStudioError(tool.label, new Error('AI 服务没有启动，请先启动 DeepTutor 后端。'));
       return;
     }
-    const knowledgeBases = configRef.current.resources.some((r) => r.kbStatus === 'ready') ? [kbName] : [];
+    const knowledgeBases = configRef.current.resources.filter((r) => r.kbStatus === 'ready' && selectedResourceIds.has(r.id)).map((r) => kbNameForResourceId(r.id));
     const toolConfig = (toolConfigs[tool.id] ?? {}) as Record<string, any>;
     const ctx = { knowledgeBases, focus: (toolConfig.focusInstruction as string | undefined) || undefined };
     console.log('[studio] 开始生成', tool.id, { knowledgeBases, toolConfig });
@@ -753,11 +840,14 @@ export default function SelfStudyWorkbench({
     // 持久化的历史此时还没 hydrate 回 state（messages 仍为空），先看存储里有没有，避免用欢迎语覆盖历史
     if (loadFromStorage<ChatMessage[]>(`self-study:wb:${progressScope}:messages`, []).length > 0) return;
 
-    // 设置开场引导消息，只用功能按钮（不用快捷回复）
+    // 已经有解析就绪的资源了：不显示通用占位语，直接交给下面的 auto-kickoff 效果去真实开场
+    if (configRef.current.resources.some((r) => r.kbStatus === 'ready')) return;
+
+    // 还没有任何资源：给一句简短的引导语，等学生上传/导入资源
     setMessages([{
       id: 'welcome-guide',
       role: 'assistant',
-      content: '你好！我是你的学习助手 🤖\n\n我可以帮你：\n\n📄 **分析学习资料** - 上传文件或从知识库导入\n💬 **解答疑问** - 直接向我提问任何学习问题\n🎯 **生成学习内容** - 使用右侧学习工具生成思维导图、测试题等',
+      content: '你好！先上传或导入一份学习资料，我再带你学习～',
       timestamp: new Date(),
       suggestions: {
         actionButtons: [
@@ -849,7 +939,11 @@ export default function SelfStudyWorkbench({
       if (!hasKbReady || masteryCreatingRef.current) return;
       masteryCreatingRef.current = true;
       try {
-        const id = await createMasteryPath({ name: config.title || '学习路径', goal: `学好「${config.title || '本空间'}」学习资料里的内容`, kbName, kbLabel: config.title || '学习资料' });
+        // 掌握度路径没有「勾选」的概念，用上这个空间里所有已解析好的资源
+        const sources = configRef.current.resources
+          .filter((r) => r.kbStatus === 'ready')
+          .map((r) => ({ kbName: kbNameForResourceId(r.id), kbLabel: r.title }));
+        const id = await createMasteryPath({ name: config.title || '学习路径', goal: `学好「${config.title || '本空间'}」学习资料里的内容`, sources });
         setMasteryPathId(id);
         await refreshMastery(id);
       } catch (error) {
@@ -861,6 +955,20 @@ export default function SelfStudyWorkbench({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.learningMode, hasKbReady, masteryPathId]);
 
+  // 空间里第一次出现解析就绪的资源、且还没有真实对话时：不等学生开口，直接让当前 agent（新知/复习）开讲
+  useEffect(() => {
+    if (autoKickoffFiredRef.current) return;
+    if (!hasKbReady || isLoading) return;
+    const cur = configRef.current;
+    const onlyPlaceholder = messages.length === 0 || (messages.length === 1 && messages[0].id === 'welcome-guide');
+    if (!onlyPlaceholder) return; // 已经有真实对话（比如重新打开空间），不打断
+    autoKickoffFiredRef.current = true;
+    setMessages([]); // 去掉"还没有资源"的占位语，接下来由真实开场白顶替
+    setIsLoading(true);
+    void sendViaDeepTutor(`${buildStudentContextLine(cur)}\n\n请开始今天的学习。`, undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasKbReady]);
+
   // 发送消息
   // 通过 DeepTutor 后端回复：文字流式展示，推理过程存进 message.thinking
   const sendViaDeepTutor = async (
@@ -871,8 +979,8 @@ export default function SelfStudyWorkbench({
     if (!deeptutorChatRef.current) deeptutorChatRef.current = new DeepTutorChat();
     const chat = deeptutorChatRef.current;
 
-    // 资源已解析进知识库的话，让智能体检索它并给出引用
-    const knowledgeBases = configRef.current.resources.some((r) => r.kbStatus === 'ready') ? [kbName] : [];
+    // 只把学生勾选中的、已解析进知识库的资源带给智能体检索
+    const knowledgeBases = configRef.current.resources.filter((r) => r.kbStatus === 'ready' && selectedResourceIds.has(r.id)).map((r) => kbNameForResourceId(r.id));
 
     const aiMessageId = `msg_${Date.now()}_ai`;
     let added = false;
@@ -918,18 +1026,19 @@ export default function SelfStudyWorkbench({
         {
           onSession: (sid) => (guided ? setGuidedSessionId(sid) : setDeeptutorSessionId(sid)),
           onAnswer: (answer) => upsertAi({ content: answer, thinking: thinking || undefined }),
+          // 思考过程、检索动作、引用来源往往在正文之前就到达；不等正文开始，立刻就地显示，
+          // 这样学生在等待期间能看到"正在检索""正在思考"这些实时进度，而不是干等一个光秃秃的 spinner
           onThinking: (text) => {
             thinking = text;
-            if (added) upsertAi({ thinking: text });
+            upsertAi({ thinking: text });
           },
-          // 检索过程和引用来源在正文之前就会到达，先记下，正文开始时一并带上
           onToolCalls: (calls) => {
             toolCalls = calls;
-            if (added) upsertAi({ toolCalls: calls });
+            upsertAi({ toolCalls: calls });
           },
           onSources: (list) => {
             sources = toMessageSources(list);
-            if (added) upsertAi({ sources });
+            upsertAi({ sources });
           },
           // 导师暂停回合向学生提问（如学习前的摸底）：渲染成卡片，学生提交后同一个回合继续
           onAskUser: (payload) => {
@@ -1326,6 +1435,8 @@ export default function SelfStudyWorkbench({
         knowledgeBase: ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt', 'md', 'csv', 'html'].includes(ext) ? 'supported' : 'unsupported' };
     });
     handleUpdateConfig({ ...config, resources: [...config.resources, ...uploadedResources] });
+    // 新上传的资源默认勾选中，和「默认全选」的既定行为保持一致
+    setSelectedResourceIds((prev) => new Set([...prev, ...uploadedResources.map((r) => r.id)]));
     // 可解析的文件送进 DeepTutor 知识库（后台解析，完成后资源标签变为「知识库」）
     void syncResourcesToKb(
       uploadedResources
@@ -1435,7 +1546,7 @@ export default function SelfStudyWorkbench({
     }
     setIsGeneratingTask(true);
     try {
-      const knowledgeBases = configRef.current.resources.some((r) => r.kbStatus === 'ready') ? [kbName] : [];
+      const knowledgeBases = configRef.current.resources.filter((r) => r.kbStatus === 'ready' && selectedResourceIds.has(r.id)).map((r) => kbNameForResourceId(r.id));
       const topic = ['请针对学生做错的这些题背后的薄弱知识点，出新的练习题：', ...source.map((q, i) => `${i + 1}. ${q.content}`)].join('\n');
       const practiceQuestions = await generateQuestions({ topic, count: 3, difficulty: 'medium', knowledgeBases });
       const practiceTask = {
@@ -1534,6 +1645,7 @@ export default function SelfStudyWorkbench({
       ...config,
       resources: [...config.resources, newResource],
     });
+    setSelectedResourceIds((prev) => new Set(prev).add(newResource.id));
     setIsLinkInputOpen(false);
   };
 
@@ -1543,6 +1655,7 @@ export default function SelfStudyWorkbench({
       ...config,
       resources: [...config.resources, resource],
     });
+    setSelectedResourceIds((prev) => new Set(prev).add(resource.id));
     // 粘贴的文本等带 textContent 的资源也入库，让智能体能检索到
     if (resource.textContent && resource.knowledgeBase !== 'unsupported') {
       void syncResourcesToKb([{ resource, file: textResourceToFile(resource) }]);
@@ -1604,11 +1717,9 @@ export default function SelfStudyWorkbench({
 
   // 处理学习资料导入
   const handleResourcesImport = (resources: Resource[]) => {
-    console.log('[Demo] 导入学习资料:', resources);
-    setConfig(prev => ({
-      ...prev,
-      resources: [...prev.resources, ...resources],
-    }));
+    // 个人分类导入的资源已经带着 kbStatus: 'ready' 和 kbName，复用别的空间解析好的知识库，不用再入库
+    handleUpdateConfig({ ...config, resources: [...config.resources, ...resources] });
+    setSelectedResourceIds((prev) => new Set([...prev, ...resources.map((r) => r.id)]));
     setShowKnowledgeBaseModal(false);
   };
 
@@ -2305,6 +2416,9 @@ export default function SelfStudyWorkbench({
           onClose={() => setIsSettingsOpen(false)}
           onSave={(newConfig) => {
             handleUpdateConfig(newConfig);
+            if (newConfig.freeConfig?.selectedAgentId && newConfig.freeConfig.selectedAgentId !== config.freeConfig?.selectedAgentId) {
+              setCurrentAgentId(newConfig.freeConfig.selectedAgentId);
+            }
             setIsSettingsOpen(false);
           }}
         />
@@ -2490,6 +2604,8 @@ export default function SelfStudyWorkbench({
         onImportHistoricalTest={handleHistoricalTestImport}
         onImportNotes={handleNotesImport}
         onImportWebpages={handleWebpagesImport}
+        personalResources={personalImportableResources}
+        personalResourcesLoading={personalResourcesLoading}
       />
 
       {/* 试卷检测弹窗 */}

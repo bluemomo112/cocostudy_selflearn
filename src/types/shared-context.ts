@@ -37,6 +37,8 @@ export interface Resource {
   kbStatus?: 'indexing' | 'ready' | 'failed';
   kbFile?: string;
   kbError?: string;
+  // 知识库名称覆盖：从资源库导入、复用别的空间已解析好的库时使用；不填则按 kbNameForResource(spaceId, resourceId) 计算
+  kbName?: string;
 }
 
 export interface TaskQuestion {

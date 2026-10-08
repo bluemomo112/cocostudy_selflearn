@@ -89,11 +89,11 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-/** Draft an outline from the space's knowledge base and create the path. Returns the new path id. */
-export async function createMasteryPath(input: { name: string; goal: string; kbName: string; kbLabel: string }): Promise<string> {
+/** Draft an outline from the space's knowledge base(s) and create the path. Returns the new path id. */
+export async function createMasteryPath(input: { name: string; goal: string; sources: Array<{ kbName: string; kbLabel: string }> }): Promise<string> {
   // The draft endpoint has no language option; asking in the goal keeps the outline in Chinese.
   const goal = `${input.goal}。请模块名、学习目标、知识点名称全部使用简体中文。`;
-  const sources = [{ kind: 'knowledge_base', source_id: input.kbName, label: input.kbLabel }];
+  const sources = input.sources.map((s) => ({ kind: 'knowledge_base', source_id: s.kbName, label: s.kbLabel }));
   console.log(TAG, 'draft', input.name);
   const draft = await postJson<{ description?: string; modules?: unknown[] }>('/api/mastery-paths/topics/draft', {
     name: input.name,

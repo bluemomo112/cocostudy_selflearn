@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { GraduationCap, Compass, Users, HelpCircle, Swords, BookOpen } from 'lucide-react';
+import { GraduationCap, Compass, Users, HelpCircle, Swords, BookOpen, Sparkles, RotateCcw } from 'lucide-react';
 
 export interface AgentPreset {
   id: string;
@@ -18,6 +18,36 @@ export interface AgentPreset {
 }
 
 export const AGENT_PRESETS: AgentPreset[] = [
+  {
+    id: 'new_knowledge_tutor',
+    name: '新知导师',
+    tagline: '带你第一次学这份资料',
+    description:
+      '把资料当学生用书：先给你一张本节课的路线图，再逐块带读、讲解、布置小活动，学完一块测一块，确认学会了才往下走。',
+    tags: ['第一次学', '按资料切分', '边学边测'],
+    bestFor: '还没学过这份资料，需要有人带着从头学一遍时选它',
+    sampleLine: '你好！我们今天要学的资料是……先看看今天的路线图，准备好了就开始第 1 块。',
+    icon: Sparkles,
+    gradient: 'from-indigo-500 to-indigo-600',
+    ring: 'ring-indigo-500',
+    solidBtn: 'bg-indigo-600 hover:bg-indigo-700',
+    chipBg: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  },
+  {
+    id: 'review_tutor',
+    name: '复习导师',
+    tagline: '先测你忘了哪，再补',
+    description:
+      '已经学过这份资料、但可能忘了。先让你自评每块的掌握感觉，再出题验证，只针对真正的薄弱点补漏，不重讲一遍。',
+    tags: ['复习巩固', '先自评再测', '只补漏洞'],
+    bestFor: '这份资料学过一遍，想考前或阶段性复习巩固时选它',
+    sampleLine: '我们先看看这份资料分几块，你对每一块的掌握感觉怎么样？熟、一般、不熟还是不确定？',
+    icon: RotateCcw,
+    gradient: 'from-cyan-500 to-cyan-600',
+    ring: 'ring-cyan-500',
+    solidBtn: 'bg-cyan-600 hover:bg-cyan-700',
+    chipBg: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+  },
   {
     id: 'socratic',
     name: '苏格拉底式',
