@@ -2,6 +2,11 @@
 
 自习室核心模块，包含教师端和学生端的完整工作台组件、Mock 数据和类型定义。
 
+> **UI 分支说明（1019UI）**：本分支不依赖任何后端。`src/deeptutor/*` 里原先对接 DeepTutor 的模块
+> （对话、知识库、掌握度路径、出题/学习工具）都换成了同名导出的 mock 实现，页面样式与交互可直接查看。
+> 对接真实接口时，替换这些模块即可（`chatSession.ts`、`knowledge.ts`、`mastery.ts`、`quiz.ts`、`studio.ts`、`personas.ts`、`config.ts`）。
+> 资源预览用到的示例文件在 `public/mock_data`，需要由宿主以 `/mock_data/...` 提供。
+
 ## 安装
 
 ```bash

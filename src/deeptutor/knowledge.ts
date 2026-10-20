@@ -1,16 +1,11 @@
 /**
- * DeepTutor knowledge bases: one KB per self-study space. Resources the teacher uploads are pushed into it
- * (DeepTutor extracts, chunks and embeds them) and chat turns pass `knowledge_bases: [name]` so the tutor
- * answers with retrieval and cites sources.
- *
- * REST (v1.6.8): POST /api/knowledge-bases (multipart: name, files[]), POST /api/knowledge-bases/{kb}/upload,
- * GET /api/knowledge-bases/{kb}/progress -> {stage, percent, message} (stage "completed" | "error" ends it).
+ * UI-only build: knowledge bases are kept in memory. Uploading "indexes" instantly (after a short fake delay)
+ * and the resource library offers a few canned, already-parsed files from `public/mock_data`.
  */
-import { deeptutorApiUrl } from './config';
+import { MOCK_LATENCY_MS, sleep } from './config';
 import type { Resource } from '../types/shared-context';
 
-const TAG = '[deeptutor:kb]';
-// Characters DeepTutor rejects in a KB name: < > : " / \ | ? * # %
+// Characters the real backend rejects in a KB name: < > : " / \ | ? * # %
 const FORBIDDEN = /[<>:"/\\|?*#%\x00-\x1f]/g;
 
 export interface KbInfo {
@@ -27,6 +22,8 @@ export interface KbProgress {
   error?: string;
 }
 
+const knownKbs = new Set<string>();
+
 export function kbNameForSpace(spaceId: string): string {
   return `cross-${spaceId}`.replace(FORBIDDEN, '_').slice(0, 120);
 }
@@ -36,86 +33,38 @@ export function kbNameForResource(spaceId: string, resourceId: string): string {
   return `cross-${spaceId}-${resourceId}`.replace(FORBIDDEN, '_').slice(0, 120);
 }
 
-async function readError(res: Response): Promise<string> {
-  try {
-    const body = await res.json();
-    return typeof body?.detail === 'string' ? body.detail : JSON.stringify(body?.detail ?? body);
-  } catch {
-    return res.statusText;
-  }
-}
-
 export async function listKnowledgeBases(): Promise<KbInfo[]> {
-  const res = await fetch(deeptutorApiUrl('/api/knowledge-bases'));
-  if (!res.ok) throw new Error(`list knowledge bases failed: ${res.status} ${await readError(res)}`);
-  const data = await res.json();
-  return Array.isArray(data) ? data : (data.knowledge_bases ?? data.items ?? []);
+  return [...knownKbs].map((name) => ({ name, status: 'ready' }));
 }
 
 export async function kbExists(name: string): Promise<boolean> {
-  return (await listKnowledgeBases()).some((kb) => kb.name === name);
+  return knownKbs.has(name);
 }
 
-export async function getKbProgress(name: string): Promise<KbProgress> {
-  const res = await fetch(deeptutorApiUrl(`/api/knowledge-bases/${encodeURIComponent(name)}/progress`));
-  if (!res.ok) throw new Error(`kb progress failed: ${res.status} ${await readError(res)}`);
-  return res.json();
+export async function getKbProgress(_name: string): Promise<KbProgress> {
+  return { stage: 'completed', percent: 100 };
 }
 
-// Uploads for one space run one after another, so the first one creates the KB and the rest append to it.
-const uploadChains = new Map<string, Promise<unknown>>();
-
-/**
- * Create the KB with these files, or append them if it already exists.
- * Resolves once the server accepted the upload; indexing continues in the background (see waitForKb).
- */
-export function uploadFilesToKb(name: string, files: File[]): Promise<{ created: boolean; taskId: string | null }> {
-  const run = async () => {
-    const exists = await kbExists(name);
-    const form = new FormData();
-    let url: string;
-    if (exists) {
-      url = `/api/knowledge-bases/${encodeURIComponent(name)}/upload`;
-    } else {
-      url = '/api/knowledge-bases';
-      form.append('name', name);
-    }
-    files.forEach((f) => form.append('files', f, f.name));
-    console.log(TAG, exists ? 'upload to' : 'create', name, files.map((f) => f.name));
-    const res = await fetch(deeptutorApiUrl(url), { method: 'POST', body: form });
-    if (!res.ok) throw new Error(`kb ${exists ? 'upload' : 'create'} failed: ${res.status} ${await readError(res)}`);
-    const data = await res.json();
-    return { created: !exists, taskId: (data.task_id as string | null) ?? null };
-  };
-  const previous = uploadChains.get(name) ?? Promise.resolve();
-  const next = previous.catch(() => undefined).then(run);
-  uploadChains.set(name, next);
-  return next;
+export async function uploadFilesToKb(name: string, _files: File[]): Promise<{ created: boolean; taskId: string | null }> {
+  await sleep(MOCK_LATENCY_MS);
+  const created = !knownKbs.has(name);
+  knownKbs.add(name);
+  return { created, taskId: null };
 }
 
-/** Poll until the KB finishes indexing. Rejects when DeepTutor reports an error stage. */
 export async function waitForKb(
-  name: string,
+  _name: string,
   opts: { onProgress?: (p: KbProgress) => void; intervalMs?: number; timeoutMs?: number; signal?: AbortSignal } = {},
 ): Promise<void> {
-  const { onProgress, intervalMs = 1500, timeoutMs = 10 * 60 * 1000, signal } = opts;
-  const started = Date.now();
-  // The first poll can race the background task and still see the previous run's "completed".
-  await new Promise((r) => setTimeout(r, 800));
-  while (Date.now() - started < timeoutMs) {
-    if (signal?.aborted) throw new Error('aborted');
-    const p = await getKbProgress(name);
-    onProgress?.(p);
-    if (p.stage === 'completed') return;
-    if (p.stage === 'error' || p.status === 'error') throw new Error(p.message || p.error || 'knowledge base indexing failed');
-    await new Promise((r) => setTimeout(r, intervalMs));
+  for (const percent of [30, 70, 100]) {
+    await sleep(MOCK_LATENCY_MS);
+    opts.onProgress?.({ stage: percent === 100 ? 'completed' : 'indexing', percent });
   }
-  throw new Error('knowledge base indexing timed out');
 }
 
-/** Download URL of an original file inside a KB (used for previews). */
-export function kbFileUrl(name: string, filename: string): string {
-  return deeptutorApiUrl(`/api/knowledge-bases/${encodeURIComponent(name)}/files/${encodeURIComponent(filename)}`);
+/** URL of an original file inside a KB (used for previews); the canned files are served from public/mock_data. */
+export function kbFileUrl(_name: string, filename: string): string {
+  return `/mock_data/${encodeURIComponent(filename)}`;
 }
 
 export interface KbFile {
@@ -124,12 +73,8 @@ export interface KbFile {
   mime_type?: string;
 }
 
-/** Original files stored in a KB (each of our per-resource KBs holds exactly one). */
-export async function listKbFiles(name: string): Promise<KbFile[]> {
-  const res = await fetch(deeptutorApiUrl(`/api/knowledge-bases/${encodeURIComponent(name)}/files`));
-  if (!res.ok) throw new Error(`list kb files failed: ${res.status} ${await readError(res)}`);
-  const data = await res.json();
-  return Array.isArray(data.files) ? data.files : [];
+export async function listKbFiles(_name: string): Promise<KbFile[]> {
+  return [];
 }
 
 export interface ImportableKbResource {
@@ -139,24 +84,16 @@ export interface ImportableKbResource {
   mimeType?: string;
 }
 
-/**
- * Every already-parsed, ready-to-use file across all of self-learn's KBs on this (now dedicated)
- * DeepTutor instance, except the ones excluded (typically the current space's own resources).
- * Lets the "import from library" modal offer resources without re-uploading/re-indexing them.
- */
+const MOCK_IMPORTABLE: ImportableKbResource[] = [
+  { kbName: 'cross-mock-plant-factory-intro', fileName: '01 认识植物工厂V1.0.pptx', size: 38_000 * 1024 },
+  { kbName: 'cross-mock-plant-factory-handbook', fileName: '01 认识植物工厂学生手册V1.0.docx', size: 120 * 1024 },
+  { kbName: 'cross-mock-hydroponic-container', fileName: '11 设计水培容器学生手册V1.0.docx', size: 130 * 1024 },
+];
+
+/** Already-parsed files the resource library can offer without re-uploading (minus the excluded KBs). */
 export async function listImportableResources(excludeKbNames: Set<string>): Promise<ImportableKbResource[]> {
-  const kbs = await listKnowledgeBases();
-  const candidates = kbs.filter((kb) => kb.name.startsWith('cross-') && kb.status === 'ready' && !excludeKbNames.has(kb.name));
-  const results = await Promise.all(candidates.map(async (kb): Promise<ImportableKbResource[]> => {
-    try {
-      const files = await listKbFiles(kb.name);
-      return files.map((f) => ({ kbName: kb.name, fileName: f.name, size: f.size, mimeType: f.mime_type }));
-    } catch (error) {
-      console.warn(TAG, '读取知识库文件列表失败，跳过', kb.name, error);
-      return [];
-    }
-  }));
-  return results.flat();
+  await sleep(MOCK_LATENCY_MS);
+  return MOCK_IMPORTABLE.filter((item) => !excludeKbNames.has(item.kbName));
 }
 
 /** Shape an already-parsed KB file as a Resource that reuses its KB instead of re-uploading. */
@@ -180,6 +117,5 @@ export function importableKbResourceToResource(item: ImportableKbResource): Reso
 }
 
 export async function deleteKnowledgeBase(name: string): Promise<void> {
-  const res = await fetch(deeptutorApiUrl(`/api/knowledge-bases/${encodeURIComponent(name)}`), { method: 'DELETE' });
-  if (!res.ok && res.status !== 404) throw new Error(`delete kb failed: ${res.status} ${await readError(res)}`);
+  knownKbs.delete(name);
 }

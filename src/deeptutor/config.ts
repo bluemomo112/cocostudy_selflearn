@@ -1,38 +1,15 @@
 /**
- * Where the DeepTutor backend lives. Local prototype: the browser talks to it directly.
- * `cross-new`'s dev launcher exports NEXT_PUBLIC_DEEPTUTOR_BASE; the fallback matches its default port.
- *
- * Going beyond local use needs a server-side bridge instead (DeepTutor single-user mode has no auth).
+ * UI-only build: there is no DeepTutor backend here. Everything under `src/deeptutor/*` that used to talk
+ * to it (chat, knowledge bases, mastery paths, quiz / studio generation) is replaced by canned mock data
+ * with the same exports, so the screens render and respond like the real thing.
+ * Wire the real services back in by swapping these modules for your own API clients.
  */
-const DEFAULT_BASE = 'http://127.0.0.1:8001';
-const READY_TTL_MS = 10_000;
 
-export function deeptutorBase(): string {
-  return (process.env.NEXT_PUBLIC_DEEPTUTOR_BASE || DEFAULT_BASE).replace(/\/+$/, '');
-}
+export const MOCK_LATENCY_MS = 400;
 
-export function deeptutorApiUrl(path: string): string {
-  return `${deeptutorBase()}${path.startsWith('/') ? path : `/${path}`}`;
-}
+export const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-export function deeptutorWsUrl(path = '/ws'): string {
-  return deeptutorBase().replace(/^http/, 'ws') + path;
-}
-
-let readyCache: { at: number; ok: boolean } | null = null;
-
-/** GET /health/ready with a short timeout; result cached for a few seconds. */
-export async function isDeepTutorReady(force = false): Promise<boolean> {
-  const now = Date.now();
-  if (!force && readyCache && now - readyCache.at < READY_TTL_MS) return readyCache.ok;
-  let ok = false;
-  try {
-    const res = await fetch(deeptutorApiUrl('/health/ready'), { signal: AbortSignal.timeout(2000) });
-    ok = res.ok;
-  } catch {
-    ok = false;
-  }
-  readyCache = { at: now, ok };
-  console.log('[deeptutor] isDeepTutorReady =', ok);
-  return ok;
+/** Always "online" in the UI build so every feature path is reachable. */
+export async function isDeepTutorReady(): Promise<boolean> {
+  return true;
 }

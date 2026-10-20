@@ -1,5 +1,5 @@
 /**
- * Quiz generation (DeepTutor `deep_question`), objective grading (local) and subjective grading (LLM).
+ * Quiz generation and subjective grading are mocked in this UI-only build; objective grading is local.
  *
  * Answer encoding used across self-learn's question components (keep in sync with them):
  *   single_choice    -> the option text
@@ -9,7 +9,7 @@
  *   short_answer     -> free text (the reference answer, for the teacher / AI judge)
  */
 import type { TaskQuestion } from '../types/shared-context';
-import { JsonParseError, runOneShot, runOneShotJson } from './oneShot';
+import { MOCK_LATENCY_MS, sleep } from './config';
 
 /** One generated question as DeepTutor returns it: result.metadata.summary.results[].qa_pair */
 interface QaPair {
@@ -79,27 +79,19 @@ export function qaPairToTaskQuestion(rawPair: QaPair, index: number, idPrefix: s
   return { ...base, type: 'short_answer', answer };
 }
 
-/** Generate quiz questions grounded in the space's knowledge base. Takes a minute or more for a handful of questions. */
-export async function generateQuestions(options: GenerateQuestionsOptions): Promise<TaskQuestion[]> {
-  const config: Record<string, unknown> = {
-    mode: 'custom',
-    topic: options.topic,
-    num_questions: options.count,
-    difficulty: options.difficulty ?? 'medium',
-  };
-  if (options.types?.length) config.question_types = options.types;
+const MOCK_QA_PAIRS: QaPair[] = [
+  { question: '植物工厂最核心的特点是什么？', question_type: 'choice', options: { A: '完全依赖自然光照', B: '人工控制光、温、水、肥等环境因子', C: '只能种植水稻', D: '必须建在农田旁边' }, correct_answer: 'B', explanation: '植物工厂通过人工精确控制环境因子，实现全年连续、稳定的生产。' },
+  { question: '植物工厂可以不受季节和天气影响，全年连续生产。', question_type: 'concept', correct_answer: 'true', explanation: '环境由系统自动调控，因此基本不受外界季节与天气限制。' },
+  { question: '水培系统中，植物根系所需的养分来自 ______。', question_type: 'fill_in_blank', correct_answer: '营养液', explanation: '水培不使用土壤，养分溶解在营养液中直接供给根系。' },
+  { question: '以下哪些属于植物工厂中需要监测和控制的环境因子？（多选）', question_type: 'choice', options: { A: '光照强度', B: '空气湿度', C: '营养液浓度', D: '月相变化' }, correct_answer: 'ABC', explanation: '光照、湿度和营养液浓度都直接影响植物生长，月相不在控制范围内。' },
+  { question: '请简述植物工厂相比传统农业的两个优势。', question_type: 'short_answer', correct_answer: '节约土地和水资源；不受气候影响，可全年稳定生产；可精确控制品质。', explanation: '答出任意两点且说明原因即可得分。' },
+];
 
-  const result = await runOneShot(`请围绕「${options.topic}」出 ${options.count} 道题。`, {
-    knowledgeBases: options.knowledgeBases,
-    extra: { capability: 'deep_question', config },
-    signal: options.signal,
-  });
-  const resultEvent = result.events.find((e) => e.type === 'result');
-  const summary = (resultEvent?.metadata as { summary?: { results?: Array<{ qa_pair?: QaPair }> } } | undefined)?.summary;
-  const pairs = (summary?.results ?? []).map((r) => r.qa_pair).filter((p): p is QaPair => Boolean(p));
-  if (pairs.length === 0) throw new Error(result.errorMessage || 'DeepTutor did not return any questions');
+/** Mock: returns canned questions (cycled to the requested count) after a short delay. */
+export async function generateQuestions(options: GenerateQuestionsOptions): Promise<TaskQuestion[]> {
+  await sleep(MOCK_LATENCY_MS * 3);
   const prefix = `q_${Date.now()}`;
-  return pairs.map((pair, i) => qaPairToTaskQuestion(pair, i, prefix));
+  return Array.from({ length: Math.max(1, options.count) }, (_, i) => qaPairToTaskQuestion(MOCK_QA_PAIRS[i % MOCK_QA_PAIRS.length], i, prefix));
 }
 
 // ── grading ──────────────────────────────────────────────────────────────
@@ -154,40 +146,19 @@ export interface SubjectiveVerdict {
   feedback: string;
 }
 
-/** Ask the tutor to grade a free-text answer against the reference answer. */
+/** Mock: any answer of reasonable length passes with a canned comment. */
 export async function judgeSubjective(
-  question: TaskQuestion,
+  _question: TaskQuestion,
   userAnswer: string | string[] | undefined,
-  signal?: AbortSignal,
+  _signal?: AbortSignal,
 ): Promise<SubjectiveVerdict> {
   const given = Array.isArray(userAnswer) ? userAnswer.join('；') : norm(userAnswer);
   if (!given) return { score: 0, correct: false, feedback: '这道题没有作答。' };
-  const prompt = [
-    '你是一位认真、温和的老师，正在批改学生的一道题。',
-    `题目：${question.content}`,
-    `参考答案：${Array.isArray(question.answer) ? question.answer.join('；') : question.answer}`,
-    question.explanation ? `解析：${question.explanation}` : '',
-    `学生的回答：${given}`,
-    '',
-    '请判断学生的回答是否抓住了参考答案的要点，给出 0-100 的整数分，60 分及以上算正确。评语用 2-3 句话，先说哪里答对了，再指出缺了什么，语气鼓励，面向中小学生。',
-    '只输出 JSON，不要其他内容：{"score": 整数, "correct": true或false, "feedback": "评语"}',
-  ]
-    .filter(Boolean)
-    .join('\n');
-  let data: Partial<SubjectiveVerdict>;
-  try {
-    data = (await runOneShotJson<Partial<SubjectiveVerdict>>(prompt, { signal })).data;
-  } catch (error) {
-    // The verdict is a flat object, so a broken JSON reply (typically raw quotes inside the feedback) can still be read.
-    if (!(error instanceof JsonParseError)) throw error;
-    const score = /"score"\s*:\s*(\d+)/.exec(error.raw)?.[1];
-    if (score === undefined) throw error;
-    const correct = /"correct"\s*:\s*(true|false)/.exec(error.raw)?.[1];
-    const feedback = /"feedback"\s*:\s*"([\s\S]*?)"?\s*\}?\s*$/.exec(error.raw)?.[1] ?? '';
-    data = { score: Number(score), correct: correct ? correct === 'true' : undefined, feedback };
-  }
-  const score = Math.max(0, Math.min(100, Math.round(Number(data.score ?? 0))));
-  return { score, correct: typeof data.correct === 'boolean' ? data.correct : score >= 60, feedback: String(data.feedback ?? '') };
+  await sleep(MOCK_LATENCY_MS);
+  const correct = given.length >= 8;
+  return correct
+    ? { score: 85, correct: true, feedback: '抓住了主要要点，表述也比较完整。再补充一个具体例子会更好。' }
+    : { score: 40, correct: false, feedback: '方向没错，但内容还比较简略，试着多写一两个要点，并说明原因。' };
 }
 
 /** The prompt that makes the tutor analyse a finished quiz (shown to the student as the tutor's reply). */

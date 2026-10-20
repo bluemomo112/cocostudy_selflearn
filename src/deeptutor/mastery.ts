@@ -1,18 +1,9 @@
 /**
- * DeepTutor mastery paths: a topic = modules -> knowledge points, with a deterministic mastery gate,
- * questions and grading done by the tutor, and a "learning map" we read back.
- *
- * Mapping used here (one path per space and student; DeepTutor's paths are per workspace user and one path
- * can only have one state-changing turn at a time, so paths must not be shared between students):
- *   space knowledge base -> topic source, module -> LearningPathNode, tutor turn -> chat with mastery_* fields.
- *
- * REST: POST /api/mastery-paths/topics/draft, POST /api/mastery-paths/topics,
- *       GET /api/mastery-paths/progress/{id}/map
+ * Mastery path types plus a mock path: the learning map is canned and advances by one knowledge point
+ * each time the mock tutor grades an answer (see chatSession.ts).
  */
 import type { LearningPathNode } from '../types/self-study';
-import { deeptutorApiUrl } from './config';
-
-const TAG = '[deeptutor:mastery]';
+import { MOCK_LATENCY_MS, sleep } from './config';
 
 export interface MasteryKnowledgePoint {
   id: string;
@@ -53,7 +44,7 @@ export interface MasteryMap {
   };
 }
 
-/** The mastery question card the tutor emits (tool_result.metadata.tool_metadata.mastery_question). */
+/** The mastery question card the tutor emits. */
 export interface MasteryQuestion {
   question_id: string;
   prompt: string;
@@ -64,7 +55,7 @@ export interface MasteryQuestion {
   allow_free_text?: boolean;
 }
 
-/** The grading result (tool_metadata.mastery_grade.result). */
+/** The grading result for a mastery question. */
 export interface MasteryGrade {
   question_id: string;
   is_correct: boolean;
@@ -74,53 +65,48 @@ export interface MasteryGrade {
   explanation?: string;
 }
 
-async function readError(res: Response): Promise<string> {
-  try {
-    const body = await res.json();
-    return typeof body?.detail === 'string' ? body.detail : JSON.stringify(body?.detail ?? body);
-  } catch {
-    return res.statusText;
-  }
+const MODULES: Array<{ id: string; name: string; objective: string; points: string[] }> = [
+  { id: 'm1', name: '认识植物工厂', objective: '说出植物工厂的定义和基本特点', points: ['植物工厂的定义', '与传统农业的区别', '主要应用场景'] },
+  { id: 'm2', name: '环境因子与控制', objective: '理解光、温、水、肥对植物生长的影响', points: ['光照与光周期', '温湿度控制', '营养液配方'] },
+  { id: 'm3', name: '水培系统设计', objective: '能为指定作物设计简单的水培容器', points: ['水培方式分类', '容器结构要点', '设计方案评价'] },
+];
+
+/** How many knowledge points the student has mastered so far (module-level so the map survives re-fetches). */
+let masteredCount = 0;
+
+/** Called by the mock tutor after a correct mastery answer. */
+export function advanceMockMastery(): void {
+  masteredCount = Math.min(masteredCount + 1, MODULES.reduce((n, m) => n + m.points.length, 0));
 }
 
-async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(deeptutorApiUrl(path), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  if (!res.ok) throw new Error(`${path} failed: ${res.status} ${await readError(res)}`);
-  return res.json() as Promise<T>;
+export async function createMasteryPath(_input: { name: string; goal: string; sources: Array<{ kbName: string; kbLabel: string }> }): Promise<string> {
+  await sleep(MOCK_LATENCY_MS);
+  return 'mock-path';
 }
 
-/** Draft an outline from the space's knowledge base(s) and create the path. Returns the new path id. */
-export async function createMasteryPath(input: { name: string; goal: string; sources: Array<{ kbName: string; kbLabel: string }> }): Promise<string> {
-  // The draft endpoint has no language option; asking in the goal keeps the outline in Chinese.
-  const goal = `${input.goal}。请模块名、学习目标、知识点名称全部使用简体中文。`;
-  const sources = input.sources.map((s) => ({ kind: 'knowledge_base', source_id: s.kbName, label: s.kbLabel }));
-  console.log(TAG, 'draft', input.name);
-  const draft = await postJson<{ description?: string; modules?: unknown[] }>('/api/mastery-paths/topics/draft', {
-    name: input.name,
-    goal,
-    sources,
-    must_cover: [],
+export async function fetchMasteryMap(_pathId: string): Promise<MasteryMap | null> {
+  await sleep(MOCK_LATENCY_MS / 2);
+  let seen = 0;
+  let next: MasteryNext | undefined;
+  const modules: MasteryModule[] = MODULES.map((m, i) => {
+    const knowledge_points = m.points.map((name, j) => {
+      const idx = seen++;
+      const status: MasteryKnowledgePoint['status'] = idx < masteredCount ? 'mastered' : idx === masteredCount ? 'learning' : 'new';
+      const kp: MasteryKnowledgePoint = { id: `${m.id}-k${j + 1}`, name, type: 'concept', status, mastery: status === 'mastered' ? 1 : status === 'learning' ? 0.4 : 0 };
+      if (status === 'learning') next = { action: 'study', module_id: m.id, module_name: m.name, knowledge_point_id: kp.id, knowledge_point_name: name };
+      return kp;
+    });
+    return { id: m.id, name: m.name, objective: m.objective, order: i + 1, mastered: knowledge_points.filter((k) => k.status === 'mastered').length, total: knowledge_points.length, knowledge_points };
   });
-  if (!draft.modules?.length) throw new Error('DeepTutor did not return an outline for this knowledge base');
-  const created = await postJson<{ path_id: string }>('/api/mastery-paths/topics', {
-    name: input.name,
-    goal: input.goal,
-    sources,
-    must_cover: [],
-    description: draft.description ?? '',
-    emoji: '📚',
-    modules: draft.modules,
-  });
-  console.log(TAG, 'created', created.path_id);
-  return created.path_id;
-}
-
-/** null when the path no longer exists (deleted in DeepTutor). */
-export async function fetchMasteryMap(pathId: string): Promise<MasteryMap | null> {
-  const res = await fetch(deeptutorApiUrl(`/api/mastery-paths/progress/${encodeURIComponent(pathId)}/map`));
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`mastery map failed: ${res.status} ${await readError(res)}`);
-  return res.json();
+  const total = modules.reduce((n, m) => n + m.total, 0);
+  const mastered = modules.reduce((n, m) => n + m.mastered, 0);
+  return {
+    book_id: 'mock-path',
+    name: '学习路径',
+    path_revision: masteredCount,
+    next,
+    map: { counts: { mastered, learning: next ? 1 : 0, new: total - mastered - (next ? 1 : 0), total }, complete: mastered === total, modules },
+  };
 }
 
 const MINUTES_PER_KNOWLEDGE_POINT = 6;

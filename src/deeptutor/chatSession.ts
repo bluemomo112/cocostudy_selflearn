@@ -1,15 +1,12 @@
 /**
- * One DeepTutor chat connection: runs a turn at a time, folds the event stream into
- * answer / thinking text, and resolves when the turn ends.
- *
- * Protocol notes (v2.0): the server assigns session ids (pass null on the first turn, keep the
- * one from the `session` event), one active turn per session, and `done` is not the last event
- * (the title `session_meta` follows it) -- we resolve on `done` and ignore the rest.
+ * UI-only build: a mock tutor connection. `runTurn` streams canned text through the same callbacks the real
+ * connection used (thinking -> tool call -> sources -> answer), plus the three special turns the UI renders:
+ *   - first turn of a chat      -> intro + a `card:roadmap-new` roadmap card
+ *   - mastery-path (guided) chat -> ask_user intake card, then a mastery question; answering it grades it
+ *   - quiz analysis prompt       -> a canned error analysis
  */
-import type { ServerEvent, StartTurnMessage, StreamEvent } from './model/protocol';
-import { isNarrationMarker, recomputeAnswerContent, shouldAppendEventContent } from './lib/stream';
-import { UnifiedTurnClient } from './transport/UnifiedTurnClient';
-import { deeptutorWsUrl } from './config';
+import { MOCK_LATENCY_MS, sleep } from './config';
+import { advanceMockMastery } from './mastery';
 
 export type TurnStatus = 'completed' | 'failed' | 'cancelled' | 'rejected';
 
@@ -18,14 +15,13 @@ export interface TurnRequest {
   /** null/undefined on the first turn of a conversation. */
   sessionId?: string | null;
   knowledgeBases?: string[];
-  /** Optional tools only; [] disables them (auto-mounted tools such as rag/ask_user stay). */
   tools?: string[];
   language?: string;
-  /** Any other start_turn field (capability, persona, course_id, mastery_*, ...). */
-  extra?: Partial<Omit<StartTurnMessage, 'type' | 'content'>>;
+  /** Extra start_turn fields (persona, workspace_mode, mastery_answer, ...). */
+  extra?: Record<string, unknown>;
 }
 
-/** One retrieved passage DeepTutor cites (from `sources` events; RAG sources carry file title, snippet, page, score). */
+/** One retrieved passage the tutor cites. */
 export interface TurnSource {
   type: string;
   title: string;
@@ -44,7 +40,6 @@ export interface AskUserPayload {
     id: string;
     prompt: string;
     header?: string;
-    /** Options arrive as { label, description } objects (older builds sent plain strings). */
     options?: Array<string | { label: string; description?: string }>;
     multi_select?: boolean;
     allow_free_text?: boolean;
@@ -58,19 +53,23 @@ export interface TurnToolCall {
   query?: string;
 }
 
+/** The only event shape the UI reads: `tool_result` events carrying mastery question / grade metadata. */
+export interface StreamEvent {
+  type: string;
+  content?: string;
+  metadata: Record<string, unknown>;
+}
+
 export interface TurnCallbacks {
   onSession?(sessionId: string, turnId: string): void;
-  /** Full answer text so far (narration rounds already removed). */
+  /** Full answer text so far. */
   onAnswer?(answer: string): void;
   /** Full reasoning text so far. */
   onThinking?(thinking: string): void;
-  /** Deduplicated citations so far. */
   onSources?(sources: TurnSource[]): void;
-  /** Tool calls so far, in order. */
   onToolCalls?(calls: TurnToolCall[]): void;
   /** The turn is now waiting for the student's answers (see submitUserReply). */
   onAskUser?(payload: AskUserPayload): void;
-  /** Every stream event, plus the turn's events so far. */
   onEvent?(event: StreamEvent, events: StreamEvent[]): void;
 }
 
@@ -86,202 +85,182 @@ export interface TurnResult {
   events: StreamEvent[];
 }
 
-interface ActiveTurn {
-  callbacks: TurnCallbacks;
-  events: StreamEvent[];
-  answer: string;
-  thinking: string;
-  sources: TurnSource[];
-  toolCalls: TurnToolCall[];
-  sessionId?: string;
-  turnId?: string;
-  errorMessage?: string;
-  settle: (result: TurnResult) => void;
-}
+const MOCK_SOURCES: TurnSource[] = [
+  { type: 'rag', title: '认识植物工厂', snippet: '植物工厂是在封闭环境中，利用人工光源和自动控制系统，全年连续生产植物的设施。', page: '3', score: 0.92, chunkId: 'mock-1' },
+  { type: 'rag', title: '认识植物工厂学生手册', snippet: '水培是不使用土壤，将植物根系浸在含有各种营养元素的营养液中培养的方法。', page: '7', score: 0.87, chunkId: 'mock-2' },
+];
 
-const TAG = '[deeptutor:chat]';
+const ROADMAP_REPLY = `你好！今天我们来学《认识植物工厂》。植物工厂里没有田地，却能全年种出蔬菜——它是怎么做到的？我们会一边读书、一边讲解、一边小练习来搞清楚这个问题。
+
+\`\`\`card:roadmap-new
+1. 「认识植物工厂」· 重点：定义与特点
+   《认识植物工厂》
+   学完你能：说出植物工厂的定义和两个特点
+2. 「环境因子与控制」
+   《认识植物工厂》
+   学完你能：举例说明光、温、水、肥对生长的影响
+3. 「水培系统」
+   《认识植物工厂学生手册》
+   学完你能：区分常见的水培方式
+\`\`\`
+
+先热身一个小问题：你觉得植物没有土壤，还能从哪里获得养分？`;
+
+const GENERIC_REPLY = `好问题！结合资料来看：
+
+- 植物工厂通过**人工光源**和**自动控制系统**，让植物不受季节、天气影响。
+- 水培用**营养液**代替土壤，养分由根系直接吸收。
+
+你可以试着用自己的话再说一遍，我来帮你看看哪里还可以补充。`;
+
+const ANALYSIS_REPLY = `这次做得不错，先肯定你答对的部分。
+
+**错因分析**
+- 有一题把"营养液"和"土壤"的作用混在了一起：营养液是直接给根系供应养分，土壤在水培里并不存在。
+- 多选题容易漏选，建议逐项对照资料判断。
+
+**复习建议**
+1. 重读《认识植物工厂》里"环境因子"一节。
+2. 自己画一张"光、温、水、肥 → 植物生长"的关系图。`;
+
+const MASTERY_QUESTION = {
+  prompt: '水培与传统土培相比，植物获得养分的方式有什么不同？',
+  question_type: 'choice',
+  objective: { name: '与传统农业的区别' },
+  difficulty: 'easy',
+  options: [
+    { label: 'A', body: '根系从土壤中吸收养分' },
+    { label: 'B', body: '根系直接从营养液中吸收养分' },
+    { label: 'C', body: '叶片直接吸收空气中的养分' },
+  ],
+};
+
+const INTAKE: AskUserPayload = {
+  intro: '开始之前，我想先了解一下你的情况。',
+  questions: [
+    { id: 'prior', header: '基础', prompt: '你之前接触过植物工厂或水培吗？', options: [{ label: '没接触过' }, { label: '听说过一点' }, { label: '自己种过' }], allow_free_text: true },
+    { id: 'goal', header: '目标', prompt: '这次学习你最想达到什么？', options: [{ label: '理解概念' }, { label: '完成设计任务' }, { label: '应对考试' }], multi_select: true, allow_free_text: true },
+  ],
+};
+
+const CHUNK = 3;
+const CHUNK_DELAY_MS = 25;
+let seq = 0;
 
 export class DeepTutorChat {
-  private client: UnifiedTurnClient | null = null;
-  private active: ActiveTurn | null = null;
-  private settledTurnIds = new Set<string>();
+  private running = false;
+  private cancelled = false;
+  private pendingReply: ((ok: boolean) => void) | null = null;
 
   get busy(): boolean {
-    return this.active !== null;
+    return this.running;
   }
 
-  runTurn(request: TurnRequest, callbacks: TurnCallbacks = {}): Promise<TurnResult> {
-    if (this.active) return Promise.reject(new Error('a turn is already running on this chat'));
+  async runTurn(request: TurnRequest, callbacks: TurnCallbacks = {}): Promise<TurnResult> {
+    if (this.running) throw new Error('a turn is already running on this chat');
+    this.running = true;
+    this.cancelled = false;
+    const sessionId = request.sessionId ?? `mock-session-${++seq}`;
+    const turnId = `mock-turn-${++seq}`;
+    const events: StreamEvent[] = [];
+    const result: TurnResult = { status: 'completed', answer: '', thinking: '', sources: [], toolCalls: [], sessionId, turnId, events };
+    const emit = (event: StreamEvent) => {
+      events.push(event);
+      callbacks.onEvent?.(event, events);
+    };
 
-    return new Promise<TurnResult>((resolve) => {
-      const turn: ActiveTurn = {
-        callbacks,
-        events: [],
-        answer: '',
-        thinking: '',
-        sources: [],
-        toolCalls: [],
-        settle: (result) => {
-          if (this.active !== turn) return;
-          this.active = null;
-          console.log(TAG, 'turn settled', { status: result.status, sessionId: result.sessionId, turnId: result.turnId, answerLen: result.answer.length });
-          resolve(result);
-        },
-      };
-      this.active = turn;
+    try {
+      callbacks.onSession?.(sessionId, turnId);
+      const extra = request.extra ?? {};
+      const guided = extra.workspace_mode === 'mastery_path';
+      const masteryAnswer = extra.mastery_answer as { question_id: string; text: string } | undefined;
 
-      const message: StartTurnMessage = {
-        type: 'start_turn',
-        content: request.content,
-        session_id: request.sessionId ?? null,
-        capability: 'chat',
-        tools: request.tools ?? [],
-        knowledge_bases: request.knowledgeBases ?? [],
-        language: request.language ?? 'zh',
-        config: {},
-        ...request.extra,
-      };
-      console.log(TAG, 'start_turn', { sessionId: message.session_id, kb: message.knowledge_bases, tools: message.tools, contentLen: request.content.length });
-      this.ensureClient().send(message);
-    });
+      result.thinking = '先回顾学生的问题，再从资料里检索相关段落……';
+      callbacks.onThinking?.(result.thinking);
+      await sleep(MOCK_LATENCY_MS);
+      result.toolCalls = [{ name: 'rag', query: request.content.slice(0, 30) }];
+      callbacks.onToolCalls?.([...result.toolCalls]);
+      await sleep(MOCK_LATENCY_MS);
+      if ((request.knowledgeBases ?? []).length > 0 || guided) {
+        result.sources = MOCK_SOURCES;
+        callbacks.onSources?.([...MOCK_SOURCES]);
+      }
+
+      let text: string;
+      let question = false;
+      if (guided && masteryAnswer) {
+        const correct = masteryAnswer.text.startsWith('B');
+        if (correct) advanceMockMastery();
+        emit({
+          type: 'tool_result',
+          metadata: {
+            tool_metadata: {
+              mastery_grade: {
+                result: {
+                  question_id: masteryAnswer.question_id,
+                  is_correct: correct,
+                  learner_answer: masteryAnswer.text,
+                  correct_label: 'B',
+                  correct_body: '根系直接从营养液中吸收养分',
+                  explanation: '水培没有土壤，养分溶解在营养液里，由根系直接吸收。',
+                },
+              },
+            },
+          },
+        });
+        text = correct ? '回答正确！你已经抓住了水培的关键。我们来看下一个小问题。' : '差一点：水培里没有土壤，养分来自营养液。我们再来一道巩固一下。';
+        question = true;
+      } else if (guided && !request.sessionId) {
+        callbacks.onAskUser?.(INTAKE);
+        const ok = await new Promise<boolean>((resolve) => (this.pendingReply = resolve));
+        this.pendingReply = null;
+        if (!ok) throw new Error('cancelled');
+        text = '好的，了解了。那我们从最基础的开始，先来一道小题。';
+        question = true;
+      } else if (guided) {
+        text = '我们继续往下学。';
+        question = true;
+      } else if (request.content.includes('错因分析') || request.content.includes('答错')) {
+        text = ANALYSIS_REPLY;
+      } else if (!request.sessionId || request.content.includes('请开始今天的学习')) {
+        text = ROADMAP_REPLY;
+      } else {
+        text = GENERIC_REPLY;
+      }
+
+      for (let i = CHUNK; i < text.length + CHUNK; i += CHUNK) {
+        if (this.cancelled) throw new Error('cancelled');
+        result.answer = text.slice(0, i);
+        callbacks.onAnswer?.(result.answer);
+        await sleep(CHUNK_DELAY_MS);
+      }
+      if (question) {
+        emit({ type: 'tool_result', metadata: { tool_metadata: { mastery_question: { question_id: `mq-${++seq}`, ...MASTERY_QUESTION } } } });
+      }
+    } catch (error) {
+      result.status = this.cancelled ? 'cancelled' : 'failed';
+      if (!this.cancelled) result.errorMessage = error instanceof Error ? error.message : String(error);
+    } finally {
+      this.running = false;
+    }
+    return result;
   }
 
-  /** Ask the server to cancel the running turn; resolves whether it accepted. */
   async cancel(): Promise<boolean> {
-    const turn = this.active;
-    if (!turn?.turnId || !this.client) return false;
-    console.log(TAG, 'cancel_turn', turn.turnId);
-    return this.client.sendAwaitingAck({ type: 'cancel_turn', turn_id: turn.turnId });
+    if (!this.running) return false;
+    this.cancelled = true;
+    this.pendingReply?.(false);
+    return true;
   }
 
-  /** Answer the tutor's pending `ask_user` questions; the same turn then continues. Resolves whether the server accepted. */
-  async submitUserReply(answers: Array<{ questionId: string; text: string }>): Promise<boolean> {
-    const turn = this.active;
-    if (!turn?.turnId || !this.client) return false;
-    console.log(TAG, 'submit_user_reply', turn.turnId, answers.length);
-    return this.client.sendAwaitingAck({ type: 'submit_user_reply', turn_id: turn.turnId, answers });
+  /** Answer the pending `ask_user` questions; the same turn then continues. */
+  async submitUserReply(_answers: Array<{ questionId: string; text: string }>): Promise<boolean> {
+    if (!this.pendingReply) return false;
+    this.pendingReply(true);
+    return true;
   }
 
   dispose(): void {
-    this.client?.disconnect();
-    this.client = null;
-    this.finish('cancelled', 'chat disposed');
-  }
-
-  private ensureClient(): UnifiedTurnClient {
-    if (this.client) return this.client;
-    const client = new UnifiedTurnClient(
-      (event) => this.handleEvent(event),
-      () => this.finish('failed', 'connection to DeepTutor closed'),
-      { url: deeptutorWsUrl('/ws'), onControlFrame: (frame) => this.handleControlFrame(frame) },
-    );
-    client.connect();
-    this.client = client;
-    return client;
-  }
-
-  private handleControlFrame(frame: ServerEvent): void {
-    if (frame.type !== 'protocol_error' || !this.active) return;
-    const rejected = frame.error_code === 'start_turn_rejected';
-    console.warn(TAG, 'protocol_error', frame.error_code, frame.message);
-    this.finish(rejected ? 'rejected' : 'failed', frame.message || frame.error_code);
-  }
-
-  private handleEvent(event: StreamEvent): void {
-    const turn = this.active;
-    if (!turn) return;
-    // The previous turn's title session_meta can land after `done`, i.e. during the next turn.
-    if (event.turn_id && this.settledTurnIds.has(event.turn_id)) return;
-    turn.events.push(event);
-    if (event.session_id) turn.sessionId = event.session_id;
-    if (event.turn_id) turn.turnId = event.turn_id;
-
-    switch (event.type) {
-      case 'session':
-        if (turn.sessionId && turn.turnId) turn.callbacks.onSession?.(turn.sessionId, turn.turnId);
-        break;
-      case 'content':
-        if (shouldAppendEventContent(event)) {
-          turn.answer += event.content;
-          turn.callbacks.onAnswer?.(turn.answer);
-        }
-        break;
-      case 'progress':
-        // A round that resolved as narration demotes its streamed text to the trace.
-        if (isNarrationMarker(event)) {
-          turn.answer = recomputeAnswerContent(turn.events);
-          turn.callbacks.onAnswer?.(turn.answer);
-        }
-        break;
-      case 'thinking':
-        turn.thinking += event.content;
-        turn.callbacks.onThinking?.(turn.thinking);
-        break;
-      case 'tool_call': {
-        const args = (event.metadata as { args?: { query?: unknown } }).args;
-        turn.toolCalls.push({ name: event.content, query: typeof args?.query === 'string' ? args.query : undefined });
-        turn.callbacks.onToolCalls?.([...turn.toolCalls]);
-        break;
-      }
-      case 'tool_result': {
-        const ask = (event.metadata as { tool_metadata?: { ask_user?: AskUserPayload } }).tool_metadata?.ask_user;
-        if (ask?.questions?.length) {
-          console.log(TAG, 'ask_user', ask.questions.map((q) => q.id));
-          turn.callbacks.onAskUser?.(ask);
-        }
-        break;
-      }
-      case 'sources': {
-        const list = (event.metadata as { sources?: Array<Record<string, unknown>> }).sources ?? [];
-        for (const item of list) {
-          const chunkId = typeof item.chunk_id === 'string' ? item.chunk_id : undefined;
-          const title = String(item.title ?? item.url ?? '');
-          const snippet = String(item.content ?? '');
-          if (turn.sources.some((x) => (chunkId ? x.chunkId === chunkId : x.title === title && x.snippet === snippet))) continue;
-          turn.sources.push({
-            type: String(item.type ?? ''),
-            title,
-            snippet,
-            page: item.page ? String(item.page) : undefined,
-            score: typeof item.score === 'number' ? item.score : undefined,
-            url: typeof item.url === 'string' ? item.url : undefined,
-            kbName: typeof item.kb_name === 'string' ? item.kb_name : undefined,
-            chunkId,
-          });
-        }
-        turn.callbacks.onSources?.([...turn.sources]);
-        break;
-      }
-      case 'error':
-        turn.errorMessage = event.content || 'DeepTutor reported an error';
-        console.warn(TAG, 'error event', event.content, event.metadata);
-        break;
-      case 'done': {
-        const status = String((event.metadata as { status?: string }).status ?? 'completed');
-        this.finish(status === 'failed' || status === 'cancelled' ? status : 'completed');
-        turn.callbacks.onEvent?.(event, turn.events);
-        return;
-      }
-      default:
-        break;
-    }
-    turn.callbacks.onEvent?.(event, turn.events);
-  }
-
-  private finish(status: TurnStatus, errorMessage?: string): void {
-    const turn = this.active;
-    if (!turn) return;
-    if (turn.turnId) this.settledTurnIds.add(turn.turnId);
-    turn.settle({
-      status,
-      answer: turn.answer,
-      thinking: turn.thinking,
-      sources: turn.sources,
-      toolCalls: turn.toolCalls,
-      sessionId: turn.sessionId,
-      turnId: turn.turnId,
-      errorMessage: errorMessage ?? turn.errorMessage,
-      events: turn.events,
-    });
+    void this.cancel();
   }
 }

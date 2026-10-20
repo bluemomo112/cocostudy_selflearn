@@ -1,32 +1,21 @@
 /**
- * "Learning tools" (Studio): generate study material from the space's knowledge base with DeepTutor.
- *
- * Every generator returns exactly the data shape the matching viewer in InteractiveViewerModal /
- * ResourceInlineViewer already consumes, so the viewers do not change:
+ * "Learning tools" (Studio), mocked for the UI-only build: every generator returns canned data in exactly
+ * the shape the matching viewer in InteractiveViewerModal / ResourceInlineViewer consumes, after a short delay.
  *   flashcards -> { front, back }[]            mind map -> { center, branches: { title, items[] }[] }
  *   audio      -> { time, title, content }[]   documents -> markdown
  *   interactive page -> complete HTML (rendered in a sandboxed iframe via srcDoc)
  */
-import { runOneShot, runOneShotJson } from './oneShot';
+import { MOCK_LATENCY_MS, sleep } from './config';
 
 export interface StudioContext {
   /** Knowledge bases holding the space's resources; generation needs at least one. */
   knowledgeBases: string[];
-  /** Free-text focus from the tool's configuration dialog ("重点讲…"). */
+  /** Free-text focus from the tool's configuration dialog. */
   focus?: string;
   signal?: AbortSignal;
 }
 
-function requireKb(ctx: StudioContext) {
-  if (ctx.knowledgeBases.length === 0) {
-    throw new Error('还没有可用的学习资料：请先上传资料并等待解析完成。');
-  }
-}
-
-const GROUNDING =
-  '请先检索知识库，只依据知识库里的学习资料来做，不要编造资料里没有的内容；用简体中文，面向中小学生，表达清晰。';
-
-const focusLine = (focus?: string) => (focus?.trim() ? `重点关注：${focus.trim()}。` : '');
+const LATENCY = MOCK_LATENCY_MS * 4;
 
 // ── flashcards ───────────────────────────────────────────────────────────
 
@@ -35,22 +24,18 @@ export interface Flashcard {
   back: string;
 }
 
-export async function generateFlashcards(ctx: StudioContext, opts: { count: number }): Promise<Flashcard[]> {
-  requireKb(ctx);
-  const { data } = await runOneShotJson<{ cards?: Flashcard[] }>(
-    [
-      GROUNDING,
-      `请从学习资料里提炼 ${opts.count} 张记忆卡片，用于复习：正面是一个问题、概念或关键词，背面是简洁准确的答案（不超过 60 字，纯文本，不要 Markdown 和公式符号）。`,
-      focusLine(ctx.focus),
-      '只输出 JSON，不要其他内容：{"cards":[{"front":"…","back":"…"}]}',
-    ]
-      .filter(Boolean)
-      .join('\n'),
-    { knowledgeBases: ctx.knowledgeBases, signal: ctx.signal },
-  );
-  const cards = (data.cards ?? []).filter((c) => c?.front && c?.back);
-  if (cards.length === 0) throw new Error('没有生成出记忆卡片，请重试。');
-  return cards;
+const CARDS: Flashcard[] = [
+  { front: '什么是植物工厂？', back: '在封闭环境中，用人工光源和自动控制系统全年连续种植植物的生产方式。' },
+  { front: '水培与土培最大的区别？', back: '水培不用土壤，养分溶于营养液，由根系直接吸收。' },
+  { front: '光周期指什么？', back: '一天中光照与黑暗的时间比例，影响植物的生长和开花。' },
+  { front: 'LED 补光灯的优势？', back: '光谱可调、发热少、耗电较低，适合近距离照射植物。' },
+  { front: '营养液 EC 值反映什么？', back: '营养液中可溶性盐类的浓度，用来判断养分是否充足。' },
+  { front: '集中控制系统的作用？', back: '统一采集并调节光照、温湿度、营养液等参数，保持环境稳定。' },
+];
+
+export async function generateFlashcards(_ctx: StudioContext, opts: { count: number }): Promise<Flashcard[]> {
+  await sleep(LATENCY);
+  return Array.from({ length: Math.max(1, opts.count) }, (_, i) => CARDS[i % CARDS.length]);
 }
 
 // ── mind map ─────────────────────────────────────────────────────────────
@@ -60,43 +45,78 @@ export interface MindMap {
   branches: Array<{ title: string; items: string[] }>;
 }
 
-export async function generateMindMap(ctx: StudioContext): Promise<MindMap> {
-  requireKb(ctx);
-  const { data } = await runOneShotJson<Partial<MindMap>>(
-    [
-      GROUNDING,
-      '请把学习资料的知识结构整理成一张两层思维导图：一个中心主题，4-6 个分支，每个分支下 3-5 个要点（每个要点不超过 20 字）。',
-      focusLine(ctx.focus),
-      '只输出 JSON，不要其他内容：{"center":"中心主题","branches":[{"title":"分支名","items":["要点","要点"]}]}',
-    ]
-      .filter(Boolean)
-      .join('\n'),
-    { knowledgeBases: ctx.knowledgeBases, signal: ctx.signal },
-  );
-  const branches = (data.branches ?? []).filter((b) => b?.title && Array.isArray(b.items) && b.items.length > 0);
-  if (!data.center || branches.length === 0) throw new Error('没有生成出思维导图，请重试。');
-  return { center: data.center, branches };
+export async function generateMindMap(_ctx: StudioContext): Promise<MindMap> {
+  await sleep(LATENCY);
+  return {
+    center: '植物工厂',
+    branches: [
+      { title: '基本概念', items: ['封闭可控环境', '全年连续生产', '与传统农业对比'] },
+      { title: '环境因子', items: ['光照与光周期', '温度与湿度', 'CO₂ 浓度', '营养液'] },
+      { title: '水培系统', items: ['深液流 DFT', '营养液膜 NFT', '雾培 / 气培'] },
+      { title: '集中控制', items: ['传感器采集', '自动调节', '远程监控'] },
+      { title: '设计与评价', items: ['容器结构', '成本与能耗', '方案改进'] },
+    ],
+  };
 }
 
 // ── documents (markdown) ─────────────────────────────────────────────────
 
 export type DocKind = 'summary' | 'key_points' | 'examples' | 'concept_search';
 
-const DOC_PROMPTS: Record<DocKind, string> = {
-  summary: '请为学习资料写一份结构清晰的学习总结：先用两三句话概括全貌，再按主题分小节，最后给出 3 条复习建议。',
-  key_points: '请提炼学习资料的必记要点：用编号列表，每条一句话，并在括号里标注出处。最后补充最容易混淆的 2-3 个地方。',
-  examples: '请从学习资料里挑选或改编 3 个有代表性的实例，每个实例包含：情境、用到的知识点、分析过程、结论。',
-  concept_search: '请列出学习资料里的核心概念，每个概念用「定义 + 一个生活中的例子」解释，并说明概念之间的联系。',
+const DOCS: Record<DocKind, string> = {
+  summary: `## 学习总结
+
+植物工厂是在**封闭、可控**的环境里，用人工光源和自动控制系统种植植物的生产方式，不受季节和天气影响。
+
+### 1. 为什么需要植物工厂
+- 节约土地和水资源
+- 全年稳定供应，品质可控
+
+### 2. 关键环境因子
+| 因子 | 作用 | 常见控制方式 |
+| --- | --- | --- |
+| 光照 | 光合作用能量来源 | LED 补光、调节光周期 |
+| 温湿度 | 影响蒸腾与病害 | 空调、除湿 |
+| 营养液 | 提供矿质养分 | 监测 EC / pH |
+
+### 复习建议
+1. 对照学生手册，复述植物工厂的定义。
+2. 画出水培系统的循环示意图。
+3. 用自己的话比较水培与土培。`,
+  key_points: `## 必记要点
+
+1. 植物工厂在封闭环境中用人工光源种植植物。（《认识植物工厂》）
+2. 水培的养分来自营养液，不是土壤。（《认识植物工厂》）
+3. 光周期影响植物生长和开花。
+4. 集中控制系统统一调节光照、温湿度和营养液。
+
+### 容易混淆
+- **水培 vs 雾培**：水培根系浸在营养液里，雾培是把营养液喷成雾。
+- **EC 值 vs pH 值**：EC 看浓度，pH 看酸碱度。`,
+  examples: `## 实例分析
+
+### 实例一：生菜工厂
+- **情境**：某工厂全年生产叶菜。
+- **知识点**：光周期、营养液配方。
+- **分析**：缩短光照时长会让生长变慢，因此采用连续补光。
+- **结论**：精确控制光照可以提高产量和稳定性。
+
+### 实例二：家庭阳台水培
+- **情境**：用塑料盒和营养液种薄荷。
+- **知识点**：水培容器结构。
+- **结论**：容器需遮光，否则容易长藻。`,
+  concept_search: `## 核心概念
+
+- **植物工厂**：封闭环境中全年连续种植的系统。例如：地铁站里的蔬菜货架。
+- **水培**：用营养液代替土壤。例如：水养的绿萝。
+- **光周期**：每天光照时长的安排。例如：夏天白天长，植物开花时间也会不同。
+
+**联系**：植物工厂通过集中控制调节光周期和营养液，实现水培作物的稳定生长。`,
 };
 
-export async function generateDocument(ctx: StudioContext, kind: DocKind): Promise<string> {
-  requireKb(ctx);
-  const result = await runOneShot([GROUNDING, DOC_PROMPTS[kind], focusLine(ctx.focus), '直接输出 Markdown 正文，可以用表格和 $…$ 公式。'].filter(Boolean).join('\n'), {
-    knowledgeBases: ctx.knowledgeBases,
-    signal: ctx.signal,
-  });
-  if (!result.answer.trim()) throw new Error('没有生成出内容，请重试。');
-  return result.answer;
+export async function generateDocument(_ctx: StudioContext, kind: DocKind): Promise<string> {
+  await sleep(LATENCY);
+  return DOCS[kind];
 }
 
 // ── timeline ─────────────────────────────────────────────────────────────
@@ -108,22 +128,16 @@ export interface TimelineEvent {
   description: string;
 }
 
-export async function generateTimeline(ctx: StudioContext): Promise<TimelineEvent[]> {
-  requireKb(ctx);
-  const { data } = await runOneShotJson<{ events?: TimelineEvent[] }>(
-    [
-      GROUNDING,
-      '请把学习资料里的知识或事件按发展顺序整理成一条时间线，6-8 个节点。year 写时间或阶段（如「1957 年」「第一步」），icon 用一个贴切的 emoji，description 不超过 40 字。',
-      focusLine(ctx.focus),
-      '只输出 JSON，不要其他内容：{"events":[{"year":"…","icon":"🌱","title":"…","description":"…"}]}',
-    ]
-      .filter(Boolean)
-      .join('\n'),
-    { knowledgeBases: ctx.knowledgeBases, signal: ctx.signal },
-  );
-  const events = (data.events ?? []).filter((e) => e?.title && e?.description);
-  if (events.length === 0) throw new Error('没有生成出时间线，请重试。');
-  return events;
+export async function generateTimeline(_ctx: StudioContext): Promise<TimelineEvent[]> {
+  await sleep(LATENCY);
+  return [
+    { year: '第一步', icon: '🌱', title: '认识植物工厂', description: '了解定义、特点与应用场景。' },
+    { year: '第二步', icon: '💡', title: '环境因子', description: '光、温、水、肥如何影响生长。' },
+    { year: '第三步', icon: '💧', title: '水培系统', description: '比较不同水培方式与容器结构。' },
+    { year: '第四步', icon: '🎛️', title: '集中控制', description: '传感器与自动调节的工作流程。' },
+    { year: '第五步', icon: '📐', title: '设计容器', description: '给指定作物设计水培容器。' },
+    { year: '第六步', icon: '✅', title: '评价与改进', description: '根据成本和效果优化方案。' },
+  ];
 }
 
 // ── audio overview ───────────────────────────────────────────────────────
@@ -134,31 +148,24 @@ export interface AudioChapter {
   content: string;
 }
 
-/** A spoken-style walkthrough script, split into chapters. (Audio itself needs a TTS service; see docs.) */
-export async function generateAudioScript(ctx: StudioContext, opts: { chapters: number }): Promise<AudioChapter[]> {
-  requireKb(ctx);
-  const { data } = await runOneShotJson<{ chapters?: Array<{ title: string; content: string }> }>(
-    [
-      GROUNDING,
-      `请把学习资料改写成一段适合朗读的音频讲稿，分成 ${opts.chapters} 个章节：口语化、有节奏，像老师在给学生讲解，每章 80-150 字，不用 Markdown 和特殊符号。`,
-      focusLine(ctx.focus),
-      '只输出 JSON，不要其他内容：{"chapters":[{"title":"章节标题","content":"讲稿正文"}]}',
-    ]
-      .filter(Boolean)
-      .join('\n'),
-    { knowledgeBases: ctx.knowledgeBases, signal: ctx.signal },
-  );
-  const chapters = (data.chapters ?? []).filter((c) => c?.title && c?.content);
-  if (chapters.length === 0) throw new Error('没有生成出讲稿，请重试。');
+const CHAPTERS: Array<{ title: string; content: string }> = [
+  { title: '走进植物工厂', content: '同学们好，今天我们来认识一种特别的农场——植物工厂。这里没有田地，也不看天吃饭，一切都由系统来调控。' },
+  { title: '光和水的秘密', content: '植物要长好，离不开光照和营养。在植物工厂里，LED 灯提供光，营养液提供养分，两者都能被精确控制。' },
+  { title: '聪明的控制中心', content: '传感器会不停地测量温度、湿度和营养液浓度，一旦偏离设定值，控制中心就会自动调整。' },
+  { title: '动手设计一个容器', content: '最后，请你想一想：如果要在教室里种一盆生菜，水培容器需要有哪些结构？带着这个问题去完成设计吧。' },
+];
+
+export async function generateAudioScript(_ctx: StudioContext, opts: { chapters: number }): Promise<AudioChapter[]> {
+  await sleep(LATENCY);
   let seconds = 0;
-  return chapters.map((c) => {
+  return Array.from({ length: Math.max(1, opts.chapters) }, (_, i) => CHAPTERS[i % CHAPTERS.length]).map((c) => {
     const time = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
-    seconds += Math.max(20, Math.round(c.content.length / 4.5)); // ~4.5 characters per second of speech
+    seconds += Math.max(20, Math.round(c.content.length / 4.5));
     return { time, title: c.title, content: c.content };
   });
 }
 
-// ── interactive page (explainer animation / visualization / simulation) ──
+// ── interactive page ─────────────────────────────────────────────────────
 
 export interface InteractivePage {
   title: string;
@@ -166,29 +173,18 @@ export interface InteractivePage {
   html: string;
 }
 
-/** DeepTutor's `visualize` capability, asked for a self-contained HTML page. Takes 1-2 minutes. */
-export async function generateInteractivePage(
-  ctx: StudioContext,
-  opts: { goal: string; includeControls?: boolean },
-): Promise<InteractivePage> {
-  requireKb(ctx);
-  const prompt = [
-    GROUNDING,
-    `请做一个自包含的交互式网页来演示：${opts.goal}`,
-    opts.includeControls === false ? '以动画演示为主，不需要控件。' : '带有滑块或按钮，让学生能动手调节参数并看到实时变化。',
-    focusLine(ctx.focus),
-  ]
-    .filter(Boolean)
-    .join('\n');
-  const result = await runOneShot(prompt, {
-    knowledgeBases: ctx.knowledgeBases,
-    extra: { capability: 'visualize', config: { render_mode: 'html' } },
-    signal: ctx.signal,
-  });
-  const meta = result.events.find((e) => e.type === 'result')?.metadata as
-    | { code?: { content?: string }; presentation?: { title?: string; description?: string } }
-    | undefined;
-  const html = meta?.code?.content;
-  if (!html) throw new Error(result.errorMessage || '没有生成出互动页面，请重试。');
-  return { title: meta?.presentation?.title || opts.goal, description: meta?.presentation?.description || '', html };
+const MOCK_PAGE_HTML = `<!doctype html><html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{font-family:system-ui,sans-serif;margin:0;padding:24px;background:#f0fdf4;color:#14532d}
+.plant{height:160px;display:flex;align-items:flex-end;justify-content:center}
+.stem{width:14px;background:#16a34a;border-radius:7px;transition:height .2s}
+label{display:block;margin:16px 0 4px;font-weight:600}input{width:100%}</style></head><body>
+<h2>光照时长与生长高度</h2><div class="plant"><div class="stem" id="stem" style="height:80px"></div></div>
+<label>每天光照：<span id="v">12</span> 小时</label><input id="s" type="range" min="4" max="20" value="12">
+<p id="t">适中的光照，植物长势正常。</p>
+<script>const s=document.getElementById('s'),v=document.getElementById('v'),st=document.getElementById('stem'),t=document.getElementById('t');
+s.oninput=()=>{v.textContent=s.value;st.style.height=(20+s.value*8)+'px';t.textContent=s.value<8?'光照不足，植物长得细弱。':s.value>16?'光照过长，植物可能被抑制。':'适中的光照，植物长势正常。'}</script></body></html>`;
+
+export async function generateInteractivePage(_ctx: StudioContext, opts: { goal: string; includeControls?: boolean }): Promise<InteractivePage> {
+  await sleep(LATENCY);
+  return { title: opts.goal || '光照时长与生长高度', description: '拖动滑块，观察光照时长对植物生长的影响。', html: MOCK_PAGE_HTML };
 }
