@@ -2,6 +2,9 @@
 
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface RichContentProps {
@@ -32,7 +35,8 @@ export default function RichContent({ content, className = '', compact = false }
   return (
     <div className={`rich-content ${className}`}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
         components={{
           img: ({ src, alt, ...props }) => (
             <img

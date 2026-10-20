@@ -16,6 +16,8 @@ import UnifiedResourceLibraryModal from './components/UnifiedResourceLibraryModa
 import AIGenerateFormModal from './components/AIGenerateFormModal';
 import type { ErrorQuestion, HistoricalTest, Note, InteractiveWebpage } from './data/mockKnowledgeBase';
 import { isEnabled } from './config/version';
+import { isDeepTutorReady } from './deeptutor/config';
+import { listImportableResources, importableKbResourceToResource } from './deeptutor/knowledge';
 
 type ViewState = 'manager' | 'onboarding' | 'workbench' | 'results';
 
@@ -57,6 +59,33 @@ export default function SelfStudyPage() {
   const [showCreationMethodModal, setShowCreationMethodModal] = useState(false);
   const [showFileUploadModal, setShowFileUploadModal] = useState(false);
   const [showResourceLibraryModal, setShowResourceLibraryModal] = useState(false);
+  // "个人"分类：别的空间已经解析好、可以直接复用的资源（弹窗打开时才去查）
+  const [personalResources, setPersonalResources] = useState<Resource[]>([]);
+  const [personalResourcesLoading, setPersonalResourcesLoading] = useState(false);
+
+  useEffect(() => {
+    if (!showResourceLibraryModal) return;
+    let cancelled = false;
+    (async () => {
+      setPersonalResourcesLoading(true);
+      try {
+        if (!(await isDeepTutorReady())) {
+          if (!cancelled) setPersonalResources([]);
+          return;
+        }
+        const items = await listImportableResources(new Set());
+        if (!cancelled) setPersonalResources(items.map(importableKbResourceToResource));
+      } catch (error) {
+        console.warn('[resource-library] 读取已解析资源失败:', error);
+        if (!cancelled) setPersonalResources([]);
+      } finally {
+        if (!cancelled) setPersonalResourcesLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [showResourceLibraryModal]);
   const [showAIGenerateModal, setShowAIGenerateModal] = useState(false);
   const [isAIGenerating, setIsAIGenerating] = useState(false);
   const [isImportingResources, setIsImportingResources] = useState(false);
@@ -590,6 +619,8 @@ export default function SelfStudyPage() {
         onImportHistoricalTest={handleHistoricalTestImport}
         onImportNotes={handleNotesImport}
         onImportWebpages={handleWebpagesImport}
+        personalResources={personalResources}
+        personalResourcesLoading={personalResourcesLoading}
       />
 
       {/* AI生成表单模态框 */}

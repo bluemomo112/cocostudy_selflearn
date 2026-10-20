@@ -59,7 +59,7 @@ import { AgentSwitcherModal } from './workbench/agent/AgentSwitcherModal';
 import { getAgentPreset } from '../data/agentPresets';
 import { DeepTutorChat } from '../deeptutor/chatSession';
 import { isDeepTutorReady } from '../deeptutor/config';
-import { kbExists, kbFileUrl, kbNameForResource, uploadFilesToKb, waitForKb, listImportableResources, type ImportableKbResource } from '../deeptutor/knowledge';
+import { kbExists, kbFileUrl, kbNameForResource, uploadFilesToKb, waitForKb, listImportableResources, importableKbResourceToResource } from '../deeptutor/knowledge';
 import { ensurePersona } from '../deeptutor/personas';
 import type { LearningLogEntry } from '../data/learningLog';
 import { createMasteryPath, fetchMasteryMap, toLearningPath } from '../deeptutor/mastery';
@@ -189,6 +189,19 @@ export default function SelfStudyWorkbench({
     setConfig(initialConfig);
   }, [initialConfig, config.id]);
 
+  // 宿主（空间列表页的"从资源库导入"等）往同一个空间里新增的资源：只按 id 补上缺的，不动其他字段
+  useEffect(() => {
+    if (!initialConfig || initialConfig.id !== config.id) return;
+    const cur = configRef.current;
+    const known = new Set(cur.resources.map((r) => r.id));
+    const added = initialConfig.resources.filter((r) => !known.has(r.id));
+    if (added.length === 0) return;
+    console.log('[workbench] 同步宿主新增的资源:', added.map((r) => r.id));
+    handleUpdateConfig({ ...cur, resources: [...cur.resources, ...added] });
+    setSelectedResourceIds((prev) => new Set([...prev, ...added.map((r) => r.id)]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialConfig]);
+
   // 挂载时如果用了自己更权威的存储而不是宿主传入的（落后的）副本，顺手把宿主那份纠正回去，
   // 不然它会一直停留在旧快照上，下次整个页面重新加载又会读到同一份旧数据。
   useEffect(() => {
@@ -236,25 +249,6 @@ export default function SelfStudyWorkbench({
   };
 
   // 把"从资源库导入"查到的、已经解析好的 DeepTutor 文件包成 Resource：kbStatus 直接是 ready，不用重新上传/解析
-  const importableKbResourceToResource = (item: ImportableKbResource): Resource => {
-    const ext = item.fileName.split('.').pop()?.toLowerCase() || '';
-    const isPresentation = ['ppt', 'pptx'].includes(ext);
-    const isVideo = ['mp4', 'avi', 'mov', 'webm'].includes(ext);
-    const isAudio = ['mp3', 'wav', 'm4a', 'ogg'].includes(ext);
-    const type: Resource['type'] = isPresentation ? 'presentation' : (isVideo || isAudio) ? 'video' : 'document';
-    return {
-      id: `kb_${item.kbName}`,
-      title: item.fileName.replace(/\.[^/.]+$/, ''),
-      type,
-      fileType: (isPresentation ? ext : isVideo ? 'video' : isAudio ? 'audio' : ext) as Resource['fileType'],
-      description: `${(item.size / 1024).toFixed(0)} KB · 已解析`,
-      knowledgeBase: 'supported',
-      kbStatus: 'ready',
-      kbFile: item.fileName,
-      kbName: item.kbName,
-    };
-  };
-
   const syncResourcesToKb = async (items: Array<{ resource: Resource; file: File }>) => {
     if (items.length === 0) return;
     if (!(await isDeepTutorReady())) {
@@ -626,6 +620,8 @@ export default function SelfStudyWorkbench({
   // [资源/任务] 统一的资源点击处理 - 所有资源默认全屏打开
   // 上传文件的 blob: 链接刷新后会失效；资源已入库的话，改用 DeepTutor 知识库里保存的原文件
   const resolveViewUrl = async (url: string | undefined, kbFile: string | undefined, resourceId: string): Promise<string | undefined> => {
+    // 从资源库导入的资源没有本地 url，直接用知识库里的原文件
+    if (!url && kbFile) return kbFileUrl(kbNameForResourceId(resourceId), kbFile);
     if (!url || !url.startsWith('blob:') || !kbFile) return url;
     const controller = new AbortController();
     try {

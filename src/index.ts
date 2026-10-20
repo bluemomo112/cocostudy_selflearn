@@ -43,3 +43,7 @@ export { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 
 // Utils
 export * from './utils/storage';
+
+// DeepTutor（供宿主页面给资源库弹窗提供"我的"已解析资源）
+export { isDeepTutorReady } from './deeptutor/config';
+export { listImportableResources, importableKbResourceToResource } from './deeptutor/knowledge';

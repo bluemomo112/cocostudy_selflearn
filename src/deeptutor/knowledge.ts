@@ -7,6 +7,7 @@
  * GET /api/knowledge-bases/{kb}/progress -> {stage, percent, message} (stage "completed" | "error" ends it).
  */
 import { deeptutorApiUrl } from './config';
+import type { Resource } from '../types/shared-context';
 
 const TAG = '[deeptutor:kb]';
 // Characters DeepTutor rejects in a KB name: < > : " / \ | ? * # %
@@ -156,6 +157,26 @@ export async function listImportableResources(excludeKbNames: Set<string>): Prom
     }
   }));
   return results.flat();
+}
+
+/** Shape an already-parsed KB file as a Resource that reuses its KB instead of re-uploading. */
+export function importableKbResourceToResource(item: ImportableKbResource): Resource {
+  const ext = item.fileName.split('.').pop()?.toLowerCase() || '';
+  const isPresentation = ['ppt', 'pptx'].includes(ext);
+  const isVideo = ['mp4', 'avi', 'mov', 'webm'].includes(ext);
+  const isAudio = ['mp3', 'wav', 'm4a', 'ogg'].includes(ext);
+  const type: Resource['type'] = isPresentation ? 'presentation' : (isVideo || isAudio) ? 'video' : 'document';
+  return {
+    id: `kb_${item.kbName}`,
+    title: item.fileName.replace(/\.[^/.]+$/, ''),
+    type,
+    fileType: (isPresentation ? ext : isVideo ? 'video' : isAudio ? 'audio' : ext) as Resource['fileType'],
+    description: `${(item.size / 1024).toFixed(0)} KB · 已解析`,
+    knowledgeBase: 'supported',
+    kbStatus: 'ready',
+    kbFile: item.fileName,
+    kbName: item.kbName,
+  };
 }
 
 export async function deleteKnowledgeBase(name: string): Promise<void> {
